@@ -1,0 +1,1367 @@
+﻿Colour Coded Suggestions
+Loot / Skill changes.
+Remove entirely from loot.
+Too weak for the current loot pool.
+Too strong for the current loot pool.
+Switched to a different loot pool.
+Not on DB yet.
+Tax changes.
+Needs changes.
+
+
+Treasures
+Dicephoon (C)
+Summon Dice (C)
+Ancient Leaf (C)
+Storm (C)
+Creature Seizure (C)
+Blustering Winds (C)
+Poison of the Old Man (C)
+Cup of Ace (C)
+Final Destiny (C)
+Double Summon (C)
+The Shallow Grave (C)
+A Feather of the Phoenix (C)
+Different Dimension Capsule (C)
+Chain Destruction (C)
+Battle Break (C)
+The Legend of Tickets  (C)
+Half Unbreak (R)
+Upstart Goblin (R)
+Bye Bye Damage (R)
+Card Destruction (R)
+Changing Destiny (R)
+Security Orb (R)
+Pinpoint Guard (R)
+Magic Jammer (R)
+Foolish Burial (R)
+One Day of Peace (R)
+Ego Boost (R)
+Aqua Chorus Round (R)
+Flash of the Forbidden Spell (R)
+Dragged Down into the Grave (R)
+Shrink (R)
+Multi-Universe (R)
+Disablaster the Negation Fortress (R)
+Fairy Tail - Snow (SR)
+The League of Uniform Nomenclature Strikes (SR)
+Kuebiko (SR)
+Grief Tablet  (SR)
+Time Dimension Hole  (SR)
+Dark Core (SR)
+Threatening Roar (SR)
+Waboku (SR)
+Final Bringer of the End Times  (SR)
+Offerings to the Doomed (SR)
+Forbidden Lance (SR)
+Triple Tactics Talent (SR)
+Chicken Game (SR)
+Overexaggeration (SR)
+Sixth Sense (SR)
+Jelly Cannon (SR)
+Premature Burial (UR)
+Mirage of Nightmare (UR)
+Pot of Greed (UR)
+Graceful Charity (UR)
+Monster Reborn (UR)
+Last Will (UR)
+Forbidden Chalice (UR)
+Giant Trunade (UR)
+Daigusto Emeral (UR)
+Dark Rebellion Xyz Dragon (UR)
+Number 103: Ragnazero (UR)
+Leviair the Sea Dragon (UR)
+Generic Skills
+
+
+1. Greed is Good? - Draw 2 cards for your Draw Phase instead of 1, but, your hand-size limit is 0 for the end of turns (discard until you have 0 cards in your hand during the End Phase).
+
+2. Chicken- (Once per Duel) Pay 500 LP: Draw 1 card. Your opponent can then pay 1000 LP to draw 1 card. Continue passing this choice with the LP cost doubling until one player decides to stop.
+
+3. Mulligan (Stackable) - At the start of the duel, you can shuffle your hand back into your Deck and draw a new starting hand. Each new stack of this ability allows you to Mulligan an additional time.
+
+4. Parasitic Invasion - Add 3 "Parasite Paracide" to your Deck (permanently). At the start of the Duel, activate the Flip effects of all "Parasite Paracide" in your Deck and Hand. Draw cards to replace the ones activated in your hand so that your hand size is 5 again. If your opponent Special Summons a "Parasite Paracide", draw 1 card.
+
+5. Scapelamba (Stackable) - Start the game with a Token in play ("Scapelamba" 2000 ATK/2000 DEF Level 4 Earth/Beast). Each stack of this skill grants you an additional token.
+
+6. Staff of Avarice (Stackable) - (Once per Duel) You can shuffle 1 card in your GY back into the Deck to draw 1 card. Each stack of this skill allows you to activate it an additional time per duel.
+
+7. Future Visions (During your first Draw Phase): You can discard 1 card, activate 1 "Future Fusion" from your Deck. (Add "Future Fusion" to your inventory).
+
+8. A Visit to the Old Sage (Once per Duel): You can reveal 1 Fusion Monster in your Extra Deck, add 1 monster listed on it as a Fusion Material from your Deck or GY to your hand, then, you can add "Polymerization" from your Deck to your hand (Add "Polymerization" to your inventory).
+
+9. Ritual Tribute - You can conduct a Tribute Summon in addition to your Normal Summon/Set each turn.
+
+10. Card Vendor (During your first Standby Phase) (Once per Duel): You can activate up to 3 "Card Trader" from your Deck. You can activate the effect of "Card Trader" during your opponent\'s Standby Phase. (Add "Card Trader" to your inventory.)
+
+11. Sacrifice to the Cards (Once per Duel) (During your opponent’s turn) (Quick Effect): You can destroy 1 monster you control and draw 2 cards. Your opponent can activate cards/effects in response to the activation of this skill. Each stack of this skill lets you activate this effect an additional time per Duel.
+
+12. Metalmorph (Stackable) - Take 300 damage less from any source of damage. Each stack of this skill increases the damage reduction by 100.
+
+13. Unexpected Die (Once per Duel): Add 1 "Unexpected Dai" from your Deck to your hand. (Add "Unexpected Dai" and "Little D" to your inventory.)
+
+14. Bargain! -  Pools cost 1 Gold less.
+
+15. Silver Tongue - Purchasing Training costs 1 less Gold.
+
+16. Pirate Soul - Whenever you get to choose a Treasure, you can choose 3 of the options presented.
+
+17. Dark Emissary - Start the Duel with "Gorz the Emissary of Darkness" in your hand (if you drew "Gorz the Emissary of Darkness" in your opening hand, reveal it and draw a card instead of adding it to your hand). (Add "Gorz the Emissary of Darkness" to your inventory).
+
+18. Normal Summon Alligator: When you Normal Summon "Alligator's Sword" you can add 1 "Kunai with Chain" from your Deck or GY to your hand, then draw 2 cards and discard 2 cards (Add "Alligator's Sword" and "Kunai with Chain" to your inventory).
+
+19. Faulty Programming: Each player draws 2 cards for their Draw Phase, except during the first Draw Phase. Each player must shuffle 1 card they control or in their hand into the Deck during their End Phase, except during the first End Phase.
+
+20. Plundered Booty: When you sell Treasure, you gain 3 Gold per Treasure instead of 1.
+
+21. Chilly Shores (Once per Duel): Next turn, the next 2 times you would take damage, or a monster you control would be destroyed by battle, you do not take damage and that monster is not destroyed.
+
+22. Normal Seal: Non-effect monsters and monsters with negated effects on your side of the field gain 500 ATK/DEF while face-up on the field. (Once per Duel): You can negate the effects of a face-up monster you control, or, give a non-effect monster you control 500 ATK.
+
+23. Tapped Potential: You can tribute 1 "Fiend Scorpion" to Special Summon 1 "Millennium Scorpion" from your hand or Deck, then you can add up to 2 Trap Card(s) from your Deck to your hand. "Millennium Scorpion" you control gain 1000 ATK for their effect instead of 500. (Add "Fiend Scorpion" and "Millennium Scorpion" to your inventory).
+
+24. Archetype Madness: Declare 1 card name in your inventory and 1 archetype name. That card becomes part of that archetype.
+
+25. Lifesteal - If your monster battles an opponent's monster and inflicts damage to them, gain LP equal to the amount inflicted.
+
+26. The Tragedy - (Once per turn): If a monster you control is destroyed by battle you can add 1 "Tragoedia" from your Deck to your hand. (Add "Tragoedia" to your inventory.)
+
+
+   27. Heavy Sack - Gain 2 gold at the start of each Shop Phase.
+
+   28. Legendary Sacrifice - (Once per turn): If your Legendary Monster is destroyed, draw 2 cards.
+
+   29. Beatdown - (Once per Duel) (Stackable): At the start of the Battle Phase, for each monster you control, you can increase the ATK of all monsters you control by 300. Destroy all monsters you control at the end of the Battle Phase. Each stack of this skill increases the ATK gained by 100.
+
+   30. Mind Scan - (Once per turn): You can target 1 Set card your opponent controls; you can look at it or declare a card name, and if the card is the declared card destroy it. Cards and effects can be activated in response to this Skill.
+
+   31. Lucky Die -(Once per turn): Reveal 1 monster in your hand and roll a six-sided die. The level of that monster becomes that roll until the end of the turn. If the result is higher than 4, draw 1 card.
+
+   32. Magic Madness - (Once per Duel): You can banish 3 Spell Cards face-down from your GY. Your opponent randomly picks one of them to add to your hand. This turn, if you activate a Spell, you can banish it face-down. (Once per Duel): You can make your opponent add 1 of your face-down banished cards to your hand at random, and if you do, discard 1 card.
+
+   33. We are Number One - (Once per Duel): If you control a Normal monster, you can Special Summon up to 2 monsters from your Deck with the same name as that monster, also, monsters summoned from the Extra Deck this turn have their effects negated.
+
+   34. Tank-Up - (Once per Duel) (During your Main Phase 1) (Stackable): You can switch all monsters you control to Defense Position, then, they gain 1500 DEF. Each stack of this skill lets you activate this an additional time per Duel.
+
+   35. Strong Arm - (Once per Duel): You can make 1 monster your opponent controls declare an attack, or if it\'s in Defense Position, you can change it to Attack Position. Neither player takes battle damage this turn with battle involving that card.
+
+
+      36. Lawnmower - (Once per Duel): You can send the top card of your deck to the GY. Your opponent can then repeat this effect, but sends twice as many as the previous amount. Continue passing this choice with the number sent doubling until one player decides to stop.
+
+      37. Deck Hurty Virus - (Once per Duel) (before the start of the duel): Both players discard 5, mill 5, then draw 5. This does not trigger GY effects of any kind.
+
+      38. Rainbow Energy - (Once per Duel): You can declare an Attribute. For the rest of the Duel, all face-up monsters you control are also treated as that Attribute.
+
+      39. Minigun - (Once per turn) (Stackable): You start the Duel with 500 charges. You can spend any number of charges and lower the ATK 1 face-up monster by that much. If this reduces its ATK to 0, destroy the monster and gain 500 charges. (Once per turn) (Quick Effect): You can destroy 1 monster you control to gain 500 charges. This effect can go on chain. Each stack of this skill gives an additional 500 charges at the start of the Duel.
+
+      40. Battle Boogy - Rise Up! - (Once per Duel): This turn, you can switch the position of monsters you control the turn they are Summoned, Set, or after they’ve battled.
+
+      41. Fusion Festival! - (Once per turn): If you Fusion Summon a monster, you can add 1 "Polymerization" and 1 monster used as Fusion Material for that monster from your GY to your hand (add "Polymerization" and "Garura, Wings of Resonant Life" to your inventory). If you're Toy Maker you can only use this Skill once per Duel.
+
+      42. Normie Gathering - (Once per Duel) (Stackable): You can add 1 non-effect monster from your Deck to your hand, except for your Legendary Monster(s). (Once per Duel): You can Special Summon 1 Level 4 or lower non-effect monster from your hand. Each stack of this skill lets you add up to 2 additional non-effect monster(s) from your Deck to your hand.
+
+      43. Wreck-less - (Once per Duel): You can discard 1 card; add 1 "Rush Recklessly" from your Deck to your hand. (Once per Duel): If a monster you control destroys an opponent’s monster by battle: you can add 1 "Rush Recklessly" from your GY to your hand.'
+
+      44. Storm Sceptre - (Once per Duel): If an opponent’s Spell/Trap card is sent to the GY during your turn: you can add 1 "Mystical Space Typhoon" from your Deck to your hand (add "Mystical Space Typhoon" to your inventory).
+
+      45. Cosmic Sceptre - (Once per Duel): If a card in your opponent’s possession is banished: add 1 "Cosmic Cyclone" from your Deck to your hand (add  "Cosmic Cyclone" to your inventory).
+
+      46. A Tribute to Those Who Lost - (Once per Duel): If a card in your opponent’s possession is destroyed by a card or Skill effect during your turn: add 1 "Tribute to the Doomed" from your Deck to your hand (add "Tribute to the Doomed" to your inventory).
+
+      47. Chainlonk - Once per Duel (Quick Effect): You can activate this Skill as only Chain Link 2 or higher: This current chain resolves forwards instead of backwards.
+
+      48. Straightened Priorities - (Once per Duel): You can activate the effect of 1 face-up card you control as a Quick Effect.
+
+      49. My Crazy New Link 1 Idea - (Once per Duel) If you Link Summon "Clara & Rushka, the Ventriloduo", you can add 1 Field Spell from your Deck to your hand. (Add "Clara & Rushka, the Ventriloduo" to your inventory)
+
+      50. Quest of Young Adult - (Once per turn): You can reveal 1 Level 5 or higher monster; this turn you can Normal Summon that monster without tributing. You can\'t reveal a monster with the same level of a previously revealed monster for the rest of the Duel.
+
+      51. Skill Veiler - (Once per Duel): You can negate 1 of your opponent’s non-unique skills until the end of the next turn.
+
+      52. Marvelous Meatball - The effect of "Nibiru, the Primal Being" is instead: "During the Main Phase, if your opponent Normal/Special Summoned 5 or more monsters this turn (Quick Effect): You can target 1 Effect Monster your opponent controls and return it to the hand; Special Summon this card from your hand." (Add "Nibiru, the Primal Being" to your inventory)
+
+      53. Social Distancing - (Once per turn): During your Draw Phase, draw 2 cards. Cards you control cannot be in adjacent zones (excluding Field Zone) to each other.
+
+      54. Entrance Exam - (Once per turn): You can send 1 "Duel Academy" from your hand or field to the GY to activate one of the following effects (Add "Duel Academy", "Polymerization", "Yubel" and "A Hero Emerges" to your inventory):\n- Add 1 "Polymerization" or 1 "Fusion" Spell from your Deck to your hand.\n- Draw 1 card and reveal it, if it is a monster card, add it to your hand, otherwise, send it to the GY.\n- Reveal the top 3 cards of your Deck and add 1 Trap Card from among them to your hand, then send the rest to the GY.
+
+      55. Exodia, Obliterate! - (Once per turn) (During your Draw Phase): Send 1 "Forbidden One" card from your hand or Deck to the GY. (Once per turn): If you have all 5 pieces of Exodia in your GY, you can target 1 monster on the field; destroy it. (Add 1 of each of the pieces of Exodia to your Deck, permanently).
+
+      56. My Wingman! - The effect of "Super Polymerization" is now: "Discard 1 card and send 1 monster from your Deck to your GY: Special Summon 1 "Flame Wingman" from your Extra Deck (this is treated as a Fusion Summon). (Once per turn): While you control "Flame Wingman", you can activate 1 "Skyscraper" from your Deck or GY, then Special Summon 1 "Ancient Gear Golem" from your Deck or GY to your opponent’s side of the field, ignoring its summoning conditions. (Add 3 "Super Polymerization", 3 "Flame Wingman" to your Deck, permanently. Add "Skyscraper" and "Ancient Gear GoleM" to your inventory.)
+
+      57. Utopic Goober - You can Xyz Summon "Number 39: Utopia" with monsters of any level (Add 3 "Number 39: Utopia" to your Extra Deck, permanently).
+
+      58. Talkers, Decoded - (Once per turn): You can tribute 1 card "Decode Talker" points to draw 1 card, or if the tributed monster was Link Summoned, draw cards equal to its Link Rating. (Add "Decode Talker" to your inventory.)
+
+      59. The Real Mystic Mine Out - Only 1 Field Spell can be face-up on the field at a time. If either player activates another Field Spell the previous one is destroyed.
+
+      60. Blazing Brazier - (Once per turn) (During the End Phase): You can send the top card of your Deck to the GY. After each time you use this Skill, this skill sends an additional card until the end of the Duel (max 3).
+
+      61. Torchlight - During your Draw Phase, instead of your normal draw, banish the top two cards of your Deck facedown, then add 1 from among those two facedown banished cards to your hand.'
+
+      62. Advanced Worship - Add 1 of each of the Egyptian Gods to your deck (permanently). You can Tribute Summon them for 2 Tributes instead of 3. Negate the fourth effect of "Slifer the Sky Dragon".
+
+      63. Magical Warrior’s Blessing - (Once per turn): If you Normal Summon "Breaker the Magical Warrior", you can Normal Summon another monster this turn. If you destroy a Spell/Trap with the effect of "Breaker the Magical Warrior", you can draw 1 card. (Add "Breaker the Magical Warrior" to your inventory.)
+
+      64. Dimension Rod - (Once per Duel) (During your Draw Phase): You can shuffle 3 of your cards that are banished into the Deck to draw 1 card.
+
+      65. Tuning Fork - (Once per Duel): Target 1 non-Tuner monster you control; it is treated as a Tuner. (Add "Stardust Dragon" to your inventory.)
+
+      66. Sacrificial Arts - You can Normal Summon an additional time each turn, but each time you Normal Summon, you must pay 1000 LP. You can still use this effect even if you cannot pay the LP cost.
+
+      67. Dedidated Crows - "D.D. Crow" can only target non-Legendary monsters (add "D.D. Crow" to your inventory).
+
+      68. Spell Overflow! - During your End Phase, gain 300 LP for each Spell card in your GY.
+
+      69. Thin Margins - (Once per turn): You can banish 1 card from your hand, and add 1 card with the same name from your Deck to your hand.
+
+      70. Destiny Draw - (Once per Duel): During your Draw Phase, if your LP are lower than 4000, you can give up your normal draw, and add 1 card from your Deck to your hand.
+
+      71. Monster Mash - If you control no Spell/Trap cards, you can use your Spell & Trap Zones as Monster Zones. If a Spell/Trap card is on your field, send all monsters in your Spell & Trap Zones to the GY.
+
+      72. Young Upstart - During your first Standby Phase, you can shuffle up to 3 cards from your hand into the Deck, and add the same number of "Upstart Goblin" from your Deck to your hand. (Add "Upstart Goblin" to your inventory.)
+
+      73. Exchange - Before the Match, you and your opponent choose 1 of the others Skills, and swap them for this match.
+
+      74. Steep Gamble - (Once per Duel): You can draw 2 cards, and your opponent gains 8000 LP.
+
+      75. Doomed Tribute - (Once per Duel) - You can tribute 1 face-up monster you control and target 1 card your opponent controls; destroy it. Your opponent can activate cards/effects in response to this skill's activation.
+
+      76. Shard Hunter - (Once per Duel): You can discard 2 cards and activate up to 3 "Shard of Greed" from your Deck. (Add "Shard of Greed" to your inventory.)
+
+      77. Yūgō Shōkan - (Once per Duel): Fusion Summon 1 Fusion Monster from your Extra Deck, using monsters from your hand or field as Fusion Material. That monster cannot be targeted or destroyed by card effects this turn.
+
+      78. Laughing Tail - If your opponent declares an attack on a monster you control: You can send any number of cards from your hand to the GY; that monster gains 1000 ATK for each card sent until the end of the Damage Step. Neither player takes battle damage from this battle, also the attacking monster cannot be destroyed by this battle.
+
+      79. Seeing Double - (Once per Duel) If you Summon a monster with an effect that activates when it is Summoned, you can immediately activate that effect a second time, ignoring "once per turn" clauses.
+
+      80. Mind Wash Car Wash - (Once per Duel): You can give 1 monster you control to your opponent; add 1 “Brain Control” from your Deck to your hand (add 1 “Brain Control” to your deck, permanently).
+
+      81. I’m Something of an Artist Myself - (Once per turn) During the Draw Phase: You can skip your Normal Draw to add 1 “Drawbread” from your Deck to your hand. If you draw a “Drawbread” from the effect of “Drawbread”, draw a card and add 1 “Drawbread” from your GY to your hand. (Add “Drawbread” to your inventory).
+
+      82. Chang’e’s Favour - You can also use the effect of “Silhouhatte Rabbit” that activates when it’s Link Summoned as if it was an Ignition Effect during your Main Phase. While you control a Continuous Trap that is also treated as a monster, your opponent cannot attack any “Silhouhatte Rabbit” you control. Add “Silhouhatte Rabbit” and “Tiki Soul” to your inventory. 
+
+      83. Growthy McGrowthface - (Once per Duel): You can place 1 “Growth” token on a monster you control (if that monster would ever be destroyed, remove 1 “Growth” token from it instead). Once per Duel, during your next Draw Phase: Tribute 1 monster with a “Growth” token on it; Special Summon 1 monster from your Deck. 
+
+      84. Full Moon - Add “Book of Moon” to your inventory. “Book of Moon” is treated as a Normal Spell Card, and can only be used any time you could use a Spell Speed 1 Effect. (Once per turn): If either player controls a Set monster, you can add 1 “Book of Moon” from your Deck to your hand.
+
+      85. Read This, My Rival - You and your current opponent can both add 1 "S:P Little Knight" to your respective Extra Decks for this Round. (Once per Duel): You can add 1 "S:P Little Knight" from your GY/banishment to your Extra Deck and draw 1 card. Your opponent can show 1 "S:P Little Knight" in their possession to negate this effect.
+
+      86. Buzz Buzz, My Rival - You and your current opponent can both add 3 “K9-17 Izuna”, 1 “K9-ØØ Lupis” and up to 3 (min 1) “Drill Driver Vespenato” to your respective Main/Extra Decks. (Once per Duel): You can add up to 3 “Drill Driver Vespenato” from your GY/banishment to your Extra Deck and draw 1 card. Your opponent can show 1 “K9-17 Izuna” in their possession to negate this effect.
+Generic Loot
+Staples Loot
+         * Sangan / Witch of the Black Forest
+         * Cockadoodledoo / Black Rose Dragon
+         * Obsessive Uvualoop / Ally of Justice Cyclone Creator / Thought Ruler Archfiend / Ally of Justice Catastor
+         * Number 30: Acid Golem of Destruction / Number 47: Nightmare Shark
+         * Super Quantal Mech Beast Grampulse
+         * Castel, the Skyblaster Musketeer
+         * Number 101: Silent Honor ARK
+         * Number 39: Utopia / Gem-Knight Pearl
+         * Number 70: Malevolent Sin / Wind-Up Zenmaister
+         * Blaze, Supreme Ruler of all Dragons / Odd-Eyes Absolute Dragon
+         * Dharc the Dark Charmer, Gloomy, / Lyna the Light Charmer, Lustrous / Wee Witch\'s Apprentice / Hip Hoshiningen
+         * Wynn the Winder Charmer, Verdant / Aussa the Earth Charmer, Immovable / Greatfly / Missus Radiant
+         * Hiita the Fire Charmer, Ablaze / Eria the Water Charmer, Gentle / Duelittle Chimera / Mistar Boy
+         * Underclock Taker / Decode Talker Extended
+         * Decode Talker / Curious, the Lightsworn Dominion / Saryuja Skull Dread
+         * Pot of Avarice / Pot of Duality
+         * Reasoning / Monster Gate
+         * Gold Sarcophagus / Pot of Desires
+         * Small Scuffle / Half Unbreak
+         * Split Mirror of the Underworld
+         * Ultimeat Offering
+         * The Seal of Orichalcos
+         * My Body as a Shield
+
+
+Removal/Disruption Loot
+         * Mystical Space Typhoon / Twin Twisters
+         * Dust Tornado / Bait Doll
+         * Galaxy Cyclone / Night Beam
+         * Cosmic Cyclone
+         * Hammer Shot / Shield Crush
+         * Nobleman of Crossout / Tribute to the Doomed
+         * Widespread Dud / Widespread Ruin
+         * Draining Shield / Magic Cylinder
+         * Scrap-Iron Scarecrow
+         * Spiritual Swords of Revealing Light
+         * Dimensional Prison
+         * Sakuretsu Armor
+         * Attack Guidance Armor / Tax +1
+         * Trap Hole
+         * Mirror Force / Tax +2
+         * Bottomless Trap Hole
+         * Banishing Trap Hole
+         * Raigeki Break
+         * Enemy Controller
+         * Book of Moon
+         * Effect Veiler / Tax +1
+         * Manticore of Smashing / Fissure / Smashing Ground
+         * Battle Fader
+
+
+
+
+Engine Loot
+         * Stardust Dragon / Stardust Synchron / Stardust Trail / Stardust Illumination / Stardust Spark Dragon
+         * Brilliant Fusion / Gem-Knight Sapphire / Gem-Knight Seraphinite / Performage Trick Clown
+         * Ryko, Lightsworn Hunter / Super-Nimble Mega Hamster
+         * Ice Hand / Fire Hand / Thunder Hand
+         * Glow-Up Bulb / Linkuriboh
+         * Predaplant Verte Anaconda / Mudragon of the Swamp / Polymerization
+         * Water Enchantress of the Temple / Magicore Warrior of the Relics / Rite of Aramesir / Fateful Adventure / Dunnel, the Noble Arms of Light / Breath of Resurrection
+         * King of the Swamp / Sea Monster of Theseus / Magnum the Reliever/ Polymerization / Ready Fusion
+         * Sky Striker Mobilize - Engage / Sky Striker Maneuver - Jamming Waves! / Sky Striker Maneuver - Afterburners!
+         * Tour Guide from the Underworld / Sangan / Wind-Up Zenmaines
+         * Speedroid Terrortop / Speedroid Taketomborg / The Phantom Knights of Break Sword
+         * Symphonic Warrior Guitaar / Symphonic Warrior Miccs
+         * Galaxy Soldier / Cyber Dragon / Imperial Princess Quinquery / Tiras, Keeper of Genesis
+         * Spellbook Magician of Prophecy / Spellbook of Knowledge / Spellbook of Secrets
+         * Trickstar Candina / Trickstar Corobane / Trickstar Light Stage
+         * Raiden, Hand of the Lightsworn / Wulf, Lightsworn Beast / Minerva, the Exalted Lightsworn / Charge of the Light Brigade / Felis, Lightsworn Archer / Minerva, the Athenian Lightsworn
+         * Treeborn Frog / Caius the Shadow Monarch / Raiza the Storm Monarch / Mobius the Frost Monarch / The Monarchs Stormforth
+         * Swap Frog / Dupe Frog / Ronintoadin / Gachi Gachi Gantetsu / Armored Kappa
+         * Magicians\' Souls / Illusion of Chaos
+         * Xyz Armor Torpedo / Xyz Armor Fortress / Full Armored Crystalzero Lancer / Xyz Entrust / Full-Armored Xyz
+
+
+Fisherman Shop
+Terrors from the Deep
+Tip Ratio: 10-15
+Fly Fishing - You are always treated as having "Umi" on the field. WATER monsters you control gain 200 ATK / DEF.
+I Taught the Fish to Xyz Summon - If "Terrorking Salmon" is used for the Xyz Summon of a WATER monster, it can be treated as a Level 3 or 4 monster. An Xyz monster with "Terrorking Salmon" as material, is treated as "Terrorking Salmon".
+
+
+Starter Packs 
+X-Y-ZEP!
+         * Mother Grizzly / Skreech / Fenrir / Hydrojet Shark / Double Fin Shark / Saber Shark / Shark Stickers / Silent Sea Nettle / Hammer Shark / Panther Shark / Eagle Shark / Gazer Shark / Cutter Shark / Number 19: Freezadon / Number 17: Leviathan Dragon / Snowdust Giant / Abyss-Steam
+
+TUNAS!
+            * Sea Dragon Lord Gishilnodon / Glacial Beast Blizzard Wolf / Glacial Beast Iceberg Narwhal / Glacial Beast Polar Penguin / Nightmare Penguin / Penguin Ninja / Penguin Cleric / Penguin Torpedo / Penguin Sword / Tatsunoko
+
+            * Ice Master / Cold Enchanter / Snowman Creator / Snow Dragon / Snowdust Dragon / Mobius the Mega Monarch / Ice Knight / Piwraithe the Ghost Pirate / Snowdust Giant / Ice Doll / Ice Doll Mirror / Twin Pillars of Ice 
+
+
+Medium Quality
+               * Lappis Dragon / Fishborg Harpooner / Graydle Dragon / White Aura Dolphin
+               * Icejade Tinola / Icejade Acti / Icejade Tremora / Icejade Cradle
+               * Swap Frog / Dupe Frog / Ronintoadin / Mistar Boy
+               * Aquaactress Tetra / Aquaactress Guppy / Aquaactress Arowana / Aquarium Set
+               * Xyz Remora / Drake Shark / Surfacing Big Jaws / Number 32: Shark Drake
+               * Beautunaful Princess / Minairuka / Silent Angler / Bahamut Shark / Number 47: Nightmare Shark / Full Armored Black Ray Lancer
+               * True King Bahrastos, the Fathomer
+               * Tsuru-Puru-Purun / Hydor, the Base of All Things
+               * Surface / White Mirror
+               * Eria the Water Channeler / Butterfly Fish
+               * Citadel Whale / Sea Stealth Attack
+               * Flying Red Carp / Gluttonous Reptolphin Greethys / Superancient Deepsea King Coelacanth / Royal Swamp Eel / Metabo Shark / Whitefish Salvage / Brionac, the Magical Ice Dragon / White Aura Monoceros
+
+
+High Quality
+               * Mermail Abyssmegalo / Mermail Abysslinde / Mermail Abyssgunde / Mermail Abysspike / Poseidra, the Storming Atlantean / Atlantean Heavy Infantry / Abyss-sphere
+               * The Great Emperor Penguin / Penguin Squire / Puny Penguin / Nopenguin / Penguin Soldier / Penguin Brave / Enigmaster Packet
+               * Icejade Aegirine / Icejade Ran Aegirine / Icejade Creation Kingfisher / Icejade Manifestation / Lancea, Dragonic Ancestor of the Ice Spirit Mountain / Icejade Erosion
+               * Deep Sea Diva / Guitar Gurnards Duonigis / Deep Sea Repetiteur / Deep Sea Prima Donna / Navy Dragon Mech / Magellanica, the Deep Sea City
+               * Mermail Abyssteus / Mermail Abyssturge / Neptabyss, the Atlantean Prince / Atlantean Dragoons / Mermail Abyssalacia
+               * Tidal, Dragon Ruler of Waterfalls / Stream, Dragon Ruler of Droplets / Abysstrite, the Atlantean Spirit
+               * Electric Jellyfish / Codarus / Amphibious Bugroth MK-11
+               * Whitebeard, the Plunder Patroll Helm / Blackeyes, the Plunder Patroll Seaguide / Bluebeard, the Plunder Patroll Shipwright / Goldenhair, the Newest Plunder Patroll / Blackbeard, the Plunder Patroll Captain / Plunder Patroll Shipyarrrd / Plunder Pals: The effects of "Plunder Patroll" monsters that prevent you from Special Summoning monsters, except "Plunder Patroll" monsters no longer do so. The effect of "Plunder Patroll" cards to Special Summon a "Plunder Patroll" monster from your Extra Deck can Special Summon any WATER monster from your Extra Deck instead.
+               * Apischool / Infernalqueen Salmon / Eria the Water Charmer, Gentle
+               * Gishki Grimness / Gishki Abyss / Gishki Aquamirror / Gishki Zielgigas / Gishki Beast / Gishki Mind Augus
+Necromancer Shop
+The Undead Host
+Tip Ratio: 10-15
+Dead Man’s Hand - (Once per turn): If you Summon "Skull Servant" with Look Ma, No Hands you can use it again this turn. 
+Omni-Servant - Your Legendary Monster can be treated as the full Tribute for either a Tribute Summon or Ritual Summon, also if Skull Servant would be used for a Synchro Summon, you can treat it as a Level 1, 2, 3, or 4 Tuner monster. (Once per turn): If you control "Skull Servant" you can Tribute Summon a monster. 
+
+
+Starter Packs
+TRICK-OR-TREAT!
+               * Ghostrick Siren / Ghostrick Stein / Ghostrick Jiangshi / Ghostrick Witch / Ghostrick Alucard / Ghostrick Warwolf / Ghostrick Ghoul / Ghostrick Fairy / Ghostrick Lantern / Ghostrick Specter / Ghostrick Mary / Ghostrick Shot / Haunted Shrine / Return of the Zombies / Shiranui Style Success / Shiranui Style Synthesis / Ghostrick Roll'd - "Ghostrick" monsters in your possession are also treated as Zombie monsters.
+
+
+DYING IN SYNC(HRO)!
+               * Mad Mauler / Pain Painter / Archfiend Zombie-Skull / Doomkaiser Dragon / Zombie Master / Shiranui Squiresaga / Delta of Invitation / Plaguespreader Zombie / Revived King Ha Des
+
+
+TRIBUTE TO THE DOOMED!
+               * Red-Eyes Zombie Dragon / Vampire Lord / Vulcarrion the Rotting Phoenix / Pumprincess the Princess of Ghosts / Bayonater, the Baneful Barrel / Doombearer Psychopompos / Tutan Mask / Pyramid of Wonders / Tribute to the Doomed / Zoma the Spirit
+
+
+Medium Quality
+               * Vampire Vamp / Vampire Red Baron / Vampire's Desire
+               * Pyramid Turtle / Zombina
+               * Wightlord / Flying Mary the Wandering Ghost Ship
+               * Moissa Wight  / Wight Master 
+               * Procession of the Tea Jar / Beast of the Pharaoh / Immortal Dragon
+               * Jack-o-Bolan
+               * Changshi the Spiriado / Foolish Burial
+               * Zombie Power Struggle
+               * Vampire Sucker / Avendread Savior
+               * Zombie World / Partial Zombification: While "Zombie World" is face-up on the field, monsters your opponent controls and in their GY do not become Zombie monsters, but are also treated as Zombie monsters instead. Negate the second effect of "Zombie World". This Skill cannot leave your inventory.
+               * The Duke of Demise / Spirit Illusion / Duke of Sadness - You do not need to pay the maintenance cost of "The Duke of Demise", but it can be destroyed by battle. Negate the effects of "Spirit Illusion" during the Battle Phase. This Skill cannot leave your inventory.
+               * Dark Necromancer / Scar of the Vendread / Vendread Scavenger / Revendread Evolution
+               * Curse of the Ancient Turtle
+
+
+High Quality
+               * Vampire Voivode / Vampire Ghost / Vampire Familiar / Vampire Retainer / Vampire's Domain / The Zombie Vampire / Tax +1
+               * Vampire Scarlet Scourge / Vampire Kingdom / Vampire Takeover / Dhampir Vampire Sheridan / Tax +1
+               * Shiranui Solitaire / Uni-Zombie / Red-Eyes Zombie Necro Dragon
+               * Shiranui Spectralsword / Shiranui Spectralsword Shade / Shiranui Samurai / Shiranui Samuraisaga / Shiranui Shogunsaga
+               * Alghoul Mazera
+               * Vendread Houndhorde / Vendread Striges / Revendread Slayer / Revendread Executor / Vendread Chimera / Revendread Origin / Vendread Nights
+               * Shinobi Necro / Nine-Tailed Fox / Skeletal Dragon Felgrand
+               * Ghost Wyvern, the Underworld Dragon / Ghost Charon, the Underworld Boatman / Ghost Fusion / Dragonecro Nethersoul Dragon / Dragocytos Corrupted Nethersoul Dragon / Tax +1
+               * Call of the Haunted / Mezuki / Book of Life / Zombie Reborn / Tax +1
+               * Angelcaido of the Golden Land  / Seven Cities of the Golden Land / Eldlixir of the Exalted Golden Land  / Eldlixir of Scarlet Sanguine / Lich'd Servant: "Skull Servant" you control and in your GY are treated as "Eldlich the Golden Lord".
+Toy Maker Shop
+The Joys of Creation
+Tip Ratio: 10-15
+Patchwork Playdate: (Once per turn): You can use 1 monster your opponent controls as Fusion Material for the Summon of "Bickuribox" when you use Patchwork. 
+Fusion Fury: (Once per Duel): If you activate a card or effect that would Fusion Summon a monster, while you control "Bickuribox", you can use Patchwork for that Fusion Summon.
+
+
+Starter Packs
+UNSEALED!
+               * D/D/D Dragonbane King Beowulf / Fusion Substitute / Sea Monster of Theseus / Muddy Mudragon / Predaplant Verte Anaconda / The Light - Hex-Sealed Fusion / The Dark - Hex-Sealed Fusion / The Earth - Hex-Sealed Fusion / Ready Fusion / Hex-Unsealed: If you activate the effect of a "Hex-Sealed" monster, you can use Patchwork.
+
+
+HAM!
+               * Gagaga Magician / Master of Ham / Rocket Hermos Cannon / Santa Claws / The Great Double Casted Caster / Toon Cyber Dragon / Cyber Ogre / Cyber Ogre 2 / Shaddoll Falco / Shaddoll Beast / Qadshaddoll Keios / Shaddoll Construct
+
+
+TOY TESTING!
+               * Incredible Ecclesia, the Virtuous / The Golden Swordsoul / Goddess Bow / Heosvarog the Mechanical Dawn / Trickstar Mandrake / The Duke of Demise / Put Up Your Dukes: You do not need to pay the maintenance cost of "The Duke of Demise", but it can be destroyed by battle. This Skill cannot leave your inventory.
+
+Medium Quality
+                  * Fluffal Bear / Fluffal Wings / Fluffal Dolphin / Toy Vendor / Foolish Burial Goods / Frightfur Jar
+                  * The Dark Magicians
+                  * Keeper of Dragon Magic / Horned Saurus
+                  * Fluffal Dog / Fluffal Sheep / Fluffal Cat / Fluffal Octo / Frightfur Wolf / Proxy F Magician
+                  * Khaos Starsource Dragon
+                  * Predaplant Ophrys Scorpio / Predaplant Darlingtonia Cobra / Instant Fusion / Darkfire Dragon / Beast-Eyes Pendulum Dragon / Cross-Sheep
+                  * Albion the Sanctifire Dragon / Sleipnir the Runick Mane
+                  * Duza the Meteor Cubic Vessel / Dual Avatar Feet - Armored Un-Gyo / Dual Avatar Fists - Armored Ah-Gyo / Unification of the Cubic Lords
+                  * Titaniklad the Ash Dragon / Dogmatika Fleurdelis, the Knighted
+                  * Aleister the Invoker / Invoked Magellanica / Invocation
+                  * Stegocyber / Trifortressops / Storagepod / Frightfur Bear
+                  * Divine Scorpion Beast of Serket
+
+
+High Quality
+                  * Dracotail Lukias / Dracotail Urgula / Dracotail Pan / Dracotail Gulamel / Ketu Dracotail
+                  * Trickstar Candina / Trickstar Lycoris / Trickstar Lilybell / Trickstar Hoodie  / Trickstar Band Drummatis / Trickstar Noble Angel / Trickstar Fusion / Trickstar Light Stage / Tricked-Star: The effects of "Trickstar" monsters that inflict damage to your opponent, instead give you LP equal to that amount. "Trickstar" effects that would trigger if effect damage is inflicted instead trigger if you gain LP. This Skill cannot leave your inventory.
+                  * The First Darklord / First is Worst: You cannot Summon Fusion Monsters with the effect of "The First Darklord". Negate the first effect of "The First Darklord". This Skill cannot leave your inventory.
+                  * Edge Imp Chain / Edge Imp Cotton Eater / Frightfur Patchwork / Frightfur Sheep / Frightfur Sabre-Tooth / Missing Piece: "Frightfur Sabre-Tooth" can be destroyed by battle ignoring its effect. This Skill cannot leave your inventory.
+                  * Buio the Dawn's Light / Mutiny in the Sky / Luce the Dusk's Dark
+                  * Nehshaddoll Genius / El Shaddoll Fusion / Shaddoll Fusion / El Shaddoll Construct / Construct Constriction: You can only use each effect of "El Shaddoll Construct" once per turn. This Skill cannot leave your inventory
+                  * Reeshaddoll Wendi / Naelshaddoll Ariel / El Shaddoll Apkalone / Myutant Synthesis / Resh Shaddoll Incarnation
+                  * Toy Soldier / Toy Tank / Toy Magician / Toy Knight / Goyo Emperor / Toy Box
+                  * The Man with the Mark / Anubis the Last Judge / Divine Serpent Apophis / Temple of the Kings / Treasures of the Kings / Embodiment of Apophis / Apophis the Serpent
+                  * Edge Imp Scythe / Fluffal Penguin / Fluffal Rabbit / Vicious Astraloud / Scythe and Dice If you would activate the effect of "Edge Imp Scythe", you can use Patchwork instead but you must use "Edge Imp Scythe" as Fusion Material.
+
+
+Pyromancer Shop
+The Burning Army
+
+
+Tip Ratio: 10-15 
+Specially Prepared Meal - All monsters in your hand/GY are all also "Salamangreat" monsters. Add "Salamangreat Weasel" and "Salamangreat Tiger" to your inventory.
+The Dragon from Creation - "Twin-Headed Fire Dragon" is also treated as a Dragon monster. If you would use "Twin-Headed Fire Dragon" for a Synchro Summon, it can be treated as a Tuner monster.
+
+
+Starter Packs
+SATANIC CULT!
+                  * Hazy Flame Cerberus / Hazy Flame Griffin / Hazy Flame Peryton / Hazy Pillar / Hazy Flame Basiltrice / Hazy Flame Mantikor / Hazy Flame Hyppogrif / Hazy Flame Sphynx / Hazy Glory / Thestalos the Shadowfire Monarch / Thestalos the Mega Monarch / Prometeor, the Burning Star / Pyrotech Mech - Shiryu
+
+
+BY THE FIRELIGHT!
+                  * Volcanic Slicer / Volcanic Blaster / Volcanic Hammerer / UFO Turtle / Raging Flame Sprite / Goka, the Pyre of Malice / Defender of Nephthys / Hand of Nephthys / Sacred Phoenix of Nephthys / Disciple of Nephthys / Chronicler of Nephthys
+
+
+PROMINENCE BURN!
+                  * Laval Lakeside Lady / Laval Miller / Laval Archer / Molten Conduction Field / Laval Blaster / Laval the Greater / Flamvell Uruquizas / Brushfire Knight / Spirit of Flames / Firewing Pegasus, the Crimson Heavenly Horse 
+
+
+
+
+Medium Quality
+                  * Legendary Fire King Ponix / Fire King Avatar Rangbali / Fire King Island / Onslaught of the Fire Kings / Fire Formation - Tenki
+                  * Fire King Avatar Garunix / Fire King Avatar Yaksha / Fire King Avatar Arvata / Fire King Courtier Ulcanix / Firestorms Over Atlantis
+                  * Dora Dora / Guardragon Promineses / Salamangreat Heatleo
+                  * Volcanic Trooper / Volcanic Doomfire / Volcanic Blaze Accelerator / Tri-Blaze Accelerator
+                  * Duelittle Chimera / Flametongue the Blazing Magical Blade
+                  * Blaze Accelerator Reload / Duel Academy
+                  * Burning Dragon
+                  * Electro Blaster / The Blazing Mars / Magmacho Dragon
+                  * Salamangreat Sunlight Wolf / Amphibious Swarmship Amblowhale
+                  * Cataclysmic Scorching Sunburner / Fencing Fire Ferret
+                  * Infernal Flame Banshee
+                  * King of the Ashened City / Spearhead of the Ashened City / Shaman of the Ashened City / Awakening of Veidos / Obsidim, the Ashened City
+
+
+High Quality
+                  * Sacred Fire King Garunix / Fire King Avatar Barong / Echelon of the Fire Kings
+                  * Fire Ejection / Volcanic Rimfire / Volcanic Emperor / Volcanic Inferno / Cold Fire: Your opponent takes no damage from the effects of "Volcanic Emperor". Negate the first effect of "Volcanic Inferno". This Skill cannot leave your inventory.
+                  * Blaster, Dragon Ruler of Infernos / Burner, Dragon Ruler of Sparks
+                  * True King Agnimazud, the Vanisher
+                  * Lavalval Exlord
+                  * Tenpai Dragon Paidra / Tenpai Dragon Chundra / Tenpai Dragon Fadra / Rampaging Smashtank Rhynosaber / Sangen Kaimen / Tenpls Stop: You can only use each effect of your "Tenpai" monsters once per turn. This Skill cannot leave your inventory
+                  * Hiita the Fire Channeler / Salamangreat Burst Gryphon
+                  * Jet Synchron / Jet Warrior / One for One
+                  * Hero of the Ashened City / Priestess of the Ashened City / Embers of the Ashened / Extinguishing the Ashened / Obsidim, the Ashened City / Everlasting Burning: "Ashened" monsters in your possession are always also treated as FIRE monsters. This Skill cannot leave your inventory.
+                  * Red Resonator / Vulcan the Divine / Vermillion Dragon Mech
+Allen Shop
+Extra-Terrestrial Experiment
+
+
+Tip Ratio: 10-15
+AAAILNHLSSVH: When you place an "A" Counter(s) by a card effect, place another. This Skill's name is always treated as "Allen and Adrien’s Alienation Immigration Legalization Nation Hydration Lactation Station Socialization Vacation resulting in Hospitalization".
+Xenomorph Evolution: Reptile monsters you control and in your GY are treated as "Alien" monsters.
+
+
+Starter Packs
+RIPTILE!
+                  * Performapal Partnaga / Performapal Lizardraw / Performapal Whip Snake / Performapal Bit Bite Turtle / Performapal Swincobra / Kagetokage 
+
+
+SQUIRMY WORMIES!
+                  * Worm Illidan / Worm Rakuyeh / Worm Dimikles / Worm Gulse / Worm Solid / Worm Millidith / Worm Queen / Worm Victory / Worm Erokin / Worm Warlord / Worm Prince / Worm Noble / Worm Barses / Worm Falco / Worm Opera / Worm Linx / Worm Ugly
+
+
+INVADERS FROM OUTERSPACE!
+                  * Alien Mother / Alien Skull / Bitelon / Gale Lizard / Lion Alligator / Evilswarm Azzathoth / Masked Chameleon / Ipiria / Alien Kid / Jar Turtle / Pharaonic Advent / Terrene Toothed Tsuchinoko / Oshaleon / Otherworld - The "A" Zone / Damage = Reptile / Apophis the Swamp Deity / Jar of Greed
+
+
+Medium Quality
+                  * I.A.S. -Invasive Alien Species- / Night Sword Serpent / Foolish Burial / Crop Circles
+                  * Reptilianne Naga / Reptilianne Vaskii / Reptilianne Medusa / Reptilianne Spawn / Reptilianne Recoil
+                  * Ragnaraika Armored Lizard
+                  * Nauya, the Ogdoadic Remnant / Keurse, the Ogdoadic Light / Aleirtt, the Ogdoadic Dark / Ogdoadic Water Lily
+                  * Nunu, the Ogdoadic Remnant / Flogos, the Ogdoadic Boundless / Zohah, the Ogdoadic Boundless / Ogdoadic Serpent Strike
+                  * Danger!? Tsuchinoko? / Vanguard of the Underground Emperor
+                  * Black Mamba / Urubonus, the Avatar of Malice
+                  * Therion "Empress" Alasia
+                  * Mitsurugi no Mikoto, Kusanagi / Mitsurugi no Mikoto, Aramasa / Mitsurugi no Mikoto, Saji / Mitsurugi Prayers
+                  * Dark Alligator / Evil Dragon Ananta / Lamia
+                  * Yamorimori / Wicked Acolyte Chilam Sabak
+                  * Viper's Rebirth / Vennominon the King of Poisonous Snakes
+
+
+High Quality
+                  * Mitsurugi no Miko, Wousu / Alien Ammonite / Cosmic Fortress Gol'Gar / "A" Cell Recombination Device
+                  * Mysterious Triangle / "A" Cell Scatter Burst / Code A Ancient Ruins
+                  * Alien Shocktrooper M-Frame
+                  * Reptilianne Echidna / Reptilianne Lamia
+                  * Reptilianne Nyami / Reptilianne Coatl / Reptilianne Hydra / Reptilianne Ramifications
+                  * Aron, the Ogdoadic King / Amunessia, the Ogdoadic Queen / Ogdoadic Hollow
+                  * Nephilabyss, the Ogdoadic Overlord
+                  * Cosmic Slicer Zer'oll / A Good Offense: Negate the first effect of "Cosmic Slicer Zer'oll". This Skill cannot leave your inventory.
+                  * Haggard Lizardose / Ragnaraika Selene Snapper
+                  * Offering to the Snake Deity
+Mage Shop
+Master of Magic
+
+
+Tip Ratio: 10-15
+Infusion of Magic - Your Tokens can now be treated as a substitute for any 1 Fusion Material, but the other materials must be correct. Your Tokens can be used as the entire requirement for a Ritual Summon also they are treated as the correct tribute. Your Tokens can now be treated as 2 Tributes for a Tribute Summon.
+I Count Spells - "Neo Aqua Madoor" gains 1 Spell Counter each time a Spell Card is activated. 
+
+
+Starter Packs
+KEEPERS OF THE WORLD BEYOND!
+                  * Gravekeeper's Ambusher / Gravekeeper's Assailant / Gravekeeper's Chief / Gravekeeper's Commandant / Gravekeeper's Guard / Gravekeeper's Spear Soldier /  Gravekeeper's Spy / Necrovalley / Rite of Spirit / Necr-NO-Valley: Negate the second, third, and fourth effects of "Necrovalley". This Skill cannot leave your inventory.
+
+COUNTING CLASS!
+                     * Silent Magician Zero / Future Silence / Magical Abductor / Skilled Blue Magician / Magical Something / Magical Exemplar / Gaia The Fierce Knight / Skilled Red Magician / Archfiend of Gilfer / Magical Marionette
+
+
+MAGICAL PROWESS!
+                     * Dicephoon / Dark Horizon / Summoner’s Art / Ledger of Legerdemain / Spell Strider / Spell Striker / That Wacky Magic! / Sorcerer of Dark Magic / Crowley, the Magistus of Grimoires / Jigabyte / Ranryu / Magical Blast
+
+
+Medium Quality
+                     * Gravekeeper's Descendant / Gravekeeper's Recruiter / Gravekeeper's Nobleman / Gravekeeper's Visionary / Gravekeeper's Stele
+                     * Spellbook Magician of Prophecy / Spellbook of Knowledge / Spellbook of Secrets
+                     * Summoner Monk / Performage Trapeze Magician / Magician of Hope
+                     * Downerd Magician / Alchemic Magician
+                     * Mystical Elf - White Lightning
+                     * Adularia of the June Moon / Magical Citadel of Endymion
+                     * Cosmo Brain / Cosmo Queen / Trance the Magic Swordsman
+                     * Black Fang Magician
+                     * Dark Magician / Eternal Soul / Original Today, Aren’t We? - "Dark Magician" is now your Legendary Monster, also replace your original Legendary Monster with "Dark Magician" in your Unique Skill, Legendary Quest, and Legendary Relic.
+                     * Chronograph Sorcerer / Timegazer Magician
+                     * Day-Breaker the Shining Magical Warrior / Magia Magic - Thunder of Judgment
+                     * Silvy of the White Forest / Elzette of the White Forest / Explosive Magician / Rciela, Sinister Soul of the White Forest / Tales of the White Forest / Woes of the White Forest
+
+
+High Quality
+                     * Magister of Endymion / Reflection of Endymion
+                     * Servant of Endymion / Endymion, the Master Magician / Spell Power Mastery / Endymion's Lab
+                     * Mythical Beast Jackal King / Mythical Beast Master Cerberus / Mythical Institution / Mythical Mishaps: You cannot activate the monster effect of "Mythical Beast Jackal King". This Skill cannot leave your inventory.
+                     * Mythical Beast Jackal / Mythical Beast Garuda / Beast Magic Attack
+                     * Rucia of the White Forest / Astellar of the White Forest / Rciela, Sinister Soul of the White Forest / Diabell, Queen of the White Forest / Tales of the White Forest / Woes of the White Forest
+                     * Silent Magician / Silent Magician LV4 / Silent Magician LV8
+                     * Diabellstar the Black Witch / WANTED: Seeker of Sinful Spoils / Sinful Spoils of Betrayal - Silvera
+                     * Gravekeeper's Headman / Gravekeeper's Oracle / Gravekeeper's Spiritualist / Gravekeeper's Supernaturalist / Necrovalley Throne / Gravekeeper's Trap / Necrovalley Temple
+                     * Dark Magician / Dark Magician Girl / Magicians' Souls / The Dark Magicians / Secrets of Dark Magic / Magician of Chaos / Black Luster Soldier - Super Soldier / Charging Gaia the Fierce Knight / Entropy takes an L - The second effect of "Magician of Chaos" can only be activated on your turn. This Skill cannot leave your inventory.
+                     * Astrograph Sorcerer / Stargazer Magician
+Gardener Shop
+Powers in Season
+Tip Ratio: 10-15
+Super Nutrient Y - (Once per Duel): If you Summon a Plant monster(s): You can draw 2 cards and discard 1 card.
+Mulching - (Once per turn): You can excavate the top card of your Deck, and if it is a Plant monster, send it to the GY. Otherwise, banish it. This is treated as a card effect.
+
+
+Starter Packs
+TWISTING VINES!
+                     * Evil Thorn / Violet Witch / Evilswarm Mandragora / Sinister Seeds / Angel Trumpeter / Papa-Corn / Talaya, Princess of Cherry Blossoms / Ivy Shackles / Thorn of Malice / Traptantalizing Tune / Naturia Cherries
+
+
+MOUNT SYLVANIA!
+                     * Sylvan Lotuswain / Sylvan Blessing / Sylvan Waterslide / Sylvan Mikorange / Sylvan Snapdrassinagon / Mount Sylvania / Terraforming / Cactus Fighter
+
+
+ROSE’S THORN!
+                     * Rosaria, the Stately Fallen Angel / Chirubime, Princess of Autumn Leaves / Twilight Rose Knight / Rose Archer / Blooming of the Darkest Rose / Rose Bell of Revelation / Queen Angel of Roses / Rose Tentacles / Bird of Roses / Revival Rose
+
+
+Medium Quality
+                     * Sylvan Guardioak / Sylvan Charity / Sylly Sylvans: (Once per Duel): You can Tribute 1 Plant-type monster; excavate the top 5 cards of your Deck, and if you excavated a "Sylvan" monster, send any excavated Plant-type monsters to the GY and shuffle the rest into the Deck. Otherwise, shuffle those cards, all cards you control, in your GY, and in your hand into the Deck. This is treated as a card effect. / Tax +2
+                     * Mudan the Rikka Fairy / Primula the Rikka Fairy / Snowdrop the Rikka Fairy / Rikka Glamour
+                     * Predaplant Sarraceniant / Predaplant Squid Drosera / Predaponics / Predaplanet
+                     * Predaplant Heliamphorhynchus / Predaplant Drosophyllum Hydra / Predaplast / Predapruning
+                     * Therion "Lily" Borea / Dandy White Lion
+                     * Fallen Angel of Roses / Copy Plant / Orea, the Sylvan High Arbiter
+                     * Lord Poison / Gigantic Cephalotus
+                     * Mariña, Princess of Sunflowers / Phoenixian Cluster Amaryllis / Trade-In
+                     * Cyclos the Circular Sprite / Fairyant the Circular Sorcerer / Diabolantis the Menacing Mantis
+                     * Snyffus / Botanical Lion / Giant Kra-Corn
+                     * Ruddy Rose Witch / Witch of the Black Rose / Rose Fairy / Hate Rose Witch (OCG)
+                     * Rose Princess / Rose Shaman / Rose Paladin / Dark Rose Fairy / Frozen Rose / White Rose Cloister
+
+
+High Quality
+                     * Sylvan Sagequoia / Sylvan Hermitree / Sylvan Princessprout / Rose Girl / Rose Lover / Alsei, the Sylvan High Protector / Orea, the Sylvan High Arbiter
+                     * Tytannial, Princess of Camellias / Sylvan Peaskeeper / Sylvan Cherubsprout / Sylvan Princessprite / Lonefire Blossom / Fairy Archer Ingunar
+                     * Wall of Thorns / Miracle Fertilizer
+                     * Predaplant Bufolicula / Predaplant Triantis / Predapractice / Greedy Venom Fusion Dragon / Predaplant Chimerafflesia / Don't Be Greedy: Negate the second effect of "Greedy Venom Fusion Dragon". You can only use each effect of "Predaplant Chimeraflessia" once per turn. This Skill cannot leave your inventory.
+                     * Glow-Up Bulb / Splendid Rose / That Grass Looks Greener
+                     * Sylvan Dancepione / B-List Dancer: Negate the second effect of "Sylvan Dancepione". This Skill cannot leave your inventory.
+                     * Twilight Rose Black Knight (OCG) / Violence Witch (OCG) / Fengli the Soldrapom / Periallis, Empress of Blossoms / Bramble Rose Dragon (OCG) / BRD Up: “Bramble Rose Dragon” in your possession is also treated as “Black Rose Dragon”. The first effect of “Bramble Rose Dragon” no longer reduces the ATK of monsters, and only inflicts 300 damage. This Skill cannot leave your inventory.
+                     * Predaplant Ophrys Scorpio / Predaplant Darlingtonia Cobra / Predaplant Byblisp / Predaplant Ambulomelides / Polymerization / Ambulomelides Nerfs: The second effect of "Predaplant Ambulomelides" can only target monsters you control. This Skill cannot leave your inventory.
+                     * Naturia Camellia / Naturia Mole Cricket / Naturia Antjaw / Hi-Speedroid Chanbara / Naturia Blessing / Naturia Sacred Tree / Tamed Beast: "Hi-Speedroid Chanbara" is now treated as "Naturia Beast". This skill cannot leave your inventory.
+                     * Ragnaraika the Evil Seed / Ragnaraika Samurai Beetle / Ragnaraika Wicked Butterfly / Ragnaraika Skeletal Soldier / Ragnaraika Bloom
+
+
+Acrobat Shop
+Flipping, a neat trick!
+Tip Ratio: 10-15
+Dexterous: Gain +4 DEX. You no longer have a cap on the DEX stat. (Once per Duel): Instead of drawing for DEX, you can add "Book of Moon" from your Deck to your hand (Add 1 copy of "Book of Moon" to your Deck, permanently).
+Tight Tights: The first time you Flip Summon a monster each turn, draw 1 card, then discard 1 card.
+
+
+Starter Packs
+KRAWLING IN MY SKIN!
+                     * Parasite Paracide / Krawler Dendrite / Krawler Receptor / Krawler Ranvier / Krawler Glial / Krawler Axon / X-Krawler Qualiark / X-Krawler Synaphysis / World Legacy Survivor / Crusadia Krawler
+
+
+FULL METAL ACROBAT: BERFOHOOD!
+                     * Magical Merchant / Machina Defender / Commander Covington / Machina Soldier / Machina Sniper / Machina Force / Flipping Feline / Berfomet / Gazelle the King of Mythical Beasts / Chimera the Flying Mythical Beast / Ed… ward…?: Once per turn: You can Fusion Summon "Chimera the Flying Mythical Beast" by banishing 1 of the materials from your GY and Tributing the other from your hand or field. "Berfomet" is now treated as a Flip Monster.
+
+I’M FLIPPING BIGLY!
+                        * Subterror Behemoth Burrowing / Subterror Behemoth Dragossuary / Subterror Behemoth Stygokraken / Spirit Caller / Spirit of the Fall Wind / Bettan Bat / Ghostrick-Go-Round / Ghostrick Witch / Ghostrick Mummy / Ghostrick Yuki-Onna / Ghostrick Break / Ghostrick Vanish / Ghostrick Scare
+
+
+
+
+Medium Quality
+                        * Subterror Behemoth Fiendess
+                        * Subterror Behemoth Speleogeist / Subterror Behemoth Phospheroglacier / Subterror Cave Clash / Small Caves: The effect of "Subterror Cave Clash" to gain ATK/DEF only grants 100 ATK/DEF for each set monster on the field instead of 500. This Skill cannot leave your inventory.
+                        * Subterror Nemesis Defender / Subterror Nemesis Warrior / Subterror Behemoth Voltelluric
+                        * Mokomoko / WAKE CUP! Mocha
+                        * Ninja Grandmaster Hanzo / Kagero the Cannon Ninja / Baku the Beast Ninja / Ninjitsu Art of Duplication
+                        * Yellow Ninja / Green Ninja / Mitsu the Insect Ninja / Hidden Village of Ninjitsu Arts
+                        * Ghostrick or Treat / Ghostrick Parade / Ghostrick Mansion / Ghostrick Siren / Ghostrick Stein / Ghostrick Shot / Ghostrick Alucard / Ghostrick Ghoul / Ghostrick Renovation
+                        * Ghostrick Jiangshi / Ghostrick Specter / Ghostrick Festival / Ghostrick Jackfrost / Ghostrick Lantern / Ghostrick Dullahan / Ghostrick Mary
+                        * Conbirdable / Time Reloader
+                        * Swarm of Centipedes / Flipping Feline 
+                        * World Legacy - "World Armor" / World Legacy Pawns
+                        * Mimighoul Master / Mimighoul Slime / Mimighoul Throne / Mimighoul Maker / Mimighoul Fork
+
+
+High Quality
+                        * Krawler Spine / Krawler Soma / Deus-X Krawler / Krawler Neurogos / World Legacy in Shadow / Deus-X Machina: Negate the second effect of "Deus-X Krawler". This skill cannot leave your inventory.
+                        * Gravekeeper’s Guard / Man-Eater Bug / Ryko, Lightsworn Hunter / Night Assailant
+                        * Prediction Princess Tarotreith / Prediction Princess Arrowsylph / Underworld Ritual of Prediction / Prediction Princess Crystaldine / Tax +1
+                        * Borrelguard Dragon / Master of Ham / Polymerization / Going HAM: The Fusion materials for "Master of Ham" are 2 Flip Monsters. / Tax +1
+                        * Ninja Grandmaster Hanzo / Tobari the Sky Ninja / Meizen the Battle Ninja / Ninja Grandmaster Saizo / Ninjitsu Art Notebook of Mystery / Tenchi Kaimei / Ninjitsu Art of Dancing Leaves
+                        * Prediction Princess Tarotrei / Prediction Ritual / Prediction Princess Bibliomuse / Fake Tarot Cards: The effects of "Prediction Princess Tarotrei" can only target monsters you control. This Skill cannot leave your inventory. / Tax +1
+                        * Sunset Beat / Chakravartin Sphinx / Don’t Flip Out: If “Chakravartin Sphinx” would be sent from the field to the GY, banish it instead. This Skill cannot leave your inventory. / Tax +1
+                        * Subterror Guru / Subterror Nemesis Archer / Subterror Behemoth Umastryx / The Hidden City
+                        * Shaddoll Hedgehog / Shaddoll Squamata / Shaddoll Falco / Shaddoll Dragon / Reeshaddoll Wendi / Resh Shaddoll Incarnation / Sinister Shadow Games
+                        * Mimighoul Dragon / Mimighoul Cerberus / Mimighoul Armor / Giant Mimighoul / Mimighoul Dungeon / Mimighoul Room / CoO: Negate the second effect of "Mimighoul Dungeon". Your opponent can choose which effect of "Mimighoul Dragon" to apply instead of applying both. This Skill cannot leave your inventory.
+
+
+Priest Shop
+Holy Night
+Tip Ratio: 10-15
+Blessed by Ishizu - Once per turn, if "Kelbek", "Mudora", "Keldo", or "Agido" are Normal Summoned or sent to the GY: You can send the top 5 cards of your Deck to the GY.
+Shattered Hourglass - (Once per Duel): If you Special Summon from the effect of your Legendary Relic, you can Special Summon 1 Fairy monster from your hand or GY.
+
+
+Starter Packs
+JACKED UP ANGELS!
+                        * Cestus of Dagla / Glass Slippers / Hidden Armory / Mudora / Angel 01 / Splendid Venus / Hip Hoshiningen / Hoshiningen 
+
+
+FLUTTERING FLAPPERS!
+                        * Shining Angel / Nova Summoner / Miraculous Descent / Cards from the Sky / Hecatrice / Valhalla, Hall of the Fallen / Couple of Aces / Tethys, Goddess of Light
+
+
+ANGEL SCHOOL!
+                        * Guiding Light / Hanewata / Marshmacaron / Winged Kuriboh / Court of Justice / Counselor Lily / Cupid Dunk / Cupid Serve / Vylon Delta / Tellus the Little Angel / The Chorus in the Sky
+
+
+
+
+Medium Quality
+                        * Cataclysmic Circumpolar Chilblainia / Cataclysmic Crusted Calcifida / Cataclysmic Cryonic Coldo / Cataclysmic Scorching Sunburner / Cataclysmic Prism - Only for the effects of "Cataclysmic" monsters in your possession, Fairy-type monsters you control, except "Cataclysmic" monsters, are also always treated as all Attributes.
+                        * Constellar Omega / Constellar Ptolemy M7'
+                        * Starry Knight Astel / Starry Knight Ciel / Starry Knight Orbitael / Odd-Eyes Saber Dragon / Starry Knight Balefire
+                        * Athena / Vingolf's Blessing
+                        * Starry Knight Rayel / Starry Knight Flamel / Starry Night, Starry Dragon / Starry Knight Ceremony / Starry Knight Sky
+                        * Protector of The Agents - Moon
+                        * Dawn Angel Kambi / Hrimnir the Divine Follower
+                        * Fluffal Dog / Fluffal Bear / Fluffal Wings / Toy Vendor / Fluffal Leo / Frightful Fluffals - (Once per Duel): You can discard 1 card; send 1 "Fluffal" card from your Deck to your GY, and if you do, you can add 1 "Toy Vendor" from your GY to your hand.
+                        * Fairy Cheer Girl  / Avenging Knight Parshath / Herald of the Arc Light / Diviner of the Herald / Herald of Fairness - Negate the first and second effects of "Herald of the Arc Light". This Skill cannot leave your inventory.
+                        * Tamtam the Melodious Diva / Sonata the Melodious Diva / Canon the Melodious Diva / Solo the Melodious Songstress / Shopina the Melodious Maestra / Bloom Prima the Melodious Choir / Bloom Harmonist the Melodious Composer / Polymerization
+                        * Star Seraph Scepter / Star Seraph Sovereignty / Star Seraph Scout / Star Seraph Scale / Number 102: Star Seraph Sentry / Vylon Disigma
+                        * Vernusylph of the Misting Seedlings / Vernusylph of the Thawing Mountains / Vernusylph of the Flowering Fields / Vernusylph Corolla / Vernusylph in Full Bloom / Agido the Ancient Sentinel
+
+
+High Quality
+                        * Master Hyperion / The Agent of Creation - Venus / Mystical Shine Ball / The Agent of Destruction - Venus / Celestial Knightlord Parshath
+                        * The Agent of Entropy - Uranus / The Agent of Life - Neptune / The Agent of Miracles - Jupiter / The Executor of the Underworld - Pluto / The Sanctuary in the Sky / The Sacred Waters in the Sky
+                        * The Agent of Mystery - Earth / Majesty Hyperion / Eva / Masterflare Hyperion / The Sanctum of Parshath / The Chorus in the Sky
+                        * Soprano the Melodious Songstress / Couplet the Melodious Songstress / Mozarta the Melodious Maestra / Bacha the Melodious Maestra / Melodious Concerto
+                        * Cyber Angel Dakini / Cyber Angel Izana / Machine Angel Ritual / Cyber Petit Angel
+                        * Preparation of Rites / Cyber Angel Natasha
+                        * Trias Hierarchia
+                        * Darklord Uprising / The First Darklord / Darklord Nasten / Darklord Descent / Darklord Tezcatlipoca / Darklord Ukoback / Not the Zero’th Darklord - Negate the first effect of "The First Darklord". This Skill cannot leave your inventory.
+                        * Condemned Darklord / Darklord Desire / Darklord Ixchel / Darklord Amdusc / Darklord Contact
+                        * Vernusylph of the Awakening Forests / Vernusylph of the Flourishing Hills / Vernusylph and the Changing Season / Gravekeeper's Trap / Kelbek the Ancient Vanguard
+
+
+Warrior Shop
+I am the Bone of my Sword
+Tip Ratio: 10-15
+Secret Synchro Surprise - (Once per turn): You can have 1 Warrior monster you control become the level of a Warrior monster in your GY until the end of the turn.
+The Stars Align - (Once per turn): If you have 12 monsters with different levels in your GY, you can banish 1 monster from your GY and destroy 1 card your opponent controls. 
+
+
+Starter Packs
+CLOCKWORK KNIGHTS!
+                        * Necro Gardna / Gravity Lash / Blue Flame Swordsman / Destiny HERO - Dreadmaster / Destiny HERO - Fear Monger / Destiny HERO - Dasher / Destiny HERO - Dread Servant / Clock Tower Prison / Destiny Signal / You Can't Hide from Destiny: Once per turn: If you activate "Clock Tower Prison" you can add 1 "Destiny HERO" monster from your Deck to your hand. Each time a "Destiny HERO" monster is Summoned, place 1 Clock Counter on "Clock Tower Prison". If "Clock Tower Prison" has 4 or more Clock Counters during your turn, destroy it.
+
+
+CELTICS W!
+                        * Junk Changer / Tune Warrior / Gaia Knight, the Force of Earth / Unexpected Dai / Painful Decision / First-Aid Squad / Celtic Guardian / Obnoxious Celtic Guard / Celtic Guard of Noble Arms / Heritage of the Chalice / Copy Knight / The Guard Guardian: While you control at least 2 "Celtic Guard" monsters, and no non-"Celtic Guard" monsters, negate the first effect of "Celtic Guard of Noble Arms".
+
+
+BATTLE GUARDIANS!
+                        * Feast of the Wild LV5 / Swamp Battleguard / Lava Battleguard / Battleguard Cadet / Battleguard Rage / Battleguard Echoes / Exiled Force / D.D. Warrior Lady / Warrior Lady of the Wasteland / D.D. Warrior / Gen the Diamond Tiger / Ken the Warrior Dragon / Scrap-Iron Statue
+
+
+
+
+Medium Quality
+                        * Junk Servant / Junk Mail / Junk Changer / Junk Gardna / Junk Archer / Stardust Assault Warrior / Me and My Junk: "Junk" Tuner monsters you control can be treated as "Junk Synchron" for the Synchro Summon of a "Junk" monster.
+                        * Pyrite Knight / Parry Knights
+                        * Photon Thrasher / Photon Advancer / Photon Crusher / Photon Chargeman / Photon Emperor / Starliege Paladynamo
+                        * Charging Gaia the Fierce Knight / Arisen Gaia the Fierce Knight / Envoy of Chaos / Black Luster Soldier - Super Soldier / Super Soldier Synthesis / Beginning of Heaven and Earth
+                        * Puppet King / Puppet Queen / Puppet Rook / Puppet Pawn / Promotion
+                        * T.G. Striker / XX-Saber Fulhelmknight / Kuraz the Light Monarch / Goyo Guardian / X-Saber Wayne
+                        * Gouki Riscorpio / Gouki Headbatt / Gouki Octostretch / Gouki Heel Ogre / Gouki Destroy Ogre / Gouki Face Turn
+                        * Hayate the Earth Star / Kaiki the Unity Star / Kaiza the Hidden Star / Senko the Skybolt Star / Todoroki the Earthbolt Star / Tenma the Sky Star / Gilti-Gearfried the Magical Steel Knight / Raijin the Breakbolt Star
+                        * Tearlaments Reinoheart / Tearlaments Kashtira / Tearlaments Scream / Tearlaments Metanoise / Double Dai'
+                        * Vision HERO Faris / Vision HERO Vyon / Vision HERO Increase / Vision HERO Poisoner / Vision HERO Minimum Ray / Apparition
+                        * Artillery Catapult Turtle / Curse of Dragon, the Cursed Dragon / Curse of Dragon, the Magical Knight Dragon / Sky Galloping Gaia the Dragon Champion / Spiral Fusion / Spiral Spear Strike / Anti-Spiral: "Gaia the Dragon Champion" does not gain ATK from the effect of "Spiral Fusion". This Skill cannot leave your inventory. / Tax +1
+                        * Goblindbergh / Blue Mountain Butterspy / Gagaga Cowboy / Gagaga Samurai
+
+High Quality
+                           * Junk Converter / Jet Synchron / Quickdraw Synchron / Jet Warrior / Junk Destroyer / Junk Connector
+                           * Super Soldier Soul / Evening Twilight Knight / Beginning Knight / Black Luster Soldier / Super Soldier Ritual / Gateway to Chaos
+                           * Gouki Suprex / Gouki Twistcobra / Gouki Bearhug / Gouki Re-Match / Gouki Jet Ogre / Gouki Thunder Ogre
+                           * Expendable Dai
+                           * Faisan, Hunting Scout of the Deep Forest / Chevreuil, Hunting Scout of the Deep Forest / Hunting Horn
+                           * The Warrior Returning Alive
+                           * Rookie Warrior Lady / Therion "Bull" Ain
+                           * Fullspeed Warrior / Anchorbolt Hedgehog / Supersonic Chick / Scrap Synchron / Scrap Warrior / Junk Warrior Extreme / Synchro Fellows
+                           * Disguise, the Copycat Hero / Chanbar, the Flashy Sportsknight / Saiba the Fighting Swordsmith / Prima Light / Cursed Copycat Noble Arms
+                           * Black Luster Soldier - Envoy of the Beginning / Black Luster Soldier - Envoy of the Evening Twilight / Black Luster Soldier - Sacred Soldier / Super Soldier Rebirth
+
+
+Druid Shop
+One With Nature
+Tip Ratio: 10-15
+Shapeshift Mastery: When you Shapeshift, you can Special Summon monsters that are up to 2 Levels higher or lower than the shuffled monster.
+Swift Shapeshifter (Once per Duel): You can discard 1 card and once this turn, during your Battle Phase, you can Shapeshift as if it were a Quick Effect, also, you can Shapeshift an additional time this turn.
+
+
+Starter Packs
+GLAD TO MEET YOU!
+                           * Gladiator Beast Hoplomus / Gladiator Beast Spartacus / Gladiator Beast Gaiodiaz / Gladiator Beast’s Battle Gladius / Gladiator Beast's Battle Halberd / Gladiator Beast's Battle Manica / Gladiator Beast's Battle Archfiend Shield / Test Ape / Gladiator's Return / Gladiator Beast’s Respite / Indomitable Gladiator Beast / Gladiator Beast Samnite
+
+
+PHANTOM SYNERGIES
+                           * Gladiator Beast Octavius / Gladiator Beast Sagittarii / Gladiator Beast Tygerius / Phantom Beast Cross-Wing / Phantom Beast Rock-Lizard / Phantom Beast Wild-Horn / Phantom Beast Thunder-Pegasus / Horn of the Phantom Beast / Phantom Force: "Phantom Beast" monsters in your possession are also always treated as "Gladiator Beast" monsters, and "Gladiator Beast" monsters in your possession are also always treated as "Phantom Beast" monsters.
+
+
+THE ZOO IS ALL HERE!
+                           * Tri-Brigade Ferrijit the Barren Blossom / The Big Cattle Drive / Tri-Brigade Airborne Assault / Tri-Brigade Rendezvous / Cocatorium the Heavy Metal Avian / Minoan Centaur / Vivid Knight / Kittytail, Mystical Beast of the Forest / Carpiponica, Mystical Beast of the Forest / Wind-Up Rabbit / Photon Sabre Tiger / Kaiser Vorse Raider / Prime Material Falcon / Akz, the Pumer / The Atmosphere / Behemoth the King of a Hundred Battles / Zoodiac Bunnyblast / Zoodiac Hammerkong
+
+
+
+
+Medium Quality
+                           * Yosenju Kama 1 / Yosenju Kama 2 / Yosenju Kama 3 / Yosenju Tsujik / Yosenju Izna
+                           * King Beast Barbaros / Beast King Barbaros
+                           * Gladiator Beast Vespasius / Gladiator Beast Murmillo / Test Tiger / Gladiator Taming / Colosseum - Cage of the Gladiator Beasts
+                           * Brotherhood of the Fire Fist - Gorilla / Brotherhood of the Fire Fist - Boar / Brotherhood of the Fire Fist - Kirin / Fire Formation - Tensen / Fire Formation - Kaiyo / Fire Formation - Yoko
+                           * Scareclaw Acro / Scareclaw Belone / Scareclaw Reichheart / Scareclaw Arrival / Scareclaw Light-Heart / Scareclaw Tri-Heart / Tri-Heart Attack: Negate the first effect of "Scareclaw Tri-Heart". This Skill cannot leave your inventory.
+                           * Coach Soldier Wolfbark / Coach Captain Bearman / Coach King Giantrainer
+                           * Danger! Dogman!
+                           * Reborn Tengu / Jabbing Panda / Tri-Brigade Rugal the Silver Sheller
+                           * Fire Fighting Daruma Doll / Donner, Dagger Fur Hire
+                           * Fierce Tiger Monghu / Ayers Rock Sunrise / Crikey Mate: "Ayers Rock Sunrise" can also target Beast-Warrior monsters.
+                           * Brotherhood of the Fire Fist - Elephant / Brotherhood of the Fire Fist - Swan / Fire Formation - Ingen / Fire Fortress atop Liang Peak / Fire Formation - Tenken
+                           * Dynatherium / Diamond Dire Wolf
+
+
+High Quality
+                           * Tri-Brigade Shuraig the Ominous Omen
+                           * Test Bear / Gladiator Beast Darius / Gladiator Beast Gyzarus / Gladiator Beast Dareios / Gladiator Beast Claudius / Poorly Judged Attack: If you activate the first effect of "Gladiator Beast Claudius", your opponent takes no Battle Damage from direct attacks for your next 2 Battle Phases. "Gladiator Beast Dareios" is unaffected by the effects of "Gladiator Beast Dareios". This Skill cannot leave your inventory.
+                           * Gladiator Beast Gistel / Gladiator Beast Attorix / Gladiator Beast Augustus / Gladiator Beast Nerokius / Flavian - Colosseum of the Gladiator Beasts / Gladiator Naumachia / Damaged Arena: Monsters Summoned by the effect of "Flavius - Arena of the Gladiator Beasts" can be destroyed by battle. This Skill cannot leave your inventory.
+                           * Brotherhood of the Fire Fist - Dragon / Brotherhood of the Fire Fist - Rhino / Brotherhood of the Fire Fist - Cardinal / Brotherhood of the Fire Fist - Tiger King / Fire Formation - Tenki
+                           * Manticore of Smashing / Fissure / Smashing Ground
+                           * Imsety, Glory of Horus / Hapi, Guidance of Horus / Qebehsenuef, Protection of Horus / Duamutef, Blessing of Horus / King's Sarcophagus / Pharaoh's Curse: Negate the third effect of "King's Sarcophagus". You can only control up to 2 "Horus" monsters. This Skill cannot leave your inventory.
+                           * Zoodiac Ramram / Zoodiac Broadbull / Zoodiac Tigermortar / Zoodiac Gathering / Zoodiac Combo
+                           * Zoodiac Thoroughblade / Zoodiac Whiptail / Zoodiac Barrage / Zoodiac Chakanine / Zoodiac Boarbow / Zodiac Sign
+                           * Ancient Warriors - Loyal Guan Yun
+                           * White Steed of the Floral Knights / Horse of the Floral Knights / Noble Knight's Shield-Bearer / Centaur Mina
+
+
+Velociraptor Shop
+*Incoherent Screeching*
+Tip Ratio: 10-15
+Predation (Once per turn): You can destroy 1 card you control or in your hand. This is treated as a card effect.
+Dino-Roids (Once per Duel): You can banish 2 Dinosaur monsters from your GY; Special Summon 1 Level 5 or higher Dinosaur monster from your Deck, ignoring summoning conditions.
+
+
+Starter Packs
+VANILLA FLAVOURING!
+                           * Spacetime Transcendence / Painful Decision / Pragtical / Ready Fusion / Backup Soldier / White Elephant’s Gift / Tyrant Farm / Cosmo Brain / Megalosmasher X / Dyna Tank / Dyna Base / Kaitoptera / Polymerization / Horned Saurus / Dtryna Act Up: The third effect of "Dyna Tank" can only Special Summon Normal Monsters. Negate the first effect of Kaitoptera. This Skill cannot leave your inventory.
+
+
+DINOCRISIS!
+                           * Dragon Horn Hunter / Sea Dragoons of Draconia / Samurai Cavalry of Reptier / Dragoons of Draconia / Ancient Rules / Silent Doom / Monster Assortment / Magical Hats / Grenosaurus Giga-Cannon
+
+
+                           * Jurrac Velo / Jurrac Guaiba / Jurrac Dino / Jurrac Gallim / Jurrac Aeolo / Jurrac Herra / Jurrac Monoloph / Jurrac Stauriko / Jurrac Titano / Jurrac Velphito / Jurrac Giganoto / Evoltile Casinerio / Evoltile Megachirella / Evolsaur Lios / Steamed Sabersaurus
+
+
+
+
+Medium Quality
+                              * Supersoaring / Fossil Excavation
+                              * Dinomorphia Shell
+                              * Petiteranadon / Babycerasaurus
+                              * World Dino Wrestling / Dinowrestler Eskrimamenchi / Dinowrestler Coelasilat / Dinowrestler Systeosaur
+                              * Dinowrestler Iguanodraka / Dinowrestler Martial Ankylo / Dinowrestler Capaptera / Dinowrestler Terra Parkourio / Dinowrestler Chimera T Wrextle / Tyrant Dino Fusion
+                              * Dinowrestler Martial Anga / Dinowrestler Rambrachio / Dinowrestler Capoeiraptor / Dinowrestler Martial Ampelo / Dinowrestler King T Wrextle
+                              * Giant Rex / Hyper Hammerhead
+                              * Sky Dragoons of Draconia
+                              * Paleozoic Hallucigenia / Paleozoic Leanchoilia / Paleozoic Eldonia / Paleozoic Pikaia / Paleozoic Opabinia
+                              * Tyranno Infinity
+                              * Souleating Oviraptor
+                              * Mighty Dino King Rex
+
+
+High Quality
+                              * Miscellaneousaurus / Animadorned Archosaur / Beta Evolution Pill - Ultranscendence / I Haven't Read Misc: Negate the first effect of "Miscellaneousaurus". This Skill cannot leave your inventory.
+                              * Jurrac Megalo  / Jurrac Stigo  / Jurrac Astero  / Jurrac Volcano 
+                              * Doodle Beast - Tyranno / Doodle Beast - Stego / Doodlebook - Uh Uh Uh!
+                              * Scrap Raptor / Scrap Golem / Scrap Wyvern / Scrap Archfiend / Scrap Chimera
+                              * Xeno Meteorus / Ground Xeno
+                              * Fossil Dig / Jurassic Power
+                              * Transcendosaurus Meteorus
+                              * Lost World / Tax +1
+                              * Paleozoic Canadia / Paleozoic Marrella / Paleozoic Dinomischus / Paleozoic Cambroraster / Paleozoic Anomalocaris / Paleozoinks: The third effect of "Paleozoic Anomalocaris" can only be used on your turn. This Skill cannot leave your inventory
+                              * Transcendosaurus Exaraptor / Transcendosaurus Gigantozowler / Transendosaurus Drillygnathus / Sword Arm of Dragon / Transcendon’t: "Transcendosaurus" monsters you control that are Special Summoned from the GY are banished face-down when they leave the field. This skill cannot leave your inventory.
+
+
+Wizard (Mage) Shop
+Tip Ratio: 10-15
+Book Turning (Once per turn): When you draw a card during your Draw Phase, you can banish it face-down to draw 1 card. 
+Audible Dot Com - Once per turn, during your Draw Phase: You can add 1 "Boo Koo" from your Deck to your hand.
+
+
+Pirate (Fisherman) Shop
+Tip Ratio: 10-15
+Bigger Boats! - If you Summon "Skull Mariner", you can equip 2 monsters to it instead of 1.
+Bountifully Bodacious Booty! - If you banish a Treasure(s), you can add them to your hand. 
+
+
+Miner Shop
+Minin' Away
+Tip Ratio: 10-15
+Automated Mining Equipment: Your Unique Skill sends the remaining excavated monsters to GY instead of shuffling them back into the Deck.
+A Double Prism is a Phenomenon of Opti-: Face-up "Prisman" you control gain the effect: "Once per chain (Quick Effect): Summon an Extra Deck monster using this card as material or perform a Tribute Summon, by tributing monsters you control including this card."
+
+
+Starter Packs
+LANDSLIDE!
+                              * Muka Muka / Enraged Muka Muka / Granmarg the Mega Monarch / Hieracosphinx / Criosphinx / Guardian Sphinx / Dimension Sphinx / Gallant Granite / Exxod, Master of The Guard / DEXXO STEROIDS: "Exxod, Master of The Guard" cannot be destroyed or targeted by card effects if it hasn't battled this turn.
+
+
+LOST RELICS
+                              * Tiki Curse / Tiki Soul / Cyber Jar / Greed Jar / Dice Jar / Morphing Jar / Crystal Skull / Ashoka Pillar / Cabrera Stone / Triangle O / Number 52: Diamond Crab King / Invigoration
+
+
+LOST IN THE SHAFT
+                              * Triamid Dancer / The Rock Spirit / Tackle Crusader / Nemeses Keystone / Gigastone Omega / Catapult Zone / Release from Stone / Block Golem / Blockman / Blockdomination: "Block" monsters gain 500 ATK/DEF. Face-up "Block" monsters swap their original ATK and DEF.
+
+
+Medium Quality
+                              * Gaia Plate the Earth Giant / Neo-Spacian Grand Mole
+                              * Gorgonic Golem / Gorgonic Cerberus / Gorgonic Gargoyle / Gorgonic Ghoul / Gorgonic Guardian / Giant Soldier of Steel / Stone Grows Slowly: The effect of "Gorgonic Guardian" is not a Quick Effect until you have 14 EXP. You can only activate the first effect of "Gorgonic Guardian" once per turn.This Skill cannot leave your inventory.
+                              * Delta the Magnet Warrior / Epsilon the Magnet Warrior / Magnet Induction
+                              * Magnetic Field
+                              * Weathering Soldier / Flint Cragger / Fossil Warrior Skull Knight / Fossil Machine Skull Buggy / Fossil Fusion / Miracle Rupture
+                              * Missus Radiant / Geonator Transverser
+                              * Megarock Dragon / Revival Golem / Foolish Burial
+                              * Gogogo Goram / Gogogo Golem - Golden Form
+                              * Catorhyn the Hidden Gem of the Seafront / Adamancipator Crystal - Dragite
+                              * Number 106: Giant Hand / Kachi Kochi Dragon / Soul of Silvermountain
+                              * Diamond Dire Wolf / Daigusto Emeral / Cairngorgon, Antiluminescent Knight
+                              * Megalith Och / Megalith Hagith / Megalith Ophiel / MegalithPhaleg / Megalith Portal / Megalith Emergence
+
+
+High Quality
+                              * Block Dragon / Shell Knight
+                              * Triamid Sphinx / Triamid Pulse / Triamid Kingolem / Triamid Loading
+                              * Doki Doki / Power Giant / Primineral Kongreat / Primineral Mandstrong
+                              * Koa'ki Meiru Guardian / Koa'ki Meiru Wall / Koa'ki Meiru Sandman / Koa'ki Meiru Supplier / Koa'kill you if you do that again: "You can only activate the effects of "Koa'ki Meiru Guardian", "Koa'ki Meiru Wall", and "Koa'ki Meiru Sandman" once per turn. This Skill cannot leave your inventory.
+                              * Alpha The Electromagnet Warrior / Beta The Electromagnet Warrior / Gamma The Electromagnet Warrior / Berserkion the Electromagna Warrior / Magnet Conversion
+                              * Fossil Warrior Skull King / Fossil Machine Skull Wagon / Fossil Dragon Skullgar / Fossil Warrior Skull Bone / Fossil Fusion / Time Stream / Specimen Inspection
+                              * Adamancipator Signs / Adamancipator Friends
+                              * Dogurado the Moving Stone Relic 
+                              * Adamancipator Analyzer / Adamancipator Seeker / Adamancipator Researcher / Adamancipator Crystal - Raptite / Adamancipator Risen - Raptite / Adamancipator Laputite / Tired Arms: Your "Adamancipator" Tuner monsters cannot activate their effects on the field. This Skill cannot leave your inventory.
+                              * Conduction Warrior Linear Magnum ±
+Spider Shop
+Kumoko Stan
+Tip Ratio: 10-15
+Itsy Bitsy Spider (Once per turn): If you Normal Summon a "Spider" monster or "Kumootoko": you can target 1 monster your opponent controls; equip it to an Insect-type monster you control. This is treated as a card effect.
+Reincarnated as a Spider (Stackable): When you buy this, declare 1 insect monster’s name in your inventory. Listed cards are now also a "Spider" monster. Each stack of this skill allows you to choose another monster.
+
+
+
+
+Starter Packs
+CORPSE DWELLERS
+                              * Aztekipede, the Worm Warrior / Doom Dozer / Phalaenop Sisters / Perfectly Ultimate Great Moth / Asset Mountis / Armed Rebeellion / Needlebug Nest
+
+
+AIRBORNE ASSAULT
+                              * Dream Cicada / Oily Cicada / Traptantalizing Tune / Worm Bait / Multiplication of Ants / X-Krawler Synaphysis / Heavy Beetrooper Mighty Neptune / 4-Starred Ladybug of Doom / Number 20: Giga Brilliant / Beetrooper Descent / Beetrooper Formation / Insect Imitation / Bug Matrix
+
+
+INTERTWINING INZEKTS
+                              * Inzektor Ant / Inzektor Earwig / Inzektor Giga-Weevii / Inzektor Giga-Mantis / Inzektor Exa-Beetle / Zektrike Kou-ou / Inzektor Orb / Variable Form
+
+Medium Quality
+                                 * Danger! Mothman!
+                                 * Beetrooper Armor Horn
+                                 * Seraphim Papillion / Shinobi Insect Hagakuremino
+                                 * Praying Mantis / Guard Mantis
+                                 * Krawler Soma / Krawler Dendrite / Krawler Axon / Krawler Spine / Krawler Receptor / X-Krawler Neurogos / World Legacy Survivor
+                                 * Giant Ballgame
+                                 * Humongous Hive Hegemon - Zexstagger
+                                 * Number 3: Cicada King",
+                                 * Lair Wire
+                                 * Queen Butterfly Danaus / Rose Papillon / Ready Fusion / Kwagar Hercules / Battlewasp - Arbalest the Rapidfire
+                                 * Traptrix Allomerus / Traptrix Mantis / Traptrix Arachnocampa / Traptrix Atypus / Traptrip Garden
+                                 * Ninjitsu Art of Mosquito Marching / Insect Invitation / Part of the Family: The effect of "Insect Invitation" instead makes your opponent's monsters also become Insect. This Skill cannot leave your inventory.
+
+
+High Quality
+                                 * Resonance Insect / Dragonbite / Circle of the Fairies
+                                 * Giant Ballpark
+                                 * Giant Beetrooper Invincible Atlas / Beetrooper Scout Buggy / Beetrooper Scale Bomber / Battlewasp - Twinbow the Attacker
+                                 * Supply Soldier of the Indestructible Insects / Heavy Cavalry of the Indestructible Insects / Ultra Beetrooper Absolute Hercules / Beetrooper Cruel Saturnas / Beetrooper Light Flapper / Beetrooper Landing
+                                 * Battlewasp - Sting the Poison / Battlewasp - Pin the Bullseye / Diabolantis the Menacing Mantis
+                                 * Digital Bug Centibit / Digital Bug LEDybug / Digital Bug Registrider / Digital Bug Websolder / Digital Bug Cocoondenser / Bug Signal / Digital Bug Scaradiator / Digital Bug Corebage / Digital Bug Rhinosebus
+                                 * Inzektor Picofalena / Bio-Insect Armor
+                                 * Metamorphosed Insect Queen / Number 5: Doom Chimera Dragon
+                                 * Infinite Antlion / Parasite Paranoid
+                                 * Inzektor Hornet / Inzektor Dragonfly / Zekt Conversion
+
+
+Gambler Shop
+Feelin' Lucky
+Tip Ratio: 10-15
+Stacked Deck 1: Add the following additional Custom Cards to your inventory (max 1 of each): "Stacked Deck - Ace of Spades", "Stacked Deck - King of Hearts"
+Stacked Deck 2: Add the following Custom Card to your inventory (max 1 of each): "Stacked Deck - Jack of Clubs". You can play 1 "Stacked Deck" card at 3.
+Stacked Deck 3: Add the following Custom Card to your inventory (max 1 of each): "Stacked Deck - Full House". You can play 2 "Stacked Deck" card(s) at 3, except "Stacked Deck - Full House"
+
+
+
+
+Starter Packs
+CHESS
+                                 * Vilepawn Archfiend / Darkbishop Archfiend / Desrook Archfiend / Terrorking Archfiend / Shadowknight Archfiend / Masterking Archfiend / Skull Archfiend of Lightning / Infernalqueen Archfiend / Archfiend General / Imprisoned Queen Archfiend / Pandemonium / Perfected Pandemonium: While "Pandemonium" is face-up, all monsters you possess with an effect that requires a coin toss, or die roll are treated as "Archfiend" monsters. "Pandemonium" may also add when an "Archfiend" monster is destroyed by battle. / Casino Archfiends: Monsters with an effect to toss a coin, or that have an effect to roll a die are also treated as Fiend monsters.
+
+
+A GOOD READING
+                                 * Arcana Force I - The Magician / Arcana Force III - The Empress / Arcana Force VI - The Lovers / Arcana Force VII - The Chariot / Arcana Force XIV - Temperance / Arcana Force XVIII - The Moon / Arcana Force XXI - The World / Arcana Force EX - The Dark Ruler / Arcana Force EX - The Light Ruler / Star Platinum: The Heads effect of "Arcana Force XXI - The World" can only be used once per duel. If you use the Heads effect of "Arcana Force XXI - The World", your opponent takes no battle damage until the end of your next turn. This Skill cannot leave your inventory.
+
+
+FEELIN' LUCKY
+                                 * Dueltaining / Ms. Judge / Dicelops / Gambler of Legend / A Hero Emerges / Diced Dice / Question / Ghost Beef / Mild Turkey / Hallohallo / Bettan Bat / Tempura of Fortune - EBI  / Unexpected Dai / Time Wizard / Dark Sage / Dark Magician / Dark Magic Curtain / Tiiiime is on my Siiiiide: The effect of "Time Wizard" is now thrice per turn. The effect to destroy all monsters your opponent controls now destroys 1 monster your opponent controls. This Skill cannot leave your inventory.
+
+
+
+Medium Quality
+                                    * Snipe Hunter / Straight Sniping: (Once per turn): You can use the effect of "Snipe Hunter" without discarding once this turn.
+                                    * Arcana Reading / Gamble / Lucky Punch
+                                    * Couple of Aces / Cup Full of Aces: (Once per Duel): If you Special Summon "Couple of Aces", you can add up to 3 "Cup of Ace" from your Deck, or GY to your hand.
+                                    * Silent Wolf Calupo / Number 85: Crazy Box / Shateki
+                                    * Onikuji / Kingyo Sukui / Gallis the Star Beast / Psychic Rover
+                                    * Dicephoon / Dangerous Machine Type-6 / Royal Rhino with Deceitful Dice
+                                    * Manju of the Ten Thousand Hands / Dark Master - Zorc / Contract with the Dark Master / Pre-Preparation of Rites / Gamble with the Dark Master: When you activate "Contract with the Dark Master", you can toss a coin. If the result is heads, you can treat 1 monster with an effect that either tosses a coin or rolls a die as the entire tribute. If tails, take damage equal to the combined ATK of monsters tributed for the Ritual Summon.
+                                    * Foolish Burial Goods / Proton Blast / Level Conversion Lab / Head Judging
+                                    * Needle Wall / Blind Destruction / Dice-nied / Hyper Blaze / Uria, Lord of Searing Flames
+                                    * Number 67: Pair-a-Dice Smasher / Big Number, Big Smash: (Once per Duel): If a die roll has had a result of 6 this duel, you can Xyz Summon 1 "Number 67: Pair-a-Dice Smasher" using cards from the top of your Deck equal to the number of total 6's rolled this duel as material. Negate the first effect of "Number 67: Pair-a-Dice Smasher". This Skill cannot leave your inventory.
+                                    * Musical Sumo Dice Games / Advanced Xyz Mechanics: You can treat monsters that have an effect that requires a die roll as the correct material for an Xyz Summon.
+                                    * Arcana Force 0 - The Fool / Roulette Barrel / The Weighted Dice: (During the Draw Phase) (Once per Duel): Both players roll a 6 sided die (if the rolls are the same, both players roll again). Set a "Dice Jar" from your hand or Deck to the winner’s field. If a player takes damage due to the effect of "Dice Jar", their opponent draws 2 cards.
+
+
+
+High Quality
+                                       * Dice Dungeon / Dimension Dice
+                                       * Summon Dice / That Six
+                                       * Barrel Dragon / Gatling Dragon / Fusion Deployment / Polymerization
+                                       * Desperado Barrel Dragon
+                                       * Sixth Sense
+                                       * The Claw of Hermos / Time Magic Hammer
+                                       * Arcana Spread
+                                       * Number 7: Lucky Straight / 7 Completed / 777: Each time you call a coin toss correctly, you can add 1 "7 Completed" from your Deck to your hand. (Once per Duel): You can Xyz Summon 1 "Number 7: Lucky Straight" using 3 "7 Completed" from your hand, field, or GY as material.
+                                       * BM-4 Blast Spider / Heavy Metal Raiders / Heavy Metal Morphers: While you control "Slot Machine", monsters you control are also treated as DARK Machine monsters.
+                                       * Arcana Force V - The Hierophant / Arcana Force XIX - The Sun / Arcana Force EX - The Chaos Ruler / Light Barrier / Light Force
+
+
+Amaru Shop
+Lightning God
+Tip Ratio: 10-15
+Chargeback:  Your monsters banished by your Unique Skill are also only banished until your opponent's Draw Phase.
+Charge-Up: Your non-Thunder monsters in your possession are also always treated as Thunder monsters. (Once per turn): You can banish 1 card in your hand; add 1 Thunder monster with the same Level but a different name from your GY to your hand and draw 1 card.
+
+
+
+
+Starter Packs
+WATT ARE THESE?
+                                       * Wattkeeper / Wattkiwi / Watthydra / Wattrain / Wattsquirrel / Wattcastle / Wattwoodpecker / Wattpheasant / Wattlemur / Wattsychic Fighting Porter / Thunder Short / Thunder Crash / Wattkingdom / Watt Did You Say?!: Negate the first effect of "Wattkingdom". This Skill cannot leave your inventory.
+
+
+KAIJU RUMBLE
+                                       * Thunder King, the Lightningstrike Kaiju / Wattsychic Fighter / The Creator Incarnate / Gigathunder Giclops / Vylon Prism / Diana the Light Spirit / Thunderclap Monk / Paralyzing Mushroom / Mist Wurm / Prey of the Jirai Gumo
+
+
+BATTERY POWERED FUSING
+                                       * Gem-Knight Tourmaline / Gem-Knight Lazuli / Gem-Knight Prismaura / Gem-Knight Topaz / Batteryman AAA / Super-Electromagnetic Voltech Dragon / Batteryman C / Brilliant Fusion / Gem-Knight Fusion / Battery Charger / Quick Charger / Batteryman C-hanging: The effect of "Batteryman C" also increases the ATK/DEF of "Batteryman" monsters.
+
+
+Medium Quality
+                                       * Aloof Lupine / Thunder Dragondark / Thunder Dragonroar / Thunder Dragonlord / Thunder Dragonhawk / Thunder Dragon Discharge
+                                       * Batteryman Charger / Batteryman Fuel Cell / Portable Battery Pack
+                                       * The Ascended of Thunder
+                                       * Electrode Beast Cation / Electrode Beast Anion / Lightning Chidori / Spirit Converter / Conversion Therapy: You can Xyz Summon "Lightning Chidori" using 2 Level 4 Thunder monsters instead.
+                                       * Batteryman Industrial Strength
+                                       * Prank-Kids Dodo-Doodle-Doo / Prank-Kids Pranks / Prank-Kids Plan / Just a Prank: Thunder monsters in your possession are always treated as "Prank-Kids" monsters.
+                                       * Zaborg the Mega Monarch
+                                       * Shell of Chaos / Chaos Core / Gold Pride - Star Leon
+                                       * Sudden Thunderous Swamp / Abyss Stungray
+                                       * Wattcobra / Wattgiraffe / Wattuna / Wattkyuki / Wattchimera
+                                       * Dark Beckoning Beast / Dark Summoning Beast / Hamon, Lord of Striking Thunder / Opening of the Spirit Gates
+                                       * Nemeses Corridor / Nemeses Umbrella / Nemeses Flag / Nemeses Keystone / Archnemeses Protos / Nemeses Adrastea / Nemesis of the Nemeses: "Nemeses" monsters in your possession are always treated as Thunder monsters. Negate the second effect of "Archnemeses Protos". This Skill cannot leave your inventory.
+
+
+High Quality
+                                       * Batteryman Solar / Some Summer Summoner / Thunder Dragon Thunderstormech
+                                       * Otonari Thunder / Sword Ryzeal / Node Ryzeal / Palm Ryzeal / Ryzeal Duo Drive / Ryzeal Plugin
+                                       * Thunder Dragon Titan / Thunder Dragon Fusion
+                                       * Spright Blue / Spright Jet / Spright Elf / Spright Starter 
+                                       * Onibimaru Soul Sweeper 
+                                       * Spright Red / Spright Pixies / Gigantic Spright / Spright Sprind
+                                       * Thunder Dragonduo / Thunder Dragon Colossus / The New Support Konami Refuses to Give Us: "Thunder Dragon Colossus" you control has their effects negated. This Skill cannot leave your inventory.
+                                       * The Chaos Creator
+                                       * Judgment of Thunder / Thunder Dragons' Hundred Thunders
+                                       * Recycling Batteries / Makiu, the Magical Mist
+
+
+Cyborg Shop
+Warhammer Reference
+Tip Ratio: 10-15
+All the Colours of the Gadget: If you Tribute Summon a Machine monster by tributing a "Gadget" monster, it gains all 3 of the listed effects in your Relic.
+Further Upgrades: Weakness of Flesh can Summon Level 5 or higher monsters.
+
+
+Starter Packs
+CYBERNETIC ENHANCEMENT
+                                       * Cyber Laser Dragon / Proto-Cyber Dragon / Cyber Dragon Zwei / Cyber Dragon Vier / Cyber Dragon Drei / Cyber Dragon Nachster / Cyber Emergency / Cyberdark Edge / Cyberdark Keel / Cyberdark Horn / Cyberdark Dragon / Cyberdark Impact / Over Future Fusion  / Cyberdark Inferno / Photon Generator Unit / Cyberdarker: The effect of "Cyberdark" monsters to equip Dragon monsters can also equip Machine monsters instead. "Cyberdark" monsters you control equipped with a monster are treated as "Cyber Dragon".
+
+
+ROIDING UP
+                                       * Meteor Rush - Monochroid / Mixeroid / Expressroid / Truckroid / Streamroid / Drillroid / Ambulanceroid / Submarineroid / Rescueroid / Shuttleroid / Machine Duplication / Megaroid City / Vehicroid Connection Zone / Supercharge / Super Vehicroid Jumbo Drill / Ambulance Rescueroid / Roids on ‘roids: "Roid" monsters in your possession are also treated as "Gadget" monsters. "Machine Duplication" can only target "Roid" monsters. This Skill cannot leave your inventory.
+
+
+INDUSTRIAL REVOLUTION
+                                       * Shreddder / Snow Plow Hustle Rustle / Powered Crawler / Gizmek Yata, the Gleaming Vanguard / Machina Peacekeeper / Cardcar D / Card Trooper / Cracking Dragon / Tin Goldfish / Number 27: Dreadnought Dreadnoid / Iron Draw / Iron Call / Unauthorized Reactivation
+
+
+Medium Quality
+                                       * Motor Shell / Motor Frenzy / Motor Kaiser  / Fiendish Engine Ω / Two-for-One Repair Job  / Scrap Garage 
+                                       * Cyber Jormungandr  / Cyber Dragon Core / Cyber Dragon Herz / Cyber Dragon Sieger / Cyber Repair Plant / Cyber Revsystem
+                                       * Clockwork Knight / Clockwork Night / Clockwork Knight’s Neat Nite-Nite: The effect of "Clockwork Night" only changes all of your face-up monsters into Machine monsters. This skill cannot leave your inventory.
+                                       * Night Express Knight / Super Express Bullet Train / Ruffian Railcar / Flying Pegasus Railroad Stampede / Superdreadnought Rail Cannon Gustav Max / Revolving Switchyard
+                                       * Heavy Mech Support Armor / Union Pilot / Union Driver / Union Hangar / Union Attack / Union Carrier
+                                       * Machina Fortress
+                                       * Machina Gearframe / Machina Unclaspare / Machina Possesstorage / Machina Resavenger / Machina Armored Unit
+                                       * Gearspring Spirit
+                                       * Gizmek Inaba, the Hopping Hare of Hakuto / Gizmek Naganaki / Gizmek Taniguku, the Immobile Intellect / Gizmek Arakami, the Hailbringer Hog / Gizmek Makami, the Ferocious Fanged Fortress / Gizmek Uka, the Festive Fox of Fecundity
+                                       * Meklord Army of Granel / Meklord Army Deployer Obbligato / Meklord Army of Skiel / Meklord Nucleus Infinity Core / Meklord Emperor Wisel - Synchro Absorption / Meklord Assembly / Mektimed Blast
+                                       * Ancient Gear Gadget / Ancient Gear Gadjiltron Dragon / Ancient Gear Gadjiltron Chimera / Ancient Gear Reactor Dragon / Ancient Gear Castle
+                                       * Ancient Gear Wyvern / Ancient Gear Box / Ancient Gear Golem / Ancient Gear Statue / Ancient Gear Howitzer / Ancient Gear Fusion
+
+
+High Quality
+                                       * E.M.R
+                                       * R.B. VALCan Rocket / R.B. Ga10 Cutter / R.B. Ga10 Driller / R.B. VALCan Booster / R.B. The Brute Blues / R.B. Stage Landing / R.B. Funk Dock
+                                       * Silver Gadget / Gold Gadget / Gear Gigant X / Platinum Gadget
+                                       * X-Cross Cannon  / Y-Dragon Yearhead  / Z-Zillion Tank  / Union Activation / XYZ-Hyper Dragon Cannon  / Union Controller 
+                                       * Boot-Up Admiral - Destroyer Dynamo
+                                       * Gizmek Orochi, the Serpentron Sky Slasher 
+                                       * Boot-Up Corporal - Command Dynamo / Boot-Up Order - Gear Charge / Boot-Up Order - Gear Force
+                                       * Orbital Hydralander
+                                       * Pillar of the Future - Cyanos / Sage of Wisdom - Himmel / Sage of Strength - Akash / Aileron / Sage of Benevolence - Ciela / Sky Striker Ace - Roze / Sky Striker Ace - Azalea / Sky Striker Ace - Azalea Temperance / Himmel the Hero: Your non-Link "Sky Striker" cards are also treated as Spells while in the GY.
+                                       * Dinomight Powerload, the Dracoslayer / Dino-mistifying Powers: Add all "Dinomist" cards to your inventory.
+
+
+Chef Shop
+Fire in the Kitchen
+Tip Ratio: 10-15
+Recipe Book - Allen’s Guide to Fish: This is a special fourth ingredient that fits into any dish! (Anchovies) You can roll a die. Reveal that many cards from the top of your Deck and add 1 Ritual Monster or Ritual Spell from among those to your hand, then shuffle the rest back into the Deck. 
+Recipe Book - Adrien’s Guide to Beasts: This is a special fourth ingredient that fits into any dish! (Hotdogs) The next time you tribute a monster this turn: you can add 1 Ritual Monster that is 1 level higher or lower than the tributed monster from your Deck to your hand.
+
+
+Starter Packs
+SEAFOOD DELIGHT
+                                       * Crab Turtle / Turtle Oath / Evigishki Levianima / Gishki Diviner / Gishki Chain / Gishki Noellia / Nekroz of Valkyrus / Gishki Vision / Seafood Delight: Learn the "Seafood Platter" recipe (Check your sheet).
+
+LEFTOVERS
+                                          * Dokurorider / Revival of Dokurorider / The Masked Beast / Curse of the Masked Beast / Vendread Battlelord / Vendread Striges / Scar of the Vendread / Vendread Revolution / Demise, Agent of Armageddon / Dark Necromancer / "Leftovers": Learn the ""Leftovers"" recipe (Check your sheet).
+
+
+BRITISH CUISINE
+                                          * Vennu, Bright Bird of Divinity / Primal Cry / Bio-Mage / Spirit of the Harp / Happy Lover / Mokey Mokey / Advanced Ritual Art / High Ritual Art / Execution of the Contract / Ritual Foregone / Ritual Sanctuary / Renewal of the World / Chip Shop Chewsday: Learn the “British “Person”” recipe (Check your sheet).
+
+
+Medium Quality
+                                          * Relinquished / Black Illusion Ritual
+                                          * Impcantation Thanatosis
+                                          * Saffira, Queen of Dragons / Hymn of Light / Church? On a Sundae? - Learn the “Holy Mackerel” recipe (Check your sheet).
+                                          * Meteor Black Dragon / Humanoid Worm Drake / Aqua Dragon / Deepsea Shark / Mavelus / Dragoness the Wicked Knight / Ready Fusion / Dogmatikalamity 
+                                          * Dyna-Mondo / Cross-Sheep
+                                          * Cyber Petit Angel / Diviner of the Herald / Herald of the Arc Light / Machine Angel Absolute Ritual / Herald of Fairness - Negate the first and second effects of "Herald of the Arc Light". This Skill cannot leave your inventory.
+                                          * Disciple of Nephthys / Defender of Nephthys / Matriarch of Nephthys / Sacred Phoenix of Nephthys / Conductor of Nephthys / Devotee of Nephthys / Rebirth of Nephthys
+                                          * Herald of Mirage Lights
+                                          * Clavkiys, the Magikey Skyblaster / Magnificent Magikey Mafteal / Magikey Mechmusket - Batosbuster / Magikey Maftea / Magkey World / Magikey Duo
+                                          * Barbar, Malebranche of the Burning Abyss / Cagna, Malebranche of the Burning Abyss / Malacoda, Netherlord of the Burning Abyss / Good & Evil in the Burning Abyss
+                                          * Djinn Presider of Rituals / Djinn Prognosticator of Rituals / Sphere Kuriboh
+                                          * Litmus Doom Swordsman / Litmus Doom Ritual / Ascending Soul / Renewal of the World
+
+
+High Quality
+                                          * Angry Burger / Poissonniere de Nouvelles / Nouvelles Restaurant "At Table" / Recette de Viande (Meat Recipe) / All-Purpose Flour - "Hungry Burger" is treated as "Confiras de Nouvelles" when Ritual Summoned with “Recette de Viande (Meat Recipe)”.
+                                          * Impcantation Candoll / Impcantation Talismandra / Impcantation Chalislime / Crealtar, the Impcantation Originator / Impcantation Inception
+                                          * Lo, the Prayers of the Voiceless Voice / Saffira, Dragon Queen of the Voiceless Voice / Sauravis, Dragon Sage of the Voiceless Voice / Skull Guardian / Barrier of the Voiceless Voice / Guardian of the Voiceless Voice / World’s Worst Musical - Negate the first effect of "Barrier of the Voiceless Voice". Negate the second effect of "Guardian of the Voiceless Voice". This Skill cannot leave your inventory.
+                                          * Red-Eyes Black Metal Dragon / Lord of the Red / Red-Eyes Insight / Red-Eyes Transmigration
+                                          * Miracle Raven / ASHLAN U1000 / Readying of Rites 
+                                          * Raging Storm Dragon - Beaufort IX / Gishki Nekromirror
+                                          * Sakitama / Aratama / Shinobaron Shade Peacock / Shinobraoness Shade Peacock / Shinobird's Calling / Stars Align Above the Shrine / Shinobird Power Spot
+                                          * Black Luster Soldier - Legendary Swordsman / Not-So-Legendary - The third effect of "Black Luster Soldier - Legendary Swordsman" instead shuffles only 1 card your opponent controls into the Deck. This Skill cannot leave your inventory. 
+                                          * Megalith Phul / Megalith Hagith / Megalith Ophiel / Megalith Och / Megalith Aratron / Megalith Emergence
+                                          * Revendread Slayer / Vendread Houndhorde / Vendread Anima / Revendread Origin / Vendread Nights / Vendread Charge
+
+
+Peasant Shop
+
+
+Tip Ratio: 10-15
+Commons Alone Weak. Together, Strong: You cannot play (SR) or higher Treasures in your Deck. You can play up to 3 of any (C) or (R) Treasures you have.
+Unoppressing the Oppressive Restrictions: You can use your Legendary Relic an additional time per turn.
+
+
+Starter Packs
+SUMMONING SUMMONERS
+                                          * Guardragon Garmides / Guardragon Promineses / Dragard / Gemini Summoner / Knight of the Red Lotus / Darkstorm Dragon / Two-Man Cell Battle / Human-Wave Tactics / Over Limit
+
+IMPROVED VANILLAS
+                                             * Knight Day Grepher / Heavy Knight of Flame / Dark Valkyria / Crusader of Endymion / Skelesaurus / Chthonian Emperor Dragon / Farm Delivery
+
+ADVANTAGEOUSLY NORMAL
+                                                * Ghost Beef / Mild Turkey / Dragon Horn Hunter / Emissary of the Afterlife / Gemini Soldier / Soul Unseal / Unleash Your Power
+
+
+Medium Quality
+                                                * Ancient Rules / Silent Doom / Symbols of Duty
+                                                * Dark Factory of Mass Production / Painful Decision
+                                                * Blazewing Butterfly / Grasschopper / Red-Eyes Archfiend of Lightning
+                                                * Link Spider / Defender of the Labyrinth
+                                                * Dragolithia Kunzite / Poly-Chemicritter Dioxogre / Cry Havoc
+                                                * Sublimation Knight / Evocator Eveque
+                                                * Tri-Wight / Enchanting Fitting Room / 
+                                                * Chemicritter Oxy Ox / Chemicritter Carbo Crab / Chemicritter Hydron Hawk / Burnout
+                                                * Orichalcos Shunoros
+                                                * Exodius the Ultimate Forbidden Lord / Cosmo Brain
+                                                * Treasure Panda / Faustian Bargain / Cry Havoc
+                                                * Draconnet / Glacier Aqua Madoor
+
+
+High Quality
+                                                * Unexpected Dai / Dracoback, the Rideable Dragon
+                                                * Primite Dragon Ether Beryl / Primite Lordly Lode / Primite Fusion
+                                                * Gemini Spark / Order to Charge
+                                                * Grand Knight of the Red Lotus / Geminize Lord Golknight / Gemini Ablation
+                                                * Dimer Synthesis / Catalyst Field
+                                                * Chosen by the World Chalice / Crowned by the World Chalice / World Chalice Guardragon / World Legacy - "World Chalice" / Imduk the World Chalice Dragon / Auram the World Chalice Blademaster / World Legacy Discovery
+                                                * Materiactor Exareptor / Materiactor Gigadra / Materiactor Zeptwing / Materiactor Exagard / Materiactor Gigaboros / Materiactor Meltthrough
+                                                * Backup Soldier / The Toil of the Normal / Justi-Break
+                                                * Magikey Locking / Soul Resurrection
+                                                * Rescue Rabbit / Binary Blader / Draco Masters of the Tenyi
+
+
+Esper Shop
+Tip Ratio: 10-15
+Psychic Advantage (Once per turn): If you’ve lost 1000LP this turn, draw 1 card. 
+Therapy: The first time you would pay LP each turn, gain that much LP instead.
+
+
+Starter Packs
+PSYCHIC TRICKS
+                                                * Leafplace Plaice / Brain Research Lab / Emergency Apport / Psi-Curse / Psychic Tuning / Past Image / Bright Future
+
+
+MECHANICAL MOVEMENT
+                                                * Mekk-Knight Indigo Eclipse / Mekk-Knight Orange Sunset / Mekk-Knight Yellow Star / Mekk-Knight Green Horizon / Wind-Up Juggler
+
+
+Psychro
+                                                * Krebons / Esper Girl / Hushed Psychic Cleric / Pandaborg / Space-Time Police / Psychic Nightmare / Power Injector
+
+
+Medium Quality
+                                                * D.D. Seeker / D.D. Sprite / D.D. Telephon / Seeking Purpose: Once per turn, during your End Phase, you can Special Summon 1 “D.D.” monster from your Deck.
+                                                * Mekk-Knight Blue Sky / Mekk-Knight Purple Nightfall / Mekk-Knight Red Moon / World Legacy's Memory
+                                                * Kashtira Ogre / Tearlaments Kashtira / Scareclaw Kashtira / Psi-Beast / Number 74: Master of Blades
+                                                * Assault Sentinel / Assault Beast / Psi-Reflector / Hyper Psychic Blaster/Assault Mode / Hyper Psychic Blaster / Assault Mode Activate
+                                                * Miracle Synchro Fusion / Gravity Controller / Sakra Vendirage / Coordius the Triphasic Dealmon
+                                                * Psychic Omnibuster / PSY-Framelord Lambda / PSY-Frame Overload
+                                                * Prototype Psychic Blaster / Hushed Psychic Minister / Esper Girl / Thought Ruler Archfiend
+                                                * Daigusto Emeral / Daigusto Gulldos / Daigusto Falcos / Daigusto Eguls / Daigusto Sphreez / Pilica, Descendant of Gusto / Caam, Serenity of Gusto / Gusto Vedir / Gusto Falco / Kamui, Hope of Gusto / Gusts o’ Change: Your “Gusto” Synchro Monsters can be Synchro Summoned with any non-Tuner monster. “Gusto” monsters in your possession are treated as Psychic monsters. 
+                                                * Therion "Duke" Yul
+                                                * Minimalian / Psychic Processor / Mental Tuner / Allen and Adrien’s Psychic Solar Psybeam: Once per turn, if you banish a card from your hand, you can pay 500LP and draw 1 card.
+                                                * Psychic Jumper / HTS Psyhemuth / Overmind Archfiend
+                                                * Hyper Psychic Riser / Virtual World Beast - Jiujiu
+
+
+High Quality
+                                                * Time Thief Regulator / Time Thief Winder / Time Thief Bezel Ship / Time Thief Redoer
+                                                * Kozmo Dark Destroyer / Kozmo Sliprider / Kozmo Tincan / Kozmo Soartroopers / Kozmotown / Psychic Arsenal
+                                                * Teleport Fusion / Ultimate Axon Kicker / Absolute Axon Kicker / Axon Kicker Oracle / Absolutely Bonked: The first effect of “Absolute Axon Kicker” banishes 1 card on the field instead. The second effect of “Axon Kicker Oracle” is negated. This Skill cannot leave your inventory.
+                                                * Emergency Teleport / Psychic Wheeleder / Psychic Tracker 
+                                                * Serene Psychic Girl / Serene Psychic Sorceress / Parallel Teleport / Silent Psychic Magician / Crossmind Archfiend
+                                                * Gagaku-P.U.N.K. Wa Gon / Joruri-P.U.N.K. Madame Spider / Noh-P.U.N.K. Ze Amin / Noh-P.U.N.K. Deer Note / P.U.N.K. JAM Dragon Drive / P.U.N.K. JAM Extreme Session / Joruru-P.U.N.K. Nashiwari Surprise
+                                                * Ghost Ogre & Snow Rabbit
+                                                * Psychic Path / Psychic Fervor
+                                                * Vallon, the Super Psy Skyblaster
+                                                * Brain Controller / Mind Castlin / Brain Control
+
+
+
+
+Nephalem Shop
+Tip Ratio: 10-15
+Creation Story: Once per Duel, during your Draw Phase: Send cards from the top of your Deck to the GY until you’ve sent both 1 LIGHT and 1 DARK monster to the GY, but if you send more than 4 cards with this effect, banish all cards in your GY during the End Phase.
+Chaos Tale: Once per turn, if 2 or more monsters are banished at the same time: you can draw 1 card, discard 1 card, then send the top card of your Deck to the GY.
+
+Starter Packs
+SWEAR JAR
+                                                * Garoth, Lightsworn Warrior / Jain, Twilightsworn General / Celestia, Lightsworn Angel / Lumina, Twilightsworn Shaman / Felis, Lightsworn Archer / Ryko, Lightsworn Hunter / Lightsworn Sabre / Realm of Light / Solar Recharge
+
+
+COUNTING CHAOS
+                                                * Light and Darkness Dragon / Mystic Tomato / Chaos Witch / Jungle Dweller / Shell of Chaos / Core of Chaos / Tempest Magician / Tri-Edge Master / Infernity Doom Archfiend / Chaos Zone 
+
+WARRIORS OF LIGHT & DARKNESS
+                                                * Shining Angel / Photon Thrasher / D.D. Warrior Lady / Freed the Brave Wanderer / Noble Knight Gawayn / Armageddon Knight / Ignoble Knight of Black Laundsallyn / Destiny HERO - Malicious / The Fiend Megacyber / Guardian of Order / Lightray Grepher / Lightray Gearfried / Shadow's Light
+
+
+Medium Quality
+                                                * Black Dragon Collapserpent / White Dragon Wyverburster
+                                                * Darkflare Dragon / Lightpulsar Dragon
+                                                * Chaos Sorcerer
+                                                * Wicked Serpent Night Dragon
+                                                * Chaos Valkyria / Chaos Witch / Ringowurm, the Dragon Guarding the Hundred Apples / Chaos Goddess / Light End Dragon
+                                                * Starliege Paladynamo / Minerva, the Exalted Lightsworn / Galaxy Journey
+                                                * Chaos Phantasm
+                                                * Dharc the Dark Charmer, Gloomy / Lyna the Light Charmer, Lustrous
+                                                * Chaos Mirage Dragon / Broomy / Chaos Beast / Red Dragon Archfiend
+                                                * Mikazukinoyaiba, the Moon Fang Dragon / Fantastical Dragon Phantazmay
+                                                * Chaos Daedalus / Duality
+                                                * Fire Ant Ascator / Supay / Ascator, Dawnwalker / Supay, Duskwalker / Sun Dragon Inti / Moon Dragon Quilla
+
+
+High Quality
+                                                * Mental Tuner / Chaos Ruler, the Chaotic Magical Dragon
+                                                * Joker's Knight / Arcana Knight Joker / Face Card Fusion / Joker's Straight / Joker's Wild
+                                                * Chaos Dragon Levianeer
+                                                * Allure Queen LV3 / Chaos Allure Queen / Allure Dance / Allure Palace
+                                                * The Chaos Creator / Chaos Daedalus
+                                                * Radiant Vouirescence / Starliege Seyfert / Nebula Dragon / Galactic Spiral Dragon / Number 107: Galaxy-Eyes Tachyon Dragon
+                                                * Chaos Emperor, the Dragon of Armageddon / Chaos Space
+                                                * Lightsworn Dragonling / Weiss, Lightsworn Archfiend / Wulf, Lightsworn Beast / Minerva, the Athenian Lightsworn
+                                                * Bystial Magnamhut / Bystial Druiswurm / Best Isles: You cannot target monsters in your opponent's GY with the effects of "Bystial" monsters. This Skill cannot leave your inventory.
+                                                * Light End Sublimation Dragon / Dark End Evaporation Dragon / Khaos Starsource Dragon / Dragon's Light and Darkness
+
+
+Paladin (Nephalem) Shop
+Tip Ratio: 10-15
+Chaos Control: (Once per Duel): You can send 1 LIGHT and 1 DARK monster from your Deck to the GY, discard 1 card, then add “The Chaos Creator” from your Deck to your hand, and if you do, until the end of your turn, face-up “The Chaos Creator” have their effects negated. (Add “The Chaos Creator” to your inventory). 
+Light and Darkness Dragon: (Once per Duel): You can return from among your banishment 1 LIGHT monster and 1 DARK monster to the GY, then add 1 LIGHT Dragon monster from your Deck to your hand and send 1 DARK Dragon monster from your Deck to your GY, or vice versa.
+
+
+Mimic Shop
+Starter Packs
+                                                * Mimic Starter
+
+
+Medium Quality
+                                                * Mimic Medium
+
+
+High Quality
+                                                * Mimic High

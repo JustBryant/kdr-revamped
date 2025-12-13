@@ -1,0 +1,343 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- NextAuth Models ---
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Game relations
+  decks         Deck[]
+  tournaments   TournamentParticipant[]
+  
+  favoriteCardId String?
+  favoriteCard   Card?   @relation("UserFavoriteCard", fields: [favoriteCardId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- KDR Game Models ---
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  image       String?
+  
+  // New fields for KDR 2.1
+  legendaryMonster String?
+  legendaryQuest   String? @db.Text
+  legendaryRelic   String? @db.Text
+  
+  skills      Skill[]
+  decks       Deck[]
+  startingCards ClassCard[]
+  lootPools   LootPool[]
+}
+
+model LootPool {
+  id        String   @id @default(cuid())
+  name      String
+  tier      String   @default("STARTER") // STARTER, MID, HIGH
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  items     LootPoolItem[]
+  tax       Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LootPoolItem {
+  id          String   @id @default(cuid())
+  lootPoolId  String
+  lootPool    LootPool @relation(fields: [lootPoolId], references: [id], onDelete: Cascade)
+  
+  type        String   // "Card" or "Skill"
+  
+  // For Card
+  cardId      String?
+  card        Card?    @relation(fields: [cardId], references: [id])
+  
+  // For Skill
+  skillName   String?
+  skillDescription String? @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClassCard {
+  id        String @id @default(cuid())
+  classId   String
+  class     Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card   @relation(fields: [cardId], references: [id])
+  category  String // "Monster", "Extra", "Spell", "Trap"
+  quantity  Int    @default(1)
+  
+  @@unique([classId, cardId])
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  type        String   @default("TIP") // "MAIN", "TIP"
+  cost        Int      @default(0)
+  cooldown    Int      @default(0)
+  stackable   Boolean  @default(false)
+  
+  class       Class?   @relation(fields: [classId], references: [id])
+  classId     String?
+  
+  isSellable      Boolean @default(true)
+  
+  modifications   SkillCardModification[]
+  
+  providesCards   Card[]  @relation("SkillProvidesCards")
+
+  decks       Deck[]   @relation("DeckSkills")
+  lootItems   LootItem[]
+}
+
+model SkillCardModification {
+  id        String @id @default(cuid())
+  skillId   String
+  skill     Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  cardId    String
+  card      Card   @relation(fields: [cardId], references: [id])
+  
+  type      String // "NEGATE", "ALTER", "CONDITION"
+  
+  highlightedText String? @db.Text
+  alteredText     String? @db.Text
+  startIndex      Int?
+  endIndex        Int?
+  
+  note            String? @db.Text
+}
+
+model LootItem {
+  id        String   @id @default(cuid())
+  cardId    String?
+  card      Card?    @relation(fields: [cardId], references: [id])
+  skillId   String?
+  skill     Skill?   @relation(fields: [skillId], references: [id])
+  
+  rarity    String   // C, R, SR, UR
+  type      String   // "Card", "Skill"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Card {
+  id            String   @id @default(cuid())
+  konamiId      Int?     @unique // ID from official YGO database
+  name          String
+  type          String?  // "Normal Monster", "Spell Card", etc.
+  desc          String   @db.Text
+  atk           Int?
+  def           Int?
+  level         Int?
+  race          String?  // "Dragon", "Warrior", etc.
+  attribute     String?  // "DARK", "LIGHT", etc.
+  archetype     String?
+  scale         Int?     // Pendulum scale
+  linkVal       Int?     // Link rating
+  linkMarkers   String[] // ["Top", "Bottom-Right"]
+  
+  // Images
+  imageUrl      String?
+  imageUrlSmall String?
+  imageUrlCropped String?
+  
+  // KDR specific
+  isCustom      Boolean  @default(false)
+  customText    String?  @db.Text
+  rarity        String?
+  tier          Int      @default(1)
+  
+  deckCards     DeckCard[]
+  classCards    ClassCard[]
+  lootPoolItems LootPoolItem[]
+  lootItems     LootItem[]
+  
+  skillModifications SkillCardModification[]
+  providedBySkills Skill[] @relation("SkillProvidesCards")
+  favoritedBy      User[]  @relation("UserFavoriteCard")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DeckCard {
+  id        String   @id @default(cuid())
+  deckId    String
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  quantity  Int      @default(1)
+  
+  @@unique([deckId, cardId])
+}
+
+model Tournament {
+  id           String   @id @default(cuid())
+  name         String
+  status       String   @default("OPEN") // OPEN, ACTIVE, COMPLETED
+  currentRound Int      @default(0)
+  createdAt    DateTime @default(now())
+  
+  participants TournamentParticipant[]
+}
+
+model TournamentParticipant {
+  id           String     @id @default(cuid())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  deck         Deck?      @relation(fields: [deckId], references: [id])
+  deckId       String?    @unique
+
+  @@unique([tournamentId, userId])
+}
+
+model Deck {
+  id          String   @id @default(cuid())
+  name        String?
+  
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  
+  class       Class    @relation(fields: [classId], references: [id])
+  classId     String
+  
+  cards       DeckCard[]
+  skills      Skill[]  @relation("DeckSkills")
+  
+  participant TournamentParticipant?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GameSettings {
+  id             String   @id @default(cuid())
+  
+  // Leveling: Array of XP required for each level. 
+  // Index 0 is Level 1 (usually 0), Index 1 is Level 2, etc.
+  levelXpCurve   Int[]
+  
+  // Shop Settings - Class Pools
+  classStarterCount Int      @default(1)
+  classStarterCost  Int      @default(50)
+  classStarterMinLevel Int   @default(1)
+  
+  classMidCount     Int      @default(1)
+  classMidCost      Int      @default(100)
+  classMidMinLevel  Int      @default(3)
+  
+  classHighCount    Int      @default(1)
+  classHighCost     Int      @default(200)
+  classHighMinLevel Int      @default(5)
+  
+  // Shop Settings - Generic Pools
+  genericStarterCount Int      @default(1)
+  genericStarterCost  Int      @default(50)
+  genericStarterMinLevel Int   @default(1)
+  
+  genericMidCount     Int      @default(1)
+  genericMidCost      Int      @default(100)
+  genericMidMinLevel  Int      @default(3)
+  
+  genericHighCount    Int      @default(1)
+  genericHighCost     Int      @default(200)
+  genericHighMinLevel Int      @default(5)
+  
+  // Shop Settings - Training
+  trainingCost        Int      @default(50)
+  trainingXp          Int      @default(100)
+  
+  // Treasure Settings - weights per rarity (Common, Uncommon, Rare, Epic, Legendary)
+  treasureRarityWeights Int[]
+  // How many treasures are offered when rolling (e.g., number of items to choose from)
+  treasureOfferCount   Int      @default(1)
+  
+  // Rewards
+  xpPerRound          Int      @default(100)
+  goldPerRound        Int      @default(50)
+  
+  // Skill Settings
+  skillUnlockLevels   Int[]
+  skillSelectionCount Int      @default(3)
+  
+  updatedAt      DateTime @updatedAt
+}

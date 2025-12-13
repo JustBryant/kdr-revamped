@@ -1,0 +1,1388 @@
+﻿KDR2.1 CLASSES
+
+
+Fisherman
+Gone Fishing
+(Once per turn): When you Normal Summon WATER monster, you can roll a die. Reveal that many cards from the top of your Deck and add 1 WATER monster from among those to your hand, then shuffle the rest back into the Deck.
+
+
+Legendary Monster
+Terrorking Salmon
+
+
+Legendary Quest
+If you reveal a “Terrorking Salmon” off of your “Gone Fishing” ability, you can Special Summon a “Terrorking Salmon” from your hand or Deck after “Gone Fishing” resolves. If you summon it from your hand, draw 1 card.
+
+
+Legendary Relic
+(Once per turn): You can discard 1 “Terrorking Salmon” to activate “Gone Fishing”, and add 5 to the result of the dice roll. (Once per Duel): If you control “Terrorking Salmon”, you can destroy 1 Fish monster from among the cards you revealed from “Gone Fishing”, and if you do, give “Terrorking Salmon” ATK/DEF equal to the ATK/DEF of the destroyed card until the end of the next turn.
+
+
+Monsters
+* Piercing Moray
+* Abyss Soldier
+* Warrior of Atlantis
+* Cranium Fish
+* Ocean’s Keeper
+* Thousand-Eyes Jellyfish
+* Snowman Eater
+* Yorishiro of the Aqua
+* Aqua Spirit
+* The Legendary Fisherman II
+* Mermail Abyssnose
+* Evigishki Tetrogre
+* Gishki Vision
+* Gishki Shadow
+* Dewdark of the Ice Barrier
+* Unifrog
+* Poison Draw Frog
+* Treeborn Frog
+* Submarine Frog
+* Mobius the Frost Monarch
+
+
+Extra Deck
+* Evigishki Merrowgeist
+* White Aura Porpoise
+
+
+Spells
+* A Legendary Ocean
+* Wetlands
+* Deep Sea Aria
+* Moray of Greed
+* Gishki Photomirror
+* Royal Penguins Garden
+Traps
+* Paleozoic Olenoides
+* Paleozoic Eldonia
+
+
+
+
+Necromancer
+Look Ma, No Hands!
+When you draw a card(s) reveal it (including your opening hand), and if it is a level 4 or lower monster, send it to the GY. Once per turn, you can Special Summon 1 level 4 or lower Zombie type monster from your GY but you cannot Normal Summon/Set monsters for the rest of the turn.
+
+
+Legendary Monster
+Skull Servant
+
+
+Legendary Quest
+(Thrice per Duel): You can send 1 “Skull Servant” from your Deck to your GY. (Once per Duel): If you have 3 “Skull Servant” in your GY, you can Special Summon 1 “Skull Servant” from your GY.
+
+
+Legendary Relic
+“Skull Servant” you control gain 1000 ATK for each “Skull Servant” in your GY. (Once per Duel): You can banish 1 “Skull Servant” from your GY to give 1 “Skull Servant” you control 2000 ATK until the end of the next turn.
+
+
+
+
+Monsters
+* Guard Ghost
+* Shadow Ghoul
+* Bacon Saver
+* Shutendoji
+* Goblin Zombie
+* Vendread Anima
+* Vendread Core
+* Zombowwow
+* Pumpking the King of Ghosts
+* Samurai Skull
+* Bone Crusher
+* Glow-Up Bloom
+* Malevolent Mech - Goku En
+* Vampire Grace
+* Vampire Dragon
+Extra Deck
+* Shiranui Swordsaga
+* Pilgrim Reaper
+Spells
+* Wasteland
+* Violet Crystal
+* Call of the Mummy
+* Vendread Charge
+* Twister
+* Soul Taker
+Traps
+* Robbin’ Zombie
+* Hard-Sellin’ Zombie
+
+
+
+
+Toy Maker
+Patchwork
+If you activate "Polymerization" you can use 2 monsters that each have exactly 1 of the same Type, Attribute, Level, ATK or DEF as a Fusion monster, but do not share it with each other as Fusion Material for that Fusion monster ignoring summoning conditions. If you Fusion Summon "Bickuribox" it gains ATK equal to the combined Levels/Ranks/Link Ratings of the Fusion Materials used for it x 50 until the End Phase.
+
+
+Legendary Monster
+Bickuribox
+
+
+Legendary Quest
+If you Fusion Summon “Bickuribox”, you can complete your Legendary Quest. If you used 2 monsters with different archetypes, “Bickuribox” becomes part of those archetypes, and the Fusion Materials for "Bickuribox" becomes 1 monster each from any of those archetypes for the rest of the game (ex: 1 “Fluffal” monster + 1 “Shaddoll” monster).
+
+
+Legendary Relic
+(Once per turn): If you control "Bickuribox", you can add 1 "Polymerization" from your Deck or GY to your hand. (Once per turn): If you Fusion Summon a monster other than “Bickuribox”, you can make 1 “Bickuribox” you control gain 200 ATK.
+
+
+Monsters
+* Fluffal Owl
+* Edge Imp Sabres
+* Shaddoll Hound
+* Shaddoll Dragon
+* Shaddoll Squamata
+* Shaddoll Hedgehog
+* Helshaddoll Hollow
+* Wind-Up Snail
+* Wind-Up Soldier
+* King of the Swamp
+* Genex Ally Changer
+* Mirage Knight
+* Elemental HERO Prisma
+* Prank-Kids Fansies
+* Prank-Kids Lampsies
+* Fabled Lurrie
+* Dark Magician
+Extra Deck
+* Ambulance Rescueroid
+* Extox Hydra
+* Dark Flare Knight
+* Prank-Kids Rocket Ride
+* Flame Swordsman
+* Aerial Eater
+* Dangerous Frightfur Nightmary
+* Necroquip Princess
+* Super Vehicroid Jumbo Drill
+* Hugin the Runick Wings
+
+Spells
+   * Polymerization
+   * Fusion Recycling Plant
+   * Fusion Recovery
+   * Fusion Armament
+
+
+Traps
+   * Sinister Shadow Games
+   * Shaddoll Core
+
+
+Allen
+Corruption Cells
+If a Reptile monster battles an opponent's monster, place 1 A-Counter on that opponent's monster at the end of the Damage Step if it was not destroyed. (Once per turn): If an A-Counter(s) is removed, you can add 1 Reptile monster from your Deck to your hand with a level less than or equal to the number of A-Counters removed.
+
+
+Legendary Monster
+Alien Shocktrooper
+
+
+Legendary Quest
+If a monster with an A-Counter(s) is destroyed, you can Special Summon "Alien Shocktrooper" from your hand and place 1 A-Counter on each face-up monster on the field.
+
+
+Legendary Relic
+If "Alien Shocktrooper" would be destroyed, you can remove 3 A-Counters from the field instead. (Once per Duel): If you control "Alien Shocktrooper", this turn, any monster with an A-Counter that battles a Reptile monster, loses 300 ATK/DEF for each A-Counter during damage calculation only. If "Alien Shocktrooper" is destroyed, you can place 4 A-Counters on monsters your opponent controls, distributed as you wish.
+
+
+Monsters
+   * Worm King
+   * Worm Xex
+   * Worm Jetelikpse
+   * Worm Yagan
+   * Worm Cartaros
+   * Worm Tentacles
+   * Worm Apocalypse
+   * Reptilianne Gardna
+   * Reptilianne Gorgon
+   * Alien Dog
+   * Alien Warrior
+   * Alien Telepath
+   * Alien Overlord
+   * Alien Grey
+   * Alien Stealthbuster
+   * Cosmic Horror Gangi'el
+   * Spawn Alligator
+Extra Deck
+   * Worm Zero
+   * King of the Feral Imps
+Spells
+   * Polymerization
+   * "A" Cell Breeding Device
+   * Future Fusion
+   * Ogdoadic Daybreak
+Traps
+   * Embodiment of Apophis
+   * W Nebula Meteorite
+
+
+
+
+Pyromancer
+
+
+Everlasting Hellfire of Creation
+At the start of the Duel, you can send 2 Dragon monsters with different names from your Deck to the GY and banish 1 "Twin-Headed Fire Dragon" from your Deck. During your 2nd Standby Phase after this, add that "Twin-Headed Fire Dragon" to your hand. (Once per turn): If a FIRE monster is sent from your hand or Deck to the GY, you can banish 1 FIRE monster from your GY and add 1 banished FIRE monster with a different name to your hand.
+
+
+Legendary Monster
+Twin-Headed Fire Dragon
+
+
+Legendary Quest
+You can banish 2 FIRE monsters from your GY to Special Summon "Twin-Headed Fire Dragon" from your hand. When it leaves the field, return all your banished FIRE monsters to the GY.
+
+
+Legendary Relic
+(Once per turn): You can banish 1 FIRE monster from your GY and discard 1 card to have a "Twin-Headed Fire Dragon" you control gain ATK equal to half the banished monster's ATK until the end of the turn. (Once per turn): If you don't control a face-up "Twin-Headed Fire Dragon", you can banish 6 FIRE monsters from your GY to Special Summon 1 "Twin-Headed Fire Dragon" from your GY. If "Twin-Headed Fire Dragon" destroys a monster by battle, you can send 1 FIRE monster from your Deck to the GY.
+
+
+Monsters
+   * Volcanic Rocket
+   * Flamvell Guard
+   * Thestalos the Firestorm Monarch
+   * Horus the Black Flame Dragon LV4
+   * Horus the Black Flame Dragon LV6
+   * Volcanic Shell
+   * Flamvell Firedog
+   * Flamvell Archer
+   * Royal Firestorm Guards
+   * Inferno
+   * Flamvell Baby
+   * Master Craftsman Gamil
+   * Infernal Flame Emperor
+   * Fire King Avatar Kirin
+   * Masked Dragon
+   * Aiza the Dragoness of Deranged Devotion
+   * Agnimal Candle
+Extra Deck
+   * Lavalval Salamander
+Spells
+   * Blaze Accelerator
+   * Burning Spear
+   * Double Cyclone
+Traps
+
+
+
+
+Mage
+Mirror Images
+(During each of your Draw Phases): You can reveal any number of Spells in your hand, Summon a “Mirror Image” Token (Spellcaster/DARK/Level 7) with ATK/DEF equal to the number of Spells revealed x 500. Destroy it during the End Phase. You do not discard for hand size.
+
+
+Legendary Monster
+Neo Aqua Madoor
+
+
+Legendary Quest
+You can remove from the field 1 "Mirror Image" token that has ATK/DEF greater than or equal to 1500, then Special Summon "Neo Aqua Madoor" from your hand, and if you do, summon a "Neo Aqua Mirror" token (Spellcaster/WATER/Level 6/ATK 1200/DEF 3000) to your field.  
+
+
+Legendary Relic
+(Once per turn): You can remove 1 "Mirror Image" token with 2500 or more ATK from the field to Special Summon "Neo Aqua Madoor" from your hand. While “Neo Aqua Madoor” is face-up on the field, draw 1 additional card during each player's Draw Phase.
+
+
+Monsters
+   * Foucault’s Cannon
+   * Dark Valkyria
+   * Mythical Beast Cerberus
+   * Defender, the Magical Knight
+   * Breaker the Magical Warrior
+   * Mythical Beast Medusa
+   * Mythical Beast Bashilisk
+   * Fortune Lady Earth
+   * Blast Magician
+   * Witch of the Black Forest
+   * Divine Grace - Northwemko
+   * The Tricky
+
+
+Spells
+   * Arcane Barrier
+   * Wonder Wand
+   * One-Shot Wand
+   * Shard of Greed
+   * Spell Power Grasp
+   * Dark Factory of Mass Production
+   * Gather Your Mind
+   * Dwimmered Path
+   * A Feather of the Phoenix
+   * Ritual of Grace
+
+
+Traps
+
+
+Gardener
+Growth Spurt
+(Once per Duel): You can tribute 1 Plant monster you control and take 1 Plant type monster from your Deck that's one level higher than the tributed card; either add it to your hand or Special Summon it.
+
+
+Legendary Monster
+Trent
+
+
+Legendary Quest
+You can send 1 Level 4 or lower Plant-type monster from your Deck to your GY to Special Summon 1 "Trent" from your hand.
+
+
+Legendary Relic
+If "Trent" would be destroyed by battle, card effect, or sent to the GY by a skill, you can banish 2 Plants from your GY instead. "Trent" you control gain 100 ATK/DEF for each Plant in your GY.
+
+
+Monsters
+   * World Carrotweight Champion
+   * Fairy King Truesdale
+   * Sylvan Bladefender
+   * Sylvan Flowerknight
+   * Naturia Strawberry
+   * Botanical Girl
+   * Koa’ki Meiru Gravirose
+   * Seed of Flame
+   * Baobaboon
+   * Naturia Pumpkin
+   * Naturia Marron
+   * Predaplant Moray Nepenthes
+   * Sylvan Komushroomo
+   * Sylvan Marshalleaf
+   * Predaplant Spinodionaea
+   * Nettles
+   * Spore
+
+
+Extra Deck
+   * Rose Spectre of Dunn
+   * Splendid Rose
+   * Circle of the Fairies
+   * Baromet the Sacred Sheep Shrub
+
+
+Spells
+   * Ready Fusion
+   * Fragrance Storm
+   * Vile Germs
+   * Forest
+
+
+Traps
+   * Plant Food Chain
+
+
+
+
+Acrobat
+Sick Flips
+If your opponent Summons a monster(s): You can Flip Summon 1 monster you control. “Ancient Jar” is treated as a Flip Monster. 
+
+
+Legendary Monster
+Ancient Jar
+
+
+Legendary Quest
+If “Ancient Jar” is Flip Summoned: You can Set 1 monster from your hand to the field, and if you do discard as many cards from your hand as possible, and draw 5 cards.
+
+
+Legendary Relic
+Once per turn: You can Special Summon 1 Flip monster from your hand in face-up or face-down Defense position. (Once per turn): If “Ancient Jar” is flipped face-up: You can change 1 monster other than “Ancient Jar” to face-down Defense Position.
+
+
+Monsters
+   * Absorbing Jar
+   * Armed Ninja
+   * Crimson Ninja
+   * Prediction Princess Coinorma
+   * Slate Warrior
+   * Desertapir
+   * Photon Caesar
+   * Fairy Tail - Sleeper
+   * Gravekeeper Spy
+   * Swarm of Locusts
+   * Spear Cretin
+   * Super-Nimble Mega Hamster
+   * Reversible Beetle
+   * Subterror Behemoth Stalagmo
+   * Mimighoul Archfiend
+   * Apprentice Piper
+   * Eda the Sun Magician
+
+
+Spells
+   * Soul Reversal
+   * Book of Taiyou
+   * The Shallow Grave
+   * Mimicay
+
+
+Traps
+   * Acid Trap Hole
+   * Subterror Succession
+   * Burst Rebirth
+
+
+Priest
+Be Not Afraid
+(Once per turn): You can choose a number between 1-3, then send that many cards from the top of your Deck to the GY, but lose LP equal to the combined levels of monsters sent x 100. (Once per turn): During the End Phase, if a Fairy monster was destroyed by battle this turn, you can banish 1 Fairy monster from your GY and gain LP equal to its ATK.
+
+
+Legendary Monster
+Hourglass of Life
+
+
+Legendary Quest
+If a Fairy-type monster(s) you control is destroyed by battle or card effect: Special Summon “Hourglass of Life” from your hand or GY in ATK position. It cannot be destroyed by battle this turn.
+
+
+Legendary Relic
+While you control “Hourglass of Life”, Fairy-type monsters you control gain 300 ATK during your turn, also, each time you Summon a Fairy-type monster(s), gain 300LP. During the Standby Phase the turn after “Hourglass of Life” was Summoned: You can Special Summon 1 Fairy-type monster from your GY, except "Hourglass of Life".
+
+Monsters
+   * Cupid Volley
+   * Ryko, Lightsworn Hunter
+   * Lyla, Lightsworn Sorceress
+   * Cupid Fore
+   * Cyber Angel Idaten
+   * Cyber Angel Benten
+   * Darklord Nergal
+   * Capricious Darklord
+   * Kelbek
+   * Keldo
+   * Agido
+   * Manju of the Ten Thousand Hands
+   * Choju of the Trillion Hands
+   * Buten
+   * Dimensional Alchemist
+   * Airknight Parshath
+   * Neo-Parshath, the Sky Paladin
+
+
+Extra Deck
+   * Cupid Pitch
+
+
+Spells
+   * Machine Angel Absolute Ritual
+   * Celestial Transformation
+   * Silver Bow and Arrow
+   * Banishment of the Darklords
+
+
+Traps
+   * Stained Glass of Light & Dark
+Warrior
+Secret Village Training
+(Once per turn) (During your Draw Phase): You can send 1 Warrior monster from your Deck to the GY. Warrior monsters you control gain 100 ATK/DEF for each Warrior monster with a different Level in your GY.
+
+
+Legendary Monster
+Ansatsu
+
+
+Legendary Quest
+You can banish 3 Warrior-type monsters with different Levels from your GY; Special Summon "Ansatsu" from your hand, and if you do, you can destroy 1 monster on the field, and if it wasn’t a Legendary Monster, both players must destroy cards with that same name from their hand, field, and/or Deck. This is treated as by a card effect.
+
+
+Legendary Relic
+While you control another Warrior type monster, except "Ansatsu", "Ansatsu" cannot be targeted for attacks. (Once per turn): If a monster you control is destroyed by battle, you can discard Warrior monsters from your hand (min 2) so that the total level of discarded monsters is equal to or exceeds the Level/Rank of the monster that destroyed your monster; destroy it, then you can add 1 Warrior monster from your banishment to your hand.
+
+
+Monsters
+   * Extraceratops
+   * A/D Changer
+   * Junk Anchor
+   * Hero Kid
+   * Junk Synchron
+   * Junk Forward
+   * Shield Warrior
+   * Armageddon Knight
+   * Destiny HERO - Diamond Dude
+   * Destiny HERO - Celestial
+   * Heroic Challenger - Assault Halberd
+   * Photon Jumper
+   * War Rock Orpis
+   * Heroic Challenger - War Hammer
+   * Sword Hunter
+   * Gaia the Magical Knight
+   * Tyler the Great Warrior
+   * Flower Cardian Maple with Deer
+   * Flower Cardian Willow
+   * Veda Kalarcanum
+
+
+Extra Deck
+   * Junk Warrior
+
+
+Spells
+   * Reinforcement of the Army
+   * Divine Sword - Phoenix Blade
+   * Galaxy Zero
+
+
+Traps
+   * Reinforce Truth
+
+
+
+
+Wizard (Mage)
+Spellbook
+During the first Draw Phase, banish the top 5 cards of your Deck face-down to make your Spellbook. (Once per turn): You can add 1 monster and immediately after this effect resolves, Normal Summon it, or add 1 Spell/Trap card or Pendulum Monster Card and immediately activate it, from among your face-down banished cards. 
+
+
+Legendary Monster
+Boo Koo
+
+
+Legendary Quest
+You can shuffle your face-down banished cards back into your Deck and Special Summon 1 “Boo Koo” from your hand, then banish the top 5 cards of your Deck face-down. 
+
+
+Legendary Relic
+While “Boo Koo” is face-up on the field, you can activate Spellbook an additional time each turn but cannot add the same type of card (Monster, Spell, or Trap) twice a turn. (Once per Duel): You can shuffle 1 “Boo Koo” from your GY into the Deck, then banish 1 Spell Card from your Deck face-down.
+
+
+Monsters
+   * Foucault’s Cannon
+   * Dark Valkyria
+   * Mythical Beast Cerberus
+   * Defender, the Magical Knight
+   * Breaker the Magical Warrior
+   * Mythical Beast Medusa
+   * Mythical Beast Bashilisk
+   * Fortune Lady Earth
+   * Blast Magician
+   * Witch of the Black Forest
+   * Divine Grace - Northwemko
+   * The Tricky
+
+
+Spells
+   * Arcane Barrier
+   * Wonder Wand
+   * One-Shot Wand
+   * Shard of Greed
+   * Spell Power Grasp
+   * Dark Factory of Mass Production
+   * Gather Your Mind
+   * Dwimmered Path
+   * A Feather of the Phoenix
+   * Ritual of Grace
+
+
+Traps
+
+
+
+
+Pirate (Fisherman)
+Buried Treasure!
+Pirate gains all Treasures shown during the Shop Phase. (Once per turn): If you Normal Summon a WATER monster, you can banish cards from the top of your Deck equal to the level of that monster, then place a Booty counter on this skill. (Once per Duel): You can spend up to 3 Booty counters to add that many banished cards to your hand.
+
+
+Legendary Monster
+Skull Mariner
+
+
+Legendary Quest
+You can immediately after this effect resolves, Tribute 1 WATER monster and Normal Summon 1 “Skull Mariner” from your hand or among your banished monsters, then you can equip 1 banished monster to that card.
+
+
+Legendary Relic
+If you Summon “Skull Mariner”, you can equip 1 banished monster to that card. Once per turn (Quick Effect): You can shuffle a card equipped to “Skull Mariner” into the Deck to equip 1 banished card to “Skull Mariner”. "Skull Mariner" gains the following effect based on the level of the monster equipped to it (Check notes):
+Level 3 or lower: This card gains ATK equal to its DEF.
+Level 4: You can Special Summon a monster equipped to this card, and if you do, return this card to your hand.
+Level 5 or higher: (Quick Effect): You can shuffle 1 Level 5 or higher monster equipped to this card into the Deck and target 1 face-up monster on the field; it can’t attack this turn, also, you can change its battle position.
+
+
+Monsters
+   * Piercing Moray
+   * Abyss Soldier
+   * Warrior of Atlantis
+   * Cranium Fish
+   * Ocean’s Keeper
+   * Thousand-Eyes Jellyfish
+   * Snowman Eater
+   * Yorishiro of the Aqua
+   * Aqua Spirit
+   * The Legendary Fisherman II
+   * Mermail Abyssnose
+   * Evigishki Tetrogre
+   * Gishki Vision
+   * Gishki Shadow
+   * Dewdark of the Ice Barrier
+   * Unifrog
+   * Poison Draw Frog
+   * Treeborn Frog
+   * Submarine Frog
+   * Mobius the Frost Monarch
+
+
+Extra Deck
+   * Evigishki Merrowgeist
+   * White Aura Porpoise
+
+
+Spells
+   * A Legendary Ocean
+   * Wetlands
+   * Deep Sea Aria
+   * Moray of Greed
+   * Gishki Photomirror
+   * Royal Penguins Garden
+
+
+Traps
+   * Paleozoic Olenoides
+   * Paleozoic Eldonia
+Druid
+
+
+Shapeshift
+(Once per turn): At the end of the Battle Phase, If a Beast, Beast-Warrior, or Winged Beast monster you control battled: You can shuffle a face-up Beast, Beast-Warrior, or Winged Beast monster you control into the Deck, also Special Summon 1 Beast, Beast-Warrior, or Winged Beast from your hand or Deck with the same Level/Rank, but with a different name as that shuffled monster.
+
+
+Legendary Monster
+Gladiator Beast Andal
+
+
+Legendary Quest
+If a Beast, Beast-Warrior, or Winged Beast monster you control destroys a monster by battle, you can immediately Shapeshift into “Gladiator Beast Andal” using that monster, ignoring the level requirement, and if you do, “Gladiator Beast Andal” you currently control gain 600 ATK.
+
+
+Legendary Relic
+(Once per turn): You can reveal 1 Beast, Beast-Warrior, or Winged Beast monster in your hand, shuffle it into the Deck, then add 1 Beast, Beast-Warrior, or Winged Beast from your Deck to your hand with the same level, but with a different name as that shuffled monster.
+
+
+Monsters
+   * Gladiator Beast Alexander
+   * Gladiator Beast Dimacari
+   * Gladiator Beast Bestiari
+   * Gladiator Beast Laquari
+   * Gladiator Beast Equeste
+   * Brotherhood of the Fire Fist - Bear
+   * Brotherhood of the Fire Fist - Raven
+   * Brotherhood of the Fire Fist - Hawk
+   * Enraged Battle Ox
+   * Three Trolling Trolls
+   * Caninetaur
+   * Jabbing Panda
+   * Hyena
+   * Manticore of Darkness
+
+
+Extra Deck
+   * Gladiator Beast Essedarii
+
+
+Spells
+   * Fire Formation - Gyokkou
+   * Fire Formation - Tensu
+
+
+Traps
+   * Trojan Gladiator Beast
+   * Double Tag Team
+
+
+Velociraptor
+Dino DNA
+Monsters in your possession are also treated as Dinosaur monsters.
+
+
+Legendary Monster
+Absolute King - Megaplunder
+
+
+Legendary Quest
+You can destroy 1 Dinosaur monster you control, Special Summon “Absolute King - Megaplunder” from your hand. This is treated as a card effect.
+
+
+Legendary Relic
+(Once per turn): If a non-Effect monster(s) you control is destroyed by a card effect: You can Special Summon 1 Level 4 or lower Dinosaur monster from your Deck.  “Absolute King - Megaplunder” gains the effect (Check notes):
+   * You can destroy 1 monster you control, or if you control a non-Effect monster, you can destroy 1 monster in your hand instead, and if you do, Special Summon this card from your hand. You can only use this effect of "Absolute King - Megaplunder" once per turn.
+
+
+Monsters
+   * Sabersaurus
+   * Kabazauls
+   * Rescue Rabbit
+   * Frostosaurus
+   * Fire Opal Head
+   * Lancephorhynchus
+   * Destroyersaurus
+   * Miracle Jurassic Egg
+   * Black Tyranno
+   * Super Conductor Tyranno
+   * Submareed Tour Ride
+   * Double-Headed Dino King Rex
+
+
+Extra Deck
+   * Gem-Knight Pearl
+
+
+Spells
+   * Jurassic World
+   * Unexpected Dai
+   * Big Evolution Pill
+
+
+Traps
+   * Paleozoic Olenoides
+   * Hunting Instinct
+   * Survival Instinct
+   * Fossil Excavation
+
+
+Mimic
+Copycat!
+You copy your opponent, but you still also retain the Mimic Legendary Quest, Legendary Relic, and Legendary Monster. You do not have a Shop Phase.
+
+
+Legendary Monster
+Copycat
+
+
+Legendary Quest
+If you have a field that is an exact copy of your opponent’s (except on the first turn of the game): You can Special Summon 1 “Copycat” from your hand, Deck, or GY, then, you can draw 1 card. You can also Normal Summon “Copycat” to complete your Legendary Quest.
+
+
+Legendary Relic
+While you control “Copycat”, if your opponent plays a card, you can reveal a card with the same name in your hand, and if you do, you can also activate/Summon that card.
+
+
+Monsters
+   * Copycat
+
+
+Spells
+
+
+Traps
+Miner
+Diggin’ for Gems
+You do not Draw during your Draw Phase. Once per turn, during your Standby Phase: You can excavate the top 5 cards of your Deck, then if you control no monsters, you can Special Summon 1 excavated Level 4 or lower EARTH or Rock monster, or if you do control a monster(s), you can add 1 excavated EARTH or Rock monster to your hand, also shuffle the rest back into your Deck. (Once per turn): You can reveal 1 EARTH or Rock Normal Monster in your hand; shuffle it back into your Deck and draw 1 card.
+
+Legendary Monster
+Prisman
+
+
+Legendary Quest
+If you excavate "Prisman" off of Diggin' for Gems, you can Special Summon it even if you control a monster, and complete your Quest also you can add 1 Treasure from your Deck to your hand.
+
+
+Legendary Relic
+If you excavate “Prisman” from Diggin' for Gems, you can add 1 “Prisman” from your Deck to your hand and draw 1 card. “Prisman” can be treated as a Tuner monster for a Synchro Summon, as 2 tributes for a Tribute Summon, as a Level 4 or 5 monster for an XYZ Summon, be treated as an Effect Monster for a Link Summon, is also always treated as all Attributes, and can be used as any 1 Fusion Material for a Fusion Summon. (Once per Duel): You can banish 3 cards with different names from your GY (any combination of EARTH or Rock monsters, and Spell Cards); add 1 Spell/Trap Card from your Deck to your hand.
+
+
+Monsters
+   * Alpha the Magnet Warrior
+   * Beta the Magnet Warrior
+   * Gamma the Magnet Warrior
+   * Valkyrion the Magna Warrior
+   * Small Piece Golem
+   * Medium Piece Golem
+   * Big Piece Golem
+   * Sentry Soldier of Stone
+   * Rock Band Xenoguitar
+   * Gigantes
+   * Exiled Force
+   * Medusa Worm
+   * Triamid Master
+   * Triamid Hunter
+   * Rockstone Warrior
+   * Gonogo
+   * Gogogo Golem
+   * Giant Soldier of Stone
+   * Granmarg the Rock Monarch
+   * Epigonen, the Impersonation Invader
+
+
+Extra Deck
+   * Multiple Piece Golem
+   * Number 55: Gogogo Goliath
+
+
+Spells
+   * Attack the Moon!
+   * Triamid Cruiser
+   * Triamid Fortress
+   * Polymerization
+Traps
+   * Rock Bombardment
+   * Spiritual Earth Art - Kurogane
+
+
+
+
+Spider
+So I’m a Spider, So What?!
+“Kumootoko” and “Jurai Gumo” are treated as “Spider” monsters. Once per turn, you can change 1 monster you control to face-up Defense Position, then you can change the battle position of 1 face-up monster your opponent controls. While your monster is face-up on the field, your opponent's monster cannot change its battle position.
+
+
+Legendary Monster
+Kumootoko
+
+
+Legendary Quest
+While you control a face-up Defense Position “Spider” monster, you can Special Summon “Kumootoko” from your hand and equip 1 face-up non-Legendary Defense Position monster your opponent controls to “Kumootoko”.
+
+
+Legendary Relic
+While you control a “Spider” monster, the first non-Link monster(s) your opponent summons each turn is changed to Defense Position. Once per turn, if your opponent controls a face-up Defense Position monster: You can Special Summon 1 “Spider” monster from your hand, or GY, but if you Summon it from the GY, negate the effects of this Relic for the rest of the Duel.
+
+
+Monsters
+   * Mother Spider Splitter
+   * Naturia Spiderfang
+   * Spyder Spider
+   * Informer Spider
+   * Ground Spider
+   * Baby Spider
+   * Relinquished Spider
+   * Hunter Spider
+   * Dream Cicada
+   * Leghul
+   * Gokipon
+   * Shiny Black “C” Squadder
+   * Insect Knight
+   * Armored Bee
+   * Jirai Gumo
+   * Nobleman-Eater Bug
+   * Insect Queen
+   * Inzektor Centipede
+   * Inzektor Hopper
+   * Inzektor Ladybug
+
+
+Extra Deck
+   * Link Spider
+   * Number 70: Malevolent Sin
+
+
+Spells
+   * Roulette Spider
+   * Forest
+   * Verdant Sanctuary
+   * Terraforming
+   * Cocoon of Ultra Evolution
+   * Inzektor Sword - Zektkaliber
+
+
+Traps
+   * Spider Egg
+
+
+
+
+
+
+Gambler
+Stacked Deck
+(You can play 1 of each "Stacked Deck" card in your inventory.) Once per turn: When a card effect tosses a coin, or rolls a die, you can choose to redo your coin toss/die roll. (If the toss involved multiple coin flips/die rolls, redo all of yours.)
+
+
+Legendary Monster
+Slot Machine
+
+
+Legendary Quest
+You can toss 3 coins. Special Summon "Slot Machine" from your hand, also you can add cards that have a coin tossing effect or effect that requires a die roll, with different names from your Deck to your hand up to the number of heads, also your opponent draws cards equal to the number of tails.
+
+
+Legendary Relic
+Once per turn: You can toss 3 coins and apply the following effect based on the number of heads. You can reveal 1 "Slot Machine" in your hand to choose one of the results (Check notes):
+1 - You can Special Summon "Slot Machine" from your hand.
+2 - Add 1 "Stacked Deck" card from your Deck to your hand.
+3 - Special Summon 1 monster from your Deck, but its effects are negated also it's destroyed at the end of this turn, or, add 1 Spell/Trap from your Deck to your hand that has a coin tossing effect or an effect that requires a die roll.
+
+
+Monsters
+   * Jirai Gumo
+   * Twin-Barrel Dragon
+   * Arcana Force IV - The Emperor
+   * Dice Jar
+   * Kryuel
+   * Sand Gambler
+   * Sasuke Samurai #4
+   * Abare Ushioni
+   * Maximum Six
+   * Blowback Dragon
+   * Orgoth the Relentless
+
+
+Spells
+   * Stacked Deck - Ace of Clubs
+   * Stacked Deck - Queen of Hearts
+   * Stacked Deck - King of Diamonds
+   * Stacked Deck - Jack of Spades
+   * Cup of Ace
+   * Graceful Dice
+   * Second Coin Toss
+   * Roulette Spider
+
+
+Traps
+   * Skull Dice
+   * The Paths of Destiny
+
+
+Cyborg
+Weakness of Flesh
+Once per turn, if you activate the effect of a “Gadget” monster, immediately after this effect resolves: You can Normal Summon 1 Level 4 or lower Machine monster.
+
+
+Legendary Monster
+Gadget Soldier
+
+
+Legendary Quest
+You can shuffle 3 "Gadget" monsters with different names from your hand, field, and/or GY into the Deck to Special Summon "Gadget Soldier" from your hand, also that monster gains the effects listed in your Legendary Relic.
+
+
+Legendary Relic
+You can Tribute Summon 1 Machine monster by tributing a "Gadget" monster you control each turn in addition to your Normal Summon/Set. A Machine monster gains the appropriate effects if Tribute Summoned by tributing these cards (Check notes):
+- Green Gadget: This card gains 500 ATK.
+- Red Gadget: If this card destroys an opponent's monster by battle: You can add 1 Machine monster from your Deck to your hand with the same level as the destroyed monster.
+- Yellow Gadget: The first time this card would be destroyed by battle each turn it is not. 
+
+
+Monsters
+   * Red Gadget
+   * Green Gadget
+   * Yellow Gadget
+   * Cyber Dragon
+   * Cyber Ogre
+   * X-Head Cannon
+   * Y-Dragon Head
+   * Z-Metal Tank
+   * Dekoichi The Battlechanted Locomotive
+   * Blowback Dragon
+   * Cyber Phoenix
+   * B.E.S. Tetran
+   * Summon Reactor - SK
+   * Spell Reactor - RE
+   * Trap Reactor - Y FI
+   * Flying Fortress SKY FIRE
+
+
+Extra Deck
+   * Cyber Ogre 2
+   * XYZ-Dragon Cannon
+   * XY-Dragon Cannon
+   * XZ-Tank Cannon
+   * YZ-Tank Dragon
+
+
+Spells
+   * Polymerization
+   * Frontline Base
+   * Fusion Deployment
+   * Break! Draw!
+   * Machine Conversion Factory
+
+
+Traps
+
+
+Amaru
+El Thor
+(Once per turn): If you Summon a Thunder monster you can banish it and if you do, banish 1 monster in the column your monster was in until your opponent's Draw Phase.
+
+
+Legendary Monster
+LaLa Li-oon
+
+
+Legendary Quest
+If you banish an opponent's monster, you can place 1 "LaLa Li-oon" from your hand or face-up field in your Spell/Trap Zone and place 1 Raigo Counter on it.
+
+
+Legendary Relic
+"LaLa Li-oon" you control are unaffected by your opponent's card effects/skills. (Once per turn): During your opponent's End Phase, place 1 Raigo Counter on all "LaLa Li-oon" you control (max. 3). (Once per turn): During your End Phase, you can shuffle 1 "Lala Li-oon" from your Spell/Trap Zone into the Deck, and destroy cards on the field equal to the number of Raigo Counters that were on it (this is treated as a card effect). If "LaLa Li-oon" leaves your field, shuffle all "Lala Li-oon" in your GY and banishment into the Deck also reset your Legendary Quest.
+
+
+Monsters
+   * Thunder Dragonmatrix
+   * Batteryman Micro-Cell
+   * Wattdragonfly
+   * Mithra the Thunder Vassal
+   * Rai-Mei
+   * Batteryman AA
+   * Wattmole
+   * Mahunder
+   * Pahunder
+   * Brohunder
+   * Sishunder
+   * Thunder Sea Horse
+   * Evilswarm Thunderbird
+   * Batteryman 9-Volt
+   * Rai-Jin
+   * Zaborg the Thunder Monarch
+   * Thunder Dragon
+   * Mist Valley Executor
+   * Sanga of the Thunder
+   * The Creator
+
+Extra Deck
+      * Twin-Headed Thunder Dragon
+      * Kaminari Attack
+
+
+Spells
+      * Polymerization
+      * Electro-Whip
+      * Dark World Lightning
+      * Ready Fusion
+
+
+Traps
+
+
+
+
+Peasant
+Gem in Eye
+Gemini monsters in your hand, Deck, and banishment are treated as Normal monsters. (Once per turn): If you Summon a Normal monster, you can immediately Normal Summon 1 monster.
+
+
+Legendary Monster
+People Running About, Oppressed People, United Resistance
+
+
+Legendary Quest
+(During your Draw Phase) (Once per turn):  Add 1 "People Running About," "Oppressed
+People," or "United Resistance" from your Deck to your hand. Once you have all three,
+reveal them, and complete your Legendary Quest, and, this turn, you can activate your
+Legendary Relic twice.
+
+
+Legendary Relic:
+(Once per turn): You can activate one of the following effects:
+      * You can discard 1 "People Running About" and target 1 monster on the field; negate its effects until the end of the turn.
+      * You can discard 1 "Oppressed People"; Normal Summon 1 monster.
+      * You can discard 1 "United Resistance"; add 1 "People Running About" or "Oppressed People" from your Deck or GY to your hand.
+
+
+Monsters:
+      * Ancient Gear Knight
+      * Chthonian Emperor Dragon
+      * Evocator Chevalier
+      * Future Samurai
+      * Gemini Scorpion
+      * Gemini Soldier
+      * Phoenix Gearfried
+      * Spirit Caller
+      * Tuned Magician
+      * White Tiger Summoner
+      * Woodland Archer
+
+Extra Deck
+         * Superalloy Beast Raptinus
+         * Black Brutdrago
+
+
+Spells:
+         * Supervise
+         * Super Double Summon
+         * Swing of Memories
+         * Herculean Power
+         * Tyrant Farm
+         * White Elephant’s Gift
+         * Polymerization
+
+
+Traps:
+         * Common Charity
+         * First-Aid Squad
+         * Order to Smash
+
+
+Chef
+Let Them Cook
+Declare a Recipe to use for the rest of the Duel. If you Ritual Summon, you can use an ingredient, but you cannot use ingredients for the rest of the Duel, except when Ritual Summoning a non-effect monster. You can only use each ingredient with this skill once per Duel. Your Ritual Spells can Ritual Summon any Ritual Monster, ignoring summoning conditions, by tributing monsters whose levels equal or exceed it.
+
+
+Legendary Monster
+Hungry Burger
+
+
+Legendary Quest
+If you Ritual Summon “Hungry Burger”, you can use all your ingredients and complete your Legendary Quest.
+
+
+Legendary Relic
+(Once per turn): You can return 1 Ritual Monster you control to your hand; Special Summon 1 monster from either GY that was Tributed this turn in Defense Position, but its effects are negated, also destroy it at the end of the turn. (Once per turn): If you Ritual Summon “Hungry Burger” and use “Let Them Cook”, you can use an ingredient you’ve already used this Duel.
+
+
+Monsters
+         * Impcantation Bookstone
+         * Impcantation Pencilplume
+         * Mild Turkey
+         * Ghost Beef
+         * Black Luster Soldier
+         * Ruin, Queen of Oblivion
+         * Choju of the Trillion Hands
+         * Manju of the Ten Thousand Hands
+         * Senju of the Thousand Hands
+         * Sonic Bird
+         * Djinn Presider of Rituals
+         * Prediction Princess Arrowsylph
+         * Cyber Tutubon
+         * Transonic Bird
+
+
+Spells
+         * Hamburger Recipe
+         * Spiritual Entanglement
+         * Execution of the Contract
+         * Sonic Tracker
+         * Black Luster Ritual
+
+
+Traps
+         * Urgent Ritual Art
+         * Stars Align across the Milky Way
+
+
+Esper
+???%
+(Once per turn): You can banish 2 Psychic monsters from your GY (1 Tuner and 1 non-Tuner); Special Summon 1 Synchro Monster from your Extra Deck whose Level equals the total Levels of the banished monsters, but its effects are negated. 
+
+
+Legendary Monster
+Stinger the Electric Expeller
+
+
+Legendary Quest
+If you banish “Stinger the Electric Expeller”, Special Summon it and complete your Legendary Quest.
+
+
+Legendary Relic
+(Once per turn): You can banish 1 Psychic monster from your Deck, and have 1 monster you control become the same level as that banished monster, also you can treat it as a tuner.
+
+
+Monsters
+         * Silent Psychic Wizard
+         * Armored Axon Kicker
+         * Destructotron
+         * Psychic Commander
+         * Doctor Cranium
+         * Final Psychic Ogre
+         * Overdrive Teleporter
+         * Serene Psychic Witch
+         * Mind Procedure
+         * Psychic Ace
+
+
+Extra Deck Monsters
+         * Magical Android
+         * Psychic Lifetrancer
+         * Ritual Beast Ulti-Reirautari
+
+
+Spells
+         * Teleport
+         * Psychokinesis
+         * Psi-Station
+
+
+Traps
+         * Battle Teleportation
+         * Psychic Overload
+         * Psychic Rejuvenation
+         * Psychic Trigger
+
+
+Nephalem
+Scales of Creation
+(Once per turn): If you control an equal number of LIGHT and DARK monsters, you can send up to 1 LIGHT and 1 DARK monster from your hand/field to the GY, and draw cards equal to the amount sent. (Once per turn): If you would banish a Normal Monster from your GY, you can add it to your hand instead.
+
+
+Legendary Monster
+Dunames Dark Witch & Dark Valkyria
+
+
+Legendary Quest
+You can banish 2 LIGHT or 2 DARK monsters from your GY to Special Summon 1 Legendary Monster from your hand with a different attribute.
+
+
+Legendary Relic
+(Once per turn): During your End Phase, send 1 Legendary Monster you control to the GY and Special Summon 1 with a different Attribute from your Deck. (Once per turn): You can activate 1 of the following effects: 
+         * If you control "Dunames Dark Witch" you can banish 1 DARK monster from your GY to add 1 of your banished LIGHT monsters to your hand.
+         * If you control "Dark Valkyria" you can banish 1 LIGHT monster from your GY to add 1 of your banished DARK monsters to your hand.
+
+
+Monsters
+         * Gaia, the Polar Knight
+         * Gaia, the Mid-Knight Sun
+         * Chaos Grepher
+         * Jain, Lightsworn Paladin
+         * Lyla, Lightsworn Sorceress
+         * Lyla, Twilightsworn Enchantress
+         * Doomsday Horror
+         * Darknight Parshath
+         * Chaos-End Master
+         * Sphere of Chaos
+         * Dark Grepher
+         * Dwarf Star Dragon Planeter
+         * Airknight Parshath
+         * Neo-Parshath, the Sky Paladin
+         * Raiden, Hand of the Lightsworn
+         * King's Knight
+         * Queen's Knight
+
+Extra Deck Monsters
+            * Dark End Dragon
+
+
+Spells
+            * March of the Dark Brigade
+            * Charge of the Light Brigade
+            * Card Destruction
+            * Chaos Seed
+
+
+Traps
+            * Eternal Chaos
+
+
+Paladin (Nephalem)
+Banish the Darkness
+Once per turn, during your Draw Phase: You can send 1 LIGHT Warrior monster from your Deck to the GY, then you can banish 1 DARK monster from your Deck.
+
+
+Legendary Monster
+Jack’s Knight
+
+
+Legendary Quest
+If a Warrior monster you control would be destroyed by battle or card effect, you can Special
+Summon 1 "Jack's Knight" from your hand instead, and return all banished monsters to the GY.
+
+
+Legendary Relic
+“Jack’s Knight” you control gains 100 ATK/DEF for every DARK or every LIGHT monster in your GY (whichever is higher). (Once per turn): You can banish any number of LIGHT monsters from your GY and return that many DARK monsters from banishment to your GY or vice-versa.
+
+
+Monsters
+            * Gaia, the Polar Knight
+            * Gaia, the Mid-Knight Sun
+            * Chaos Grepher
+            * Jain, Lightsworn Paladin
+            * Lyla, Lightsworn Sorceress
+            * Lyla, Twilightsworn Enchantress
+            * Doomsday Horror
+            * Darknight Parshath
+            * Chaos-End Master
+            * Sphere of Chaos
+            * Dark Grepher
+            * Dwarf Star Dragon Planeter
+            * Airknight Parshath
+            * Neo-Parshath, the Sky Paladin
+            * Raiden, Hand of the Lightsworn
+            * King's Knight
+            * Queen's Knight
+
+Extra Deck Monsters
+               * Dark End Dragon
+
+
+Spells
+               * March of the Dark Brigade
+               * Charge of the Light Brigade
+               * Card Destruction
+               * Chaos Seed
+
+
+Traps
+               * Eternal Chaos
+Jester
+Clowning Around
+(Once per turn): You can reveal 1 "Clown" monster in your hand and declare a number from 1 to 12, then place that monster in the Pendulum Zone with its scale being the declared number. During the End Phase of this turn, Special Summon that monster from your Pendulum Zone. (Once per turn): If you Summon/Set a monster(s), you can change their battle positions.
+
+
+Legendary Quest
+If you Pendulum Summon you can Special Summon "Saggi the Dark Clown" from your Pendulum Zone, also you can add 1 "Clown" monster from your Deck to your hand, and if you do, return 1 "Saggi the Dark Clown" you control to the hand.
+
+
+Legendary Relic
+You can Special Summon monsters during the next End Phase with the effect of "Clowning Around" instead. "Saggi the Dark Clown" you control gain ATK equal to their original DEF during your turn, and gains DEF equal to their original ATK during your opponent's turn. (Once per turn): If an opponent's monster declares a direct attack, you can Special Summon 1 "Saggi the Dark Clown" from your hand and 1 "Clown" monster from your Pendulum Zone. If "Saggi the Dark Clown" is sent to the GY by an opponent's card this turn, draw 1 card. During your opponent's End Phase, return all "Saggi the Dark Clown" on the field to your hand.
+
+
+Monsters
+               * Mystic Clown
+               * Performapal Inflater Tapir
+               * Performapal Kuribohble
+               * Performapal Flip Hippo
+               * Performapal Skeeter Skimmer
+               * Performapal Handsamuraiger
+               * Performapal Salutiger
+               * Performapal Bowhopper
+               * Performapal Longphone Bull
+               * Performapal Fire Mufflerlion
+               * Performapal Bit Bite Turtle
+               * Performapal Swincobra
+               * Performapal King Bear
+               * Stargazer Magician
+               * Timegazer Magician
+               * Odd-Eyes Pendulum Dragon
+
+
+Spells
+               * Illusion Balloons
+               * Performapal Recasting
+
+
+Traps
+               * Echo Oscillation
+
+
+Hunter
+Food Chain
+(Once per turn): If a Beast monster you control is destroyed, you can add 1 Beast monster that is 1 level higher or lower from your Deck to your hand.
+
+
+Legendary Monster
+Wolf
+
+
+Legendary Quest
+You can destroy 1 Beast monster you control to Special Summon 1 “Wolf” from your hand and complete your Legendary Quest.
+
+Legendary Relic
+Each “Wolf” you control gains 500 ATK/DEF for each other “Wolf” on the field. (Once per turn): During the Battle Phase, if a “Wolf” you control declares an attack: you can destroy 1 Beast monster in your hand or field to Special Summon 1 “Wolf” from your hand, Deck, or GY. While you control 3 “Wolf”, your Unique Skill Food Chain is not once per turn.
+
+
+
+
+Giant
+Large Sized
+You can Normal Summon (but not Set) monsters of any level without a Tribute. You can only Special Summon once each turn. You cannot control Effect monsters with a Level/Rank equal to or lower than 4.
+
+
+Legendary Monster
+Hitatsu-Me Giant
+
+
+Legendary Quest
+If you Normal Summon a Level 7 or higher monster, you can also Normal Summon 1 “Hitatsu-Me Giant” from your hand.
+
+
+Legendary Relic
+“Hitatsu-Me Giant” in your possession is treated as a Level 13 monster. Your opponent can only attack your monster(s) with the highest level (their choice if tied). (Once per turn): You can tribute 1 Level 7 or higher monster you control; Normal Summon 1 “Hitatsu-Me Giant”, and if you do, it gains ATK/DEF equal to the level of the tributed monster x 200.
+
+
+Monsters
+               * Flame Ogre
+               * Gamaciel, the Sea Turtle Kaiju
+               * Airknight Parshath
+               * Ancient Crimson Ape
+               * Arcana Force XIV - Temperance
+               * Big-Tusked Mammoth
+               *
