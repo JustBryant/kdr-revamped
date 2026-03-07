@@ -8,3 +8,13 @@ dist/
 /generated/prisma
 
 card_images/
+public/icons/attributes/*.zip
+db_backup_*/
+public/icons/attributes/*.zip
+db_backup_*/
+KDR-Revamped-Images/
+Rush-HD-ORR-Extension/
+Rush-HD-Pictures/
+tmp/
+yaml-yugi/
+data/
