@@ -43,6 +43,11 @@ model User {
   password       String?
   favoriteCardId String?
   neonId         String?                 @unique
+  borderId       String?
+  frameId        String?
+  titleId        String?
+  backgroundId   String?
+  profileIconId  String?
   accounts       Account[]
   decks          Deck[]
   createdKdrs    KDR[]                   @relation("KdrCreator")
@@ -50,7 +55,12 @@ model User {
   patchNotes     PatchNote[]
   sessions       Session[]
   tournaments    TournamentParticipant[]
+  background     Item?                   @relation("UserBackground", fields: [backgroundId], references: [id])
+  border         Item?                   @relation("UserBorder", fields: [borderId], references: [id])
   favoriteCard   Card?                   @relation("UserFavoriteCard", fields: [favoriteCardId], references: [id])
+  frame          Item?                   @relation("UserFrame", fields: [frameId], references: [id])
+  profileIcon    Item?                   @relation("UserProfileIcon", fields: [profileIconId], references: [id])
+  title          Item?                   @relation("UserTitle", fields: [titleId], references: [id])
 }
 
 model VerificationToken {
@@ -148,8 +158,6 @@ model Skill {
   modifications SkillCardModification[]
   decks         Deck[]                  @relation("DeckSkills")
   providesCards Card[]                  @relation("SkillProvidesCards")
-  statRequirements Json?
-  items         Item[]
 }
 
 model SkillCardModification {
@@ -217,7 +225,6 @@ model Card {
   skillModifications  SkillCardModification[]
   favoritedBy         User[]                  @relation("UserFavoriteCard")
   providedBySkills    Skill[]                 @relation("SkillProvidesCards")
-  items               Item[]
 }
 
 model DeckCard {
@@ -323,21 +330,26 @@ model FormatClass {
 }
 
 model Item {
-  id          String   @id @default(cuid())
-  type        ItemType
-  externalId  String?  @unique
-  name        String
-  description String?
-  metadata    Json?
-  isSellable  Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  cardId      String?
-  formatId    String?
-  rarity      String?
-  skillId     String?
-  card        Card?    @relation(fields: [cardId], references: [id])
-  skill       Skill?   @relation(fields: [skillId], references: [id])
+  id               String   @id @default(cuid())
+  type             ItemType
+  externalId       String?  @unique
+  name             String
+  description      String?
+  metadata         Json?
+  isSellable       Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  cardId           String?
+  formatId         String?
+  rarity           String?
+  skillId          String?
+  imageUrl         String?
+  price            Int?
+  usersBackground  User[]   @relation("UserBackground")
+  usersBorder      User[]   @relation("UserBorder")
+  usersFrame       User[]   @relation("UserFrame")
+  usersProfileIcon User[]   @relation("UserProfileIcon")
+  usersTitle       User[]   @relation("UserTitle")
 }
 
 model PlayerItem {
@@ -512,4 +524,9 @@ enum ItemType {
   RELIC
   STAT
   OTHER
+  BORDER
+  FRAME
+  TITLE
+  BACKGROUND
+  PROFILE_ICON
 }
