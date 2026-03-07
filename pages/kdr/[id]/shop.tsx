@@ -1098,26 +1098,9 @@ export default function KdrShopPage() {
   const _exitActiveForTyping = statButtonsExit || skillButtonsExit || trainingButtonsExit || statAnimating
   const shopkeeperTyped = useTyping(_dialogueForTyping, { speed: TYPING_SPEED, pause: _exitActiveForTyping })
 
-  // trigger confetti and extra flair when level-up appears
+  // trigger effect when level-up appears
   useEffect(() => {
     if (!showLevelUp) return
-    // dynamic import so SSR doesn't break
-    let mounted = true
-    ;(async () => {
-      try {
-        const confetti = (await import('canvas-confetti')).default
-        if (!mounted) return
-        // a burst of confetti in multiple passes for nicer effect
-        confetti({ particleCount: 40, spread: 60, startVelocity: 40, ticks: 200, origin: { y: 0.4 } })
-        confetti({ particleCount: 30, spread: 100, startVelocity: 50, ticks: 220, origin: { y: 0.35 } })
-        confetti({ particleCount: 20, spread: 140, startVelocity: 60, ticks: 240, origin: { y: 0.3 } })
-        // a colorful ring
-        confetti({ particleCount: 60, angle: 90, spread: 160, scalar: 1.1, origin: { x: 0.5, y: 0.5 } })
-      } catch (e) {
-        // ignore if confetti unavailable
-      }
-    })()
-    return () => { mounted = false }
   }, [showLevelUp])
 
   
