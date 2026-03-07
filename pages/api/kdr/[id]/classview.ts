@@ -75,7 +75,7 @@ const { id, playerKey } = req.query
         // Preload referenced Item / LootItem rows so we can identify TREASURE Item types
         // PlayerItem rows reference `itemId`.
         const allItemIds = Array.from(new Set(playerItems.map((it: any) => it.itemId).filter(Boolean)))
-        const itemRows = allItemIds.length ? await prisma.item.findMany({ where: { id: { in: allItemIds as string[] } }, include: { card: true, skill: true } }) : []
+        const itemRows = allItemIds.length ? await prisma.item.findMany({ where: { id: { in: allItemIds as string[] } } }) : []
         const itemById: Record<string, any> = {}
         for (const it of itemRows) itemById[it.id] = it
 
@@ -87,8 +87,11 @@ const { id, playerKey } = req.query
             const mapped = items.map((it: any) => {
                 const refId = it.itemId || null
                 const item = refId ? itemById[refId] : null
-                const card = it.cardId ? cardById[it.cardId] ?? null : (item?.card || null)
-                const skill = it.skillId ? skillById[it.skillId] ?? null : (item?.skill || null)
+                
+                // Since Item doesn't have direct card/skill relations, 
+                // we'll rely on the playerItem.cardId/skillId that was already fetched in cardById/skillById
+                const card = it.cardId ? cardById[it.cardId] ?? null : (item?.cardId ? cardById[item.cardId] ?? null : null)
+                const skill = it.skillId ? skillById[it.skillId] ?? null : (item?.skillId ? skillById[item.skillId] ?? null : null)
                 const isTreasure = !!(item && String(item.type || '').toUpperCase() === 'TREASURE')
                 
                 return {
