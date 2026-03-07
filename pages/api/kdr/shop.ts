@@ -1315,11 +1315,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           // Also load Item model rows for any itemIds that refer to Item rows (TREASURE or other)
           const itemRows = allLootIds.length ? await prisma.item.findMany({ 
-            where: { id: { in: allLootIds as string[] } },
-            include: { card: true, skill: true }
+            where: { id: { in: allLootIds as string[] } }
           }) : []
           const itemById: Record<string, any> = {}
-          for (const it of itemRows) itemById[it.id] = it
+          for (const it of itemRows) {
+            const item = it as any;
+            if (item.cardId) item.card = cardById[item.cardId];
+            if (item.skillId) item.skill = skillById[item.skillId];
+            itemById[item.id] = item;
+          }
 
           const skillsMap: Record<string, any> = {}
 
