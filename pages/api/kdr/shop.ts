@@ -523,14 +523,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Find treasure in Item model (must be a format-specific TREASURE)
         const treasure = await prisma.item.findUnique({ 
-          where: { id: treasureId },
-          include: { card: true, skill: true }
+          where: { id: treasureId }
         }) as any
 
         // Do NOT fall back to legacy LootItem here. Treasures must be `Item` rows
         if (!treasure) {
           console.warn('[TREASURE] attempt to choose non-Item treasure', { treasureId })
           return res.status(404).json({ error: 'Treasure not found (must be an Item of type TREASURE)' })
+        }
+
+        // Manually fetch and attach card/skill if they exist
+        if (treasure.cardId) {
+          treasure.card = await prisma.card.findUnique({ where: { id: treasure.cardId } });
+        }
+        if (treasure.skillId) {
+          treasure.skill = await prisma.skill.findUnique({ where: { id: treasure.skillId } });
         }
         
         const offer = (shopState.treasureOffers || []).find((t: any) => String(t.id) === String(treasureId))
