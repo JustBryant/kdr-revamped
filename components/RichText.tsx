@@ -75,12 +75,12 @@ export function RichTextRenderer({ content, stats, requirements }: { content: st
     let processedText = text;
 
     if (!stats) {
-      processedText = processedText.replace(/\[if .*?\](.*?)\[\/if\]/gs, (match, inner) => {
+      processedText = processedText.replace(/\[if [\s\S]*?\]([\s\S]*?)\[\/if\]/g, (match, inner) => {
         // If no stats provided (e.g. in editor preview), show as "inactive" or dimmed
         return `<span class="opacity-40 italic border-l-2 border-white/10 pl-2 block my-1">${inner}</span>`
       })
     } else {
-      processedText = processedText.replace(/\[if (STR|DEX|INT|LUK|FOR|CON)([><]=?|=)(\d+)\](.*?)\[\/if\]/gs, (match, stat, op, val, inner) => {
+      processedText = processedText.replace(/\[if (STR|DEX|INT|LUK|FOR|CON)([><]=?|=)(\d+)\]([\s\S]*?)\[\/if\]/g, (match, stat, op, val, inner) => {
         const playerVal = stats[stat as keyof PlayerStats] || 0
         const threshold = parseInt(val)
         
