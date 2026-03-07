@@ -128,20 +128,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     try {
       const userId = session.user.id
-      const { findNeonUserByEmail, updatePasswordById } = await import('../../../lib/neonAuth')
+      const { findNeonUserByEmail, updatePasswordByEmail } = await import('../../../lib/neonAuth')
+      const { Pool } = await import('pg')
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+      
       const user = await prisma.user.findUnique({ where: { id: userId } })
       if (!user || !user.email) return res.status(404).json({ message: 'User not found' })
 
-      const neonUser = await findNeonUserByEmail(user.email)
-      if (!neonUser) return res.status(404).json({ message: 'Auth profile not found' })
+      const neonUser = await findNeonUserByEmail(pool, user.email)
+      if (!neonUser) {
+        await pool.end()
+        return res.status(404).json({ message: 'Auth profile not found' })
+      }
 
       const bc = await import('bcryptjs')
-      const isCorrect = await bc.compare(currentPassword, neonUser.password)
-      if (!isCorrect) return res.status(401).json({ message: 'Incorrect current password' })
+      // Note: findNeonUserByEmail returns row with account_password
+      const isCorrect = await bc.compare(currentPassword, neonUser.account_password)
+      if (!isCorrect) {
+        await pool.end()
+        return res.status(401).json({ message: 'Incorrect current password' })
+      }
 
       const hashed = await bc.hash(newPassword, 10)
-      await updatePasswordById(neonUser.id, hashed)
-
+      await updatePasswordByEmail(pool, user.email, hashed)
+      
+      await pool.end()
       return res.status(200).json({ message: 'Password updated successfully' })
     } catch (error) {
       console.error('Error updating password:', error)
