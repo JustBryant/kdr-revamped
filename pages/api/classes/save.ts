@@ -264,7 +264,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'UNIQUE',
             classId,
             uniqueRound: s.uniqueRound ?? null,
-            statRequirements: s.statRequirements ?? null
           }))
         })
       }
@@ -364,7 +363,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         name: item.skill.name,
                         description: item.skill.description,
                         isSellable: item.skill.isSellable ?? true,
-                        statRequirements: item.skill.statRequirements ?? null
                       }
                     })
                   } else {
@@ -376,7 +374,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         isSellable: item.skill.isSellable ?? true,
                         type: 'LOOT_POOL',
                         classId: classId,
-                        statRequirements: item.skill.statRequirements ?? null
                       }
                     })
                     skillId = createdSkill.id
@@ -410,7 +407,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                       isSellable: item.skill.isSellable ?? true,
                       type: 'LOOT_POOL',
                       classId: classId,
-                      statRequirements: item.skill.statRequirements ?? null
                     }
                   })
                   skillId = createdSkill.id
