@@ -4,38 +4,61 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "cleanup:deleted-kdrs": "node ./scripts/cleanupDeletedKdrs.js",
+    "remove:common-treasures": "ts-node ./scripts/remove-common-treasures.ts",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:integration": "node tests/integration/runAll.cjs",
+    "extract:atlas": "node ./scripts/extract-atlas.js assets/atlas.png assets/atlas.json public/icons"
+  },
+  "prisma": {
+    "seed": "ts-node ./scripts/seed.ts"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
     "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
+    "@prisma/client": "^7.3.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/pg": "^8.16.0",
+    "argon2": "^0.44.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.6.0",
     "next": "latest",
     "next-auth": "^4.24.13",
     "next-themes": "^0.4.6",
+    "nodemailer": "^7.0.12",
     "pdf-parse": "^2.4.5",
-    "pg": "^8.16.3",
+    "pg": "^8.17.2",
     "react": "latest",
     "react-dom": "latest",
     "resend": "^6.6.0"
   },
+  "optionalDependencies": {
+    "ws": "^8.13.0"
+  },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
-    "@types/node": "latest",
+    "@opensearch-project/opensearch": "^2.13.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.0.9",
+    "@types/nodemailer": "^7.0.5",
     "@types/react": "latest",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
     "dotenv": "^17.2.3",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "htmlparser2": "^8.0.2",
+    "octokit": "^5.0.5",
+    "p-queue": "^7.1.0",
     "postcss": "^8.5.6",
-    "prisma": "^7.1.0",
+    "prisma": "^7.3.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
-    "typescript": "latest"
+    "typescript": "^5.9.3"
   }
 }
