@@ -31,7 +31,7 @@ export default function TipSkillsEditor({ skills, onChange, send, me, peers, for
     if (editingSkill) {
       onChange(skills.map(s => s.id === editingSkill.id ? skill : s))
     } else {
-      onChange([...skills, { ...skill, id: Date.now().toString(), type: 'UNIQUE' } as Skill])
+      onChange([...skills, { ...skill, id: Date.now().toString(), type: 'UNIQUE' }])
     }
     setIsModalOpen(false)
   }
