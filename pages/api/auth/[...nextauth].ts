@@ -10,6 +10,7 @@ import { findNeonUserByEmail } from '../../../lib/neonAuth'
 const neonPool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
   },
