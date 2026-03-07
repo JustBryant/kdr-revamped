@@ -282,7 +282,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               providesCards: {
                 connect: s.providesCards?.map((c: any) => ({ id: c.id })) || []
               },
-              statRequirements: s.statRequirements ?? null
             }
           })
 
