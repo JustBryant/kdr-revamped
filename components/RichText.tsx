@@ -2,6 +2,7 @@
 // Optimized for KDR Revamped with class/card embedding support
 
 import ClassImage from './common/ClassImage'
+import Icon from './Icon'
 
 export interface StatRequirement {
   stat: 'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'
@@ -133,7 +134,7 @@ export function RichTextRenderer({ content, stats, requirements }: { content: st
       {parts.map((part, i) => {
         if (part.startsWith('{class:')) {
           const className = part.replace('{class:', '').replace('}', '')
-          return <ClassIcon key={i} name={className} />
+          return <Icon key={i} name={className} className="inline-block w-6 h-6 object-contain -mt-1 ml-1" />
         }
         
         // Basic card mention (visual only for now)
