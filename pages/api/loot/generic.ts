@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           id: item.id,
           type: item.type,
           card: item.card,
-          skill: item.type === 'Skill' ? {
+          skill: item.skillName ? {
             name: item.skillName,
             description: item.skillDescription
           } : undefined
@@ -68,8 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 create: pool.items.map((item: any) => ({
                   type: item.type,
                   cardId: item.type === 'Card' ? item.card.id : undefined,
-                  skillName: item.type === 'Skill' ? item.skill.name : undefined,
-                  skillDescription: item.type === 'Skill' ? item.skill.description : undefined
+                  skillName: item.type === 'Skill' ? (item.skill?.name || item.skillName) : undefined,
+                  skillDescription: item.type === 'Skill' ? (item.skill?.description || item.skillDescription) : undefined
                 }))
               }
             }

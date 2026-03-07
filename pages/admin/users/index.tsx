@@ -16,6 +16,7 @@ interface User {
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [pendingDeleteUserId, setPendingDeleteUserId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users')
+      const res = await fetch('/api/admin/users', { credentials: 'same-origin' })
       if (res.status === 403) {
         // Not authorized
         router.push('/')
@@ -55,6 +56,7 @@ export default function UserManagement() {
     try {
       const res = await fetch('/api/admin/users', {
         method: 'PUT',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole }),
       })
@@ -70,6 +72,34 @@ export default function UserManagement() {
     } catch (error) {
       console.error('Failed to update role', error)
       alert('An error occurred')
+    }
+  }
+
+  const requestDelete = (userId: string) => {
+    setPendingDeleteUserId(userId)
+  }
+
+  const cancelDelete = () => setPendingDeleteUserId(null)
+
+  const confirmDelete = async (userId: string) => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to delete user')
+        return
+      }
+      // remove from list
+      setUsers(users.filter(u => u.id !== userId))
+      setPendingDeleteUserId(null)
+    } catch (e) {
+      console.error('Failed to delete user', e)
+      alert('Failed to delete user')
     }
   }
 
@@ -91,7 +121,8 @@ export default function UserManagement() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
@@ -135,20 +166,31 @@ export default function UserManagement() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      className="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-white"
-                    >
-                      <option value="USER">User</option>
-                      <option value="MODERATOR">Moderator</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        className="mt-1 block py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-white"
+                      >
+                        <option value="USER">User</option>
+                        <option value="MODERATOR">Moderator</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                      {pendingDeleteUserId === user.id ? (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => confirmDelete(user.id)} className="px-2 py-1 bg-red-700 text-white rounded text-sm">Confirm Delete</button>
+                          <button onClick={cancelDelete} className="px-2 py-1 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded text-sm">Cancel</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => requestDelete(user.id)} className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-sm">Delete</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+            </div>
         </div>
       </div>
     </>

@@ -5,9 +5,10 @@ import SkillForm from './shared/SkillForm'
 interface TipSkillsEditorProps {
   skills: Skill[]
   onChange: (skills: Skill[]) => void
+  formatVariant?: string | null
 }
 
-export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorProps) {
+export default function TipSkillsEditor({ skills, onChange, send, me, peers, formatVariant }: TipSkillsEditorProps & { send?: (p:any)=>void, me?: any, peers?: Record<string, any> }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
 
@@ -19,6 +20,7 @@ export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorPro
   const handleEdit = (skill: Skill) => {
     setEditingSkill(skill)
     setIsModalOpen(true)
+    if (send) send({ section: 'tipSkills', data: { section: 'skill', skillId: skill.id }, ts: Date.now(), user: me })
   }
 
   const handleDelete = (id: string) => {
@@ -29,7 +31,7 @@ export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorPro
     if (editingSkill) {
       onChange(skills.map(s => s.id === editingSkill.id ? skill : s))
     } else {
-      onChange([...skills, { ...skill, id: Date.now().toString(), type: 'TIP' }])
+      onChange([...skills, { ...skill, id: Date.now().toString(), type: 'UNIQUE' } as Skill])
     }
     setIsModalOpen(false)
   }
@@ -37,7 +39,7 @@ export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorPro
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Tip Skills</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Unique Skills</h2>
         <button 
           onClick={handleAdd}
           className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-sm font-medium"
@@ -48,12 +50,12 @@ export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorPro
 
       {skills.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-          No Tip Skills added yet.
+          No Unique Skills added yet.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {skills.map(skill => (
-            <div key={skill.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group relative bg-white dark:bg-gray-800">
+            <div key={skill.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group relative bg-white dark:bg-gray-800" onMouseEnter={()=> send && send({ section: 'tipSkills', data: { section: 'skill', skillId: skill.id }, ts: Date.now(), user: me })} onMouseLeave={()=> send && send({ section: 'tipSkills', data: { section: 'skill', skillId: undefined }, ts: Date.now(), user: me })}>
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                 <button 
                   onClick={() => handleEdit(skill)}
@@ -85,7 +87,8 @@ export default function TipSkillsEditor({ skills, onChange }: TipSkillsEditorPro
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         initialSkill={editingSkill}
-        title={editingSkill ? 'Edit Tip Skill' : 'Add Tip Skill'}
+        title={editingSkill ? 'Edit Unique Skill' : 'Add Unique Skill'}
+        formatVariant={formatVariant}
       />
     </div>
   )

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Card, SkillModification } from '../../../types/class-editor'
 import CardDescription from './CardDescription'
-import { CARD_IMAGE_BASE_URL } from '../../../lib/constants'
+import CardImage, { selectArtworkUrl } from '../../common/CardImage'
 
-const getImageUrl = (konamiId: number) => `${CARD_IMAGE_BASE_URL}/${konamiId}.jpg`
+const getImageUrl = (konamiId: number) => selectArtworkUrl(undefined, konamiId) || undefined
 
 interface ModificationBuilderProps {
   isOpen: boolean
@@ -11,6 +11,7 @@ interface ModificationBuilderProps {
   onSave: (mod: SkillModification) => void
   initialModification?: Partial<SkillModification> | null
   title?: string
+  formatVariant?: string | null
 }
 
 export default function ModificationBuilder({ 
@@ -18,7 +19,8 @@ export default function ModificationBuilder({
   onClose, 
   onSave, 
   initialModification,
-  title = 'Add Card Modification'
+  title = 'Add Card Modification',
+  formatVariant
 }: ModificationBuilderProps) {
   const [activeModification, setActiveModification] = useState<Partial<SkillModification>>({})
   
@@ -41,7 +43,8 @@ export default function ModificationBuilder({
       if (searchQuery.length >= 2) {
         setIsSearching(true)
         try {
-          const res = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}`)
+          const variantParam = formatVariant ? `&variant=${encodeURIComponent(formatVariant)}` : ''
+          const res = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}${variantParam}`)
           const data = await res.json()
           setSearchResults(data)
         } catch (error) {
@@ -55,7 +58,7 @@ export default function ModificationBuilder({
     }, 500)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery])
+  }, [searchQuery, formatVariant])
 
   if (!isOpen) return null
 
@@ -104,8 +107,8 @@ export default function ModificationBuilder({
                       onClick={() => setActiveModification({ card })}
                       className="flex items-center p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all text-left group"
                     >
-                      <div className="w-10 h-14 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0 mr-3 shadow-sm">
-                        <img src={getImageUrl(card.konamiId)} alt="" className="w-full h-full object-cover" />
+                      <div style={{ width: 40, marginRight: 12, flexShrink: 0 }}>
+                        <CardImage konamiId={card.konamiId} card={card} alt={card.name} />
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">{card.name}</div>
@@ -123,11 +126,7 @@ export default function ModificationBuilder({
               {/* Left: Card Preview */}
               <div>
                 <div className="sticky top-0">
-                  <img 
-                    src={getImageUrl(activeModification.card.konamiId)} 
-                    alt={activeModification.card.name} 
-                    className="w-48 rounded-lg shadow-md mb-4"
-                  />
+                  <CardImage konamiId={activeModification.card.konamiId} card={activeModification.card} className="w-48 rounded-lg shadow-md mb-4" alt={activeModification.card.name} />
                   <div className="w-full space-y-2 text-sm">
                     <div className="font-bold text-gray-900 dark:text-white text-lg">{activeModification.card.name}</div>
                     <div className="flex justify-between text-gray-600 dark:text-gray-400 font-mono text-xs">

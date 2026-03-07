@@ -61,6 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           legendaryMonster: sourceClass.legendaryMonster,
           legendaryQuest: sourceClass.legendaryQuest,
           legendaryRelic: sourceClass.legendaryRelic,
+          parentClassId: sourceClass.id // Link as subclass
         }
       })
 
@@ -123,15 +124,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Copy Loot Pool Items
         if (pool.items.length > 0) {
-          await tx.lootPoolItem.createMany({
-            data: pool.items.map(item => ({
-              lootPoolId: newPool.id,
-              type: item.type,
-              cardId: item.cardId,
-              skillName: item.skillName,
-              skillDescription: item.skillDescription
-            }))
-          })
+          for (const item of pool.items) {
+            let newSkillId = null
+
+            // If the item contains a nested `skill` object, duplicate that skill (including modifications)
+            if (item.type === 'Skill' && (item as any).skill && (item as any).skill.id) {
+              const sourceSkill = await tx.skill.findUnique({
+                where: { id: (item as any).skill.id },
+                include: { modifications: true }
+              })
+
+              if (sourceSkill) {
+                const newSkill = await tx.skill.create({
+                  data: {
+                    name: sourceSkill.name,
+                    description: sourceSkill.description || '',
+                    classId: newClass.id,
+                    type: sourceSkill.type,
+                    isSellable: sourceSkill.isSellable
+                  }
+                })
+                newSkillId = newSkill.id
+
+                if (sourceSkill.modifications.length > 0) {
+                  await tx.skillCardModification.createMany({
+                    data: sourceSkill.modifications.map(mod => ({
+                      skillId: newSkill.id,
+                      cardId: mod.cardId,
+                      type: mod.type,
+                      highlightedText: mod.highlightedText,
+                      alteredText: mod.alteredText,
+                      note: mod.note
+                    }))
+                  })
+                }
+              }
+
+            // Otherwise, if item stores a skillName, create a simple Skill from that
+            } else if (item.type === 'Skill' && item.skillName) {
+              const created = await tx.skill.create({
+                data: {
+                  name: (item.skillName || 'Unnamed Skill') + ' (copy)',
+                  description: item.skillDescription || '',
+                  classId: newClass.id
+                }
+              })
+              newSkillId = created.id
+            }
+
+            // Persist loot pool item using skillName/skillDescription (schema no longer has skillId on LootPoolItem)
+            await tx.lootPoolItem.create({
+              data: {
+                lootPoolId: newPool.id,
+                type: item.type,
+                cardId: item.cardId,
+                skillName: item.skillName || undefined,
+                skillDescription: item.skillDescription || undefined
+              }
+            })
+          }
         }
       }
 

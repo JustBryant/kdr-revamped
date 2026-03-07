@@ -1,0 +1,34 @@
+{
+  "konamiId": 34124316,
+  "name": "Cyber Jar",
+  "desc": "FLIP: Destroy all monsters on the field, then both players reveal the top 5 cards from their Decks, then Special Summon all revealed Level 4 or lower monsters in face-up Attack Position or face-down Defense Position, also add any remaining cards to their hand. (If either player has less than 5 cards in their Deck, reveal as many as possible.)",
+  "type": "Flip Effect Monster",
+  "frameType": "effect",
+  "subtypes": [
+    "Rock",
+    "flip",
+    "effect"
+  ],
+  "race": "Rock",
+  "attribute": "DARK",
+  "atk": 900,
+  "def": 900,
+  "level": 3,
+  "archetype": null,
+  "scale": null,
+  "linkVal": null,
+  "linkMarkers": null,
+  "artworks": [
+    {
+      "id": 34124316,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/34124316.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/34124316.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/34124316.jpg"
+    }
+  ],
+  "primaryArtworkIndex": 0,
+  "imageUrl": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/34124316.jpg",
+  "imageUrlSmall": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/34124316.jpg",
+  "imageUrlCropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/34124316.jpg",
+  "ygoprodeckUrl": "https://ygoprodeck.com/card/cyber-jar-2900"
+}

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Player Inventory Prototype</title>
+  <style>
+    :root{
+      --bg:#F6EFE6;--panel:#FFF;--accent:#7A2F2F;--muted:#6B7280;--gold:#E8C063;--green:#2F7A4E;
+      --radius:10px;--gap:18px;--pad:16px;--max-left:440px;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#fbfbf9,#f3efe6);color:#1f2937}
+    .wrap{max-width:1200px;margin:28px auto;padding:20px}
+    .inventory{display:grid;grid-template-columns:var(--max-left) 1fr;gap:var(--gap)}
+
+    /* Left column */
+    .class-panel{background:var(--panel);border-radius:var(--radius);padding:var(--pad);box-shadow:0 6px 18px rgba(15,15,15,0.06);display:flex;flex-direction:column;gap:14px}
+    .art{width:100%;aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#e6f2ef,#f1e9e6);display:flex;align-items:center;justify-content:center}
+    .art svg{width:100%;height:100%;object-fit:cover}
+    .title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .class-title{font-size:20px;font-weight:700;margin:0}
+    .skill-sub{color:var(--muted);font-size:13px}
+
+    .box{background:#fbfaf8;border-radius:8px;padding:12px;border:1px solid rgba(0,0,0,0.04)}
+    .legend{border-left:4px solid var(--gold)}
+
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .stat{background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid rgba(0,0,0,0.04)}
+    .stat .label{font-size:12px;color:var(--muted)}
+    .stat .val{font-weight:700;font-size:16px;margin-top:6px}
+
+    .skills{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:#fff;border:1px solid rgba(0,0,0,0.06);padding:6px 10px;border-radius:999px;font-size:13px}
+
+    /* Right column */
+    .collections{display:flex;flex-direction:column;gap:12px}
+    .grid-panel{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .panel{background:var(--panel);border-radius:8px;padding:12px;min-height:160px;box-shadow:0 6px 12px rgba(10,10,10,0.04);display:flex;flex-direction:column}
+    .panel h3{margin:0 0 8px 0;display:flex;align-items:center;justify-content:space-between;font-size:16px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;overflow:auto;padding:6px;border-top:1px dashed rgba(0,0,0,0.03);height:220px}
+    .card-tile{background:#fff;border-radius:8px;padding:8px;border:1px solid rgba(0,0,0,0.04);display:flex;gap:8px;align-items:center}
+    .thumb{width:44px;height:44px;border-radius:6px;background:linear-gradient(135deg,#eef2ff,#fff)}
+    .card-meta{font-size:13px}
+    .card-meta .name{font-weight:600}
+    .count{margin-left:auto;background:#111827;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
+
+    .treasures{background:var(--panel);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;overflow:auto}
+    .treasure{background:linear-gradient(180deg,#fff,#fbf8f6);padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);font-size:13px}
+
+    /* Responsive */
+    @media (max-width:1024px){.inventory{grid-template-columns:360px 1fr}}
+    @media (max-width:800px){
+      .inventory{grid-template-columns:1fr}
+      .grid-panel{grid-template-columns:1fr}
+      .cards{height:180px}
+    }
+
+    /* small utilities */
+    .muted{color:var(--muted)}
+    .small{font-size:13px}
+    button.icon{border:0;background:transparent;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="inventory">
+
+      <aside class="class-panel">
+        <div class="art" role="img" aria-label="Class artwork">
+          <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#dbeaf0"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="#345">Class Image</text></svg>
+        </div>
+
+        <div>
+          <div class="title-row">
+            <div>
+              <h1 class="class-title">Velociraptor</h1>
+              <div class="skill-sub">Quick Strike — attacks first in battle</div>
+            </div>
+            <div class="small muted">Player: Example</div>
+          </div>
+        </div>
+
+        <div class="box legend">
+          <strong>Legendary Quest</strong>
+          <div class="small muted">You can destroy 1 Dinosaur monster you control. Special Summon "Absolute King - Megapulnder" from your hand.</div>
+        </div>
+
+        <div class="box">
+          <strong>Legendary Relic</strong>
+          <div class="small muted">(Once per turn) If a non-Effect monster(s) you control is destroyed by a card effect: You can Special Summon 1 Level 4 or lower Dinosaur monster from your Deck.</div>
+        </div>
+
+        <div>
+          <div class="small muted">Stats</div>
+          <div class="stats" aria-hidden="false">
+            <div class="stat"><div class="label">DEX</div><div class="val">0</div></div>
+            <div class="stat"><div class="label">CON</div><div class="val">5</div></div>
+            <div class="stat"><div class="label">STR</div><div class="val">8</div></div>
+            <div class="stat"><div class="label">INT</div><div class="val">0</div></div>
+            <div class="stat"><div class="label">CHA</div><div class="val">0</div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="small muted">Skills</div>
+          <div class="skills">
+            <button class="chip">Pirate Soul</button>
+            <button class="chip">Tank-Up</button>
+            <button class="chip">Strong Arm</button>
+            <button class="chip">Utopic Goober</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="collections">
+        <div class="grid-panel">
+          <section class="panel" id="monsters">
+            <h3>Monsters <small class="muted">(24)</small></h3>
+            <div class="cards">
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Sabersaurus</div><div class="muted small">Dinosaur</div></div><div class="count">2</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Mighty Dino King</div><div class="muted small">Dinosaur</div></div><div class="count">1</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Rescue Rabbit</div><div class="muted small">Dinosaur</div></div><div class="count">3</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Black Tyranno</div><div class="muted small">Dinosaur</div></div><div class="count">1</div></div>
+            </div>
+          </section>
+
+          <section class="panel" id="spells">
+            <h3>Spells <small class="muted">(12)</small></h3>
+            <div class="cards">
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Jurassic World</div><div class="muted small">Spell</div></div><div class="count">1</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Pot of Avarice</div><div class="muted small">Spell</div></div><div class="count">2</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Ground Xeno</div><div class="muted small">Spell</div></div><div class="count">1</div></div>
+            </div>
+          </section>
+
+          <section class="panel" id="traps">
+            <h3>Traps <small class="muted">(6)</small></h3>
+            <div class="cards">
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Paleozoic Canadia</div><div class="muted small">Trap</div></div><div class="count">1</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Bottomless Trap Hole</div><div class="muted small">Trap</div></div><div class="count">1</div></div>
+            </div>
+          </section>
+
+          <section class="panel" id="extra">
+            <h3>Extra Deck <small class="muted">(4)</small></h3>
+            <div class="cards">
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Megalosmasher X</div><div class="muted small">Fusion</div></div><div class="count">1</div></div>
+              <div class="card-tile"><div class="thumb"></div><div class="card-meta"><div class="name">Dyno Master</div><div class="muted small">Synchro</div></div><div class="count">1</div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="treasures" aria-label="Treasures">
+          <div class="treasure">Gold x 120</div>
+          <div class="treasure">Gem-Knight Pearl x1</div>
+          <div class="treasure">Pragmal x2</div>
+          <div class="treasure">Paleozoic Opabinia x3</div>
+        </section>
+      </main>
+
+    </div>
+  </div>
+
+  <script>
+    // Lightweight interactions: collapsible panels for mobile (not visualized here)
+    document.querySelectorAll('.panel h3').forEach(h=>{
+      h.addEventListener('click',()=>{
+        const c=h.parentElement.querySelector('.cards');
+        if(window.innerWidth<800){
+          c.style.display = c.style.display==='none'? 'grid':'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

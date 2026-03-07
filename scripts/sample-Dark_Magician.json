@@ -1,0 +1,81 @@
+{
+  "konamiId": 46986414,
+  "name": "Dark Magician",
+  "desc": "''The ultimate wizard in terms of attack and defense.''",
+  "type": "Normal Monster",
+  "frameType": "normal",
+  "subtypes": [
+    "Spellcaster",
+    "Normal"
+  ],
+  "race": "Spellcaster",
+  "attribute": "DARK",
+  "atk": 2500,
+  "def": 2100,
+  "level": 7,
+  "archetype": "Dark Magician",
+  "scale": null,
+  "linkVal": null,
+  "linkMarkers": null,
+  "artworks": [
+    {
+      "id": 46986414,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986414.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986414.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986414.jpg"
+    },
+    {
+      "id": 46986415,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986415.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986415.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986415.jpg"
+    },
+    {
+      "id": 46986416,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986416.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986416.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986416.jpg"
+    },
+    {
+      "id": 46986417,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986417.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986417.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986417.jpg"
+    },
+    {
+      "id": 46986418,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986418.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986418.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986418.jpg"
+    },
+    {
+      "id": 46986419,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986419.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986419.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986419.jpg"
+    },
+    {
+      "id": 36996508,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/36996508.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/36996508.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/36996508.jpg"
+    },
+    {
+      "id": 46986420,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986420.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986420.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986420.jpg"
+    },
+    {
+      "id": 46986421,
+      "image_url": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986421.jpg",
+      "image_url_small": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986421.jpg",
+      "image_url_cropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986421.jpg"
+    }
+  ],
+  "primaryArtworkIndex": 0,
+  "imageUrl": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/full_tcg/46986414.jpg",
+  "imageUrlSmall": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/small_tcg/46986414.jpg",
+  "imageUrlCropped": "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/46986414.jpg",
+  "ygoprodeckUrl": "https://ygoprodeck.com/card/dark-magician-4003"
+}

@@ -6,7 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await fetch('https://api.github.com/repos/JustBryant/card-images/contents/class_images')
+    const response = await fetch('https://api.github.com/repos/JustBryant/KDR-Revamped-Images/contents/class_images', { headers: { Accept: 'application/vnd.github.v3+json' } })
     
     if (!response.ok) {
       console.error('GitHub API Error:', response.status, response.statusText)
@@ -22,7 +22,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter((item: any) => item.type === 'file' && /\.(jpg|jpeg|png|webp)$/i.test(item.name))
       .map((item: any) => item.name)
 
-    res.status(200).json(images)
+    // Cache for short period at CDN
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=59')
+    return res.status(200).json(images)
   } catch (error) {
     console.error('Error fetching class images:', error)
     res.status(500).json({ message: 'Failed to fetch class images' })

@@ -14,12 +14,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'DELETE') {
     try {
-      await prisma.lootItem.delete({
-        where: {
-          id: String(id)
-        }
+      // Delete an Item of type TREASURE instead of legacy LootItem
+      await prisma.item.delete({
+        where: { id: String(id) }
       })
-      return res.status(200).json({ message: 'Treasure deleted' })
+      return res.status(200).json({ message: 'Treasure (Item) deleted' })
     } catch (error) {
       console.error('Error deleting treasure:', error)
       return res.status(500).json({ error: 'Failed to delete treasure' })

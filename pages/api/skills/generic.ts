@@ -122,9 +122,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      await prisma.skill.delete({
-        where: { id }
+      // Use a transaction to clean up relations before deleting the skill
+      await prisma.$transaction(async (tx) => {
+        // 1. Delete SkillCardModifications
+        await tx.skillCardModification.deleteMany({
+          where: { skillId: id }
+        });
+
+        // 2. Clear Skill-to-Card associations (providesCards)
+        // This is a many-to-many relation in the schema: providesCards Card[] @relation("SkillProvidesCards")
+        // We need to disconnect the skill from any cards it provides.
+        await tx.skill.update({
+          where: { id },
+          data: {
+            providesCards: {
+              set: []
+            },
+            decks: {
+              set: []
+            }
+          }
+        });
+
+        // 3. Handle LootPoolItem references
+        // Look for LootPoolItems that reference this skill and nullify the skillId or delete them
+        await tx.lootPoolItem.updateMany({
+          where: { skillId: id },
+          data: { skillId: null }
+        });
+
+        // 4. Finally delete the skill
+        await tx.skill.delete({
+          where: { id }
+        });
       });
+
       return res.status(200).json({ message: 'Skill deleted' });
     } catch (error) {
       console.error('Error deleting generic skill:', error);

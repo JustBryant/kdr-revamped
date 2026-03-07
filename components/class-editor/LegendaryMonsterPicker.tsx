@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { CARD_IMAGE_BASE_URL } from '../../lib/constants'
+import CardImage, { selectArtworkUrl } from '../common/CardImage'
 
 interface Card {
   id: string
@@ -62,7 +62,7 @@ export default function LegendaryMonsterPicker({ selectedCard, onChange }: Legen
     setShowResults(false)
   }
 
-  const getImageUrl = (konamiId: number) => `${CARD_IMAGE_BASE_URL}/${konamiId}.jpg`
+  const getImageUrl = (konamiId: number) => selectArtworkUrl(undefined, konamiId) || undefined
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-fit sticky top-8">
@@ -93,12 +93,7 @@ export default function LegendaryMonsterPicker({ selectedCard, onChange }: Legen
                   className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                 >
                   <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                     <img 
-                        src={getImageUrl(card.konamiId)} 
-                        alt={card.name} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).src = '/card-back.jpg' }}
-                      />
+                    <CardImage card={card} konamiId={card.konamiId} alt={card.name} className="w-full object-cover" />
                   </div>
                   <div className="truncate">
                     <div className="font-medium text-sm text-gray-900 dark:text-white truncate">{card.name}</div>
@@ -116,12 +111,7 @@ export default function LegendaryMonsterPicker({ selectedCard, onChange }: Legen
       ) : (
         <div className="flex flex-col items-center">
           <div className="relative w-full mb-4 rounded-lg overflow-hidden shadow-md group">
-            <img 
-              src={getImageUrl(selectedCard.konamiId)} 
-              alt={selectedCard.name} 
-              className="w-full h-auto block"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/card-back.jpg' }}
-            />
+            <CardImage card={selectedCard} konamiId={selectedCard.konamiId} alt={selectedCard.name} className="w-full h-auto block" />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button 
                 onClick={() => setSelectedCard(null)}

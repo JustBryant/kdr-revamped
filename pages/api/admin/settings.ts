@@ -12,14 +12,61 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      // Find the first settings record, or create default if none exists
+      // Optional format slug query param to support per-format settings
+      const formatSlug = typeof req.query.format === 'string' ? req.query.format : undefined;
+
+      // If a format is provided, ensure the Format exists and fetch its settings
+      if (formatSlug) {
+        const format = await prisma.format.findUnique({ where: { slug: formatSlug } });
+        if (!format) {
+          return res.status(404).json({ error: 'Format not found' })
+        }
+
+        // Return existing settings if present, otherwise create default settings and persist to the Format.settings JSON
+        if (format.settings) return res.status(200).json(format.settings)
+
+        const defaultSettings = {
+          levelXpCurve: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500],
+          classStarterCount: 1,
+          classStarterCost: 50,
+          classStarterMinLevel: 1,
+          classMidCount: 1,
+          classMidCost: 100,
+          classMidMinLevel: 3,
+          classHighCount: 1,
+          classHighCost: 200,
+          classHighMinLevel: 5,
+          genericStarterCount: 1,
+          genericStarterCost: 50,
+          genericStarterMinLevel: 1,
+          genericMidCount: 1,
+          genericMidCost: 100,
+          genericMidMinLevel: 3,
+          genericHighCount: 1,
+          genericHighCost: 200,
+          genericHighMinLevel: 5,
+          trainingCost: 50,
+          trainingXp: 100,
+          treasureRarityWeights: [70, 20, 8, 2],
+          treasureOfferCount: 1,
+          xpPerRound: 100,
+          goldPerRound: 50,
+          skillUnlockLevels: [2, 5, 8],
+          skillSelectionCount: 3
+        }
+
+        const updated = await prisma.format.update({ where: { id: format.id }, data: { settings: defaultSettings } })
+        return res.status(200).json(updated.settings)
+
+      }
+
+      // No format specified: legacy singleton behavior using GameSettings table
       let settings = await prisma.gameSettings.findFirst()
 
       if (!settings) {
         settings = await prisma.gameSettings.create({
           data: {
-            levelXpCurve: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500], // Default curve
-            // Class pools
+            levelXpCurve: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500],
             classStarterCount: 1,
             classStarterCost: 50,
             classStarterMinLevel: 1,
@@ -29,7 +76,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             classHighCount: 1,
             classHighCost: 200,
             classHighMinLevel: 5,
-            // Generic pools
             genericStarterCount: 1,
             genericStarterCost: 50,
             genericStarterMinLevel: 1,
@@ -39,26 +85,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             genericHighCount: 1,
             genericHighCost: 200,
             genericHighMinLevel: 5,
-            // Training
             trainingCost: 50,
             trainingXp: 100,
-            // Treasures - default weights for rarities [C, R, SR, UR]
             treasureRarityWeights: [70, 20, 8, 2],
-            // How many treasures to offer when rolling
             treasureOfferCount: 1,
-            // Rewards
             xpPerRound: 100,
             goldPerRound: 50,
-            // Skills
-            skillUnlockLevels: [2, 5, 8], // Default skill unlock levels
+            skillUnlockLevels: [2, 5, 8],
             skillSelectionCount: 3
           }
         })
       }
 
       return res.status(200).json(settings)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching settings:', error)
+      if (process.env.NODE_ENV === 'development') return res.status(500).json({ error: error.message, stack: error.stack })
       return res.status(500).json({ error: 'Failed to fetch settings' })
     }
   }
@@ -66,6 +108,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'PUT') {
     try {
       console.debug('PUT /api/admin/settings body:', req.body);
+      const formatSlug = typeof req.query.format === 'string' ? req.query.format : undefined;
+      let targetFormatId: string | undefined = undefined;
+
+      if (formatSlug) {
+        const format = await prisma.format.findUnique({ where: { slug: formatSlug } });
+        if (!format) return res.status(404).json({ error: 'Format not found' })
+        targetFormatId = format.id;
+      }
       const { 
         levelXpCurve, 
         classStarterCount, classStarterCost, classStarterMinLevel,
@@ -92,27 +142,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         classStarterCount: safeInt(classStarterCount, 1),
         classStarterCost: safeInt(classStarterCost, 50),
         classStarterMinLevel: safeInt(classStarterMinLevel, 1),
-        
+
         classMidCount: safeInt(classMidCount, 1),
         classMidCost: safeInt(classMidCost, 100),
         classMidMinLevel: safeInt(classMidMinLevel, 3),
-        
+
         classHighCount: safeInt(classHighCount, 1),
         classHighCost: safeInt(classHighCost, 200),
         classHighMinLevel: safeInt(classHighMinLevel, 5),
-        
+
         genericStarterCount: safeInt(genericStarterCount, 1),
         genericStarterCost: safeInt(genericStarterCost, 50),
         genericStarterMinLevel: safeInt(genericStarterMinLevel, 1),
-        
+
         genericMidCount: safeInt(genericMidCount, 1),
         genericMidCost: safeInt(genericMidCost, 100),
         genericMidMinLevel: safeInt(genericMidMinLevel, 3),
-        
+
         genericHighCount: safeInt(genericHighCount, 1),
         genericHighCost: safeInt(genericHighCost, 200),
         genericHighMinLevel: safeInt(genericHighMinLevel, 5),
-        
+
         trainingCost: safeInt(trainingCost, 50),
         trainingXp: safeInt(trainingXp, 100),
         // Treasure weights: ensure array of numbers
@@ -132,7 +182,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         skillSelectionCount: safeInt(skillSelectionCount, 3)
       };
 
-      // Update the first record found (singleton pattern)
+      // Update or create for the target format (persist to Format.settings), otherwise use GameSettings singleton
+      if (targetFormatId) {
+        const format = await prisma.format.findUnique({ where: { id: targetFormatId } })
+        if (!format) return res.status(404).json({ error: 'Format not found' })
+        const updated = await prisma.format.update({ where: { id: targetFormatId }, data: { settings: data } })
+        return res.status(200).json(updated.settings)
+      }
+
+      // Legacy singleton behavior
       const firstSettings = await prisma.gameSettings.findFirst()
       
       if (firstSettings) {
@@ -142,15 +200,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
         return res.status(200).json(updated)
       } else {
-        // Should not happen if GET is called first, but handle anyway
-        const created = await prisma.gameSettings.create({
-          data
-        })
+        const created = await prisma.gameSettings.create({ data })
         return res.status(200).json(created)
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating settings:', error)
+      if (process.env.NODE_ENV === 'development') return res.status(500).json({ error: error.message, stack: error.stack })
       return res.status(500).json({ error: 'Failed to update settings' })
     }
   }

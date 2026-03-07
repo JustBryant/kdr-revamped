@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../lib/prisma'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export default async function handler(
   req: NextApiRequest,
@@ -29,6 +32,15 @@ export default async function handler(
       where: { email: verificationToken.identifier },
       data: { emailVerified: new Date() }
     })
+
+    // Also set Neon auth user's verified timestamp if neon_auth exists
+    try {
+      const { setEmailVerified } = await import('../../../lib/neonAuth')
+      await setEmailVerified(pool, verificationToken.identifier)
+    } catch (e) {
+      // If the neon_auth schema/table doesn't exist or update fails, log and continue
+      console.warn('Failed to update neon_auth.users email_verified_at:', (e as any).message || e)
+    }
 
     // Delete Token
     await prisma.verificationToken.delete({

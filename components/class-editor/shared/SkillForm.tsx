@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Card, Skill, SkillModification } from '../../../types/class-editor'
 import ModificationBuilder from './ModificationBuilder'
 import CardDescription from './CardDescription'
-import { CARD_IMAGE_BASE_URL } from '../../../lib/constants'
+import CardPreview from './CardPreview'
+import CardImage, { selectArtworkUrl } from '../../common/CardImage'
 
-const getImageUrl = (konamiId: number) => `${CARD_IMAGE_BASE_URL}/${konamiId}.jpg`
+const getImageUrl = (konamiId: number) => selectArtworkUrl(undefined, konamiId) || undefined
 
 interface SkillFormProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface SkillFormProps {
   onSave: (skill: Skill) => void
   initialSkill?: Partial<Skill> | null
   title?: string
+  formatVariant?: string | null
 }
 
 export default function SkillForm({ 
@@ -19,7 +21,8 @@ export default function SkillForm({
   onClose, 
   onSave, 
   initialSkill,
-  title = 'Edit Skill'
+  title = 'Edit Skill',
+  formatVariant
 }: SkillFormProps) {
   const [skillForm, setSkillForm] = useState<Partial<Skill>>({
     name: '',
@@ -66,7 +69,8 @@ export default function SkillForm({
       if (searchQuery.length >= 2) {
         setIsSearching(true)
         try {
-          const res = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}`)
+          const variantParam = formatVariant ? `&variant=${encodeURIComponent(formatVariant)}` : ''
+          const res = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}${variantParam}`)
           const data = await res.json()
           setSearchResults(data)
         } catch (error) {
@@ -80,7 +84,7 @@ export default function SkillForm({
     }, 500)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery])
+  }, [searchQuery, formatVariant])
 
   const handleSaveModification = (mod: SkillModification) => {
     setSkillForm(prev => {
@@ -171,21 +175,15 @@ export default function SkillForm({
                     {skillForm.modifications.map((mod, idx) => (
                       <div 
                         key={idx} 
-                        className="flex items-center p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md group relative cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        className="flex items-center p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md group relative cursor-default transition-colors"
                         onClick={() => {
                           setActiveModification(mod)
                           setEditingModIndex(idx)
                           setIsModBuilderOpen(true)
                         }}
-                        onMouseEnter={(e) => {
-                          setHoveredCard({ card: mod.card, modification: mod })
-                          setMousePos({ x: e.clientX, y: e.clientY })
-                        }}
-                        onMouseMove={handleMouseMove}
-                        onMouseLeave={() => setHoveredCard(null)}
                       >
-                        <div className="w-8 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0 mr-3">
-                          <img src={getImageUrl(mod.card.konamiId)} alt="" className="w-full h-full object-cover" />
+                        <div style={{ width: 36, marginRight: 12, flexShrink: 0 }}>
+                          <CardImage konamiId={mod.card.konamiId} card={mod.card} alt={mod.card.name} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">{mod.card.name}</div>
@@ -216,6 +214,19 @@ export default function SkillForm({
                   </div>
                 )}
               </div>
+              {/* Unique Round (for UNIQUE skills) */}
+              {((skillForm.type === 'UNIQUE') || title.toLowerCase().includes('unique')) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unique Round (optional)</label>
+                  <input
+                    type="number"
+                    value={skillForm.uniqueRound ?? ''}
+                    onChange={e => setSkillForm(prev => ({ ...prev, uniqueRound: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g. 3"
+                  />
+                </div>
+              )}
 
               {/* Provides Cards */}
               <div className="space-y-2">
@@ -228,17 +239,10 @@ export default function SkillForm({
                     {skillForm.providesCards.map((card, idx) => (
                       <div 
                         key={idx} 
-                        className="flex items-center p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-md relative group"
-                        onMouseEnter={(e) => {
-                          const modification = skillForm.modifications?.find(m => m.card.id === card.id)
-                          setHoveredCard({ card, modification })
-                          setMousePos({ x: e.clientX, y: e.clientY })
-                        }}
-                        onMouseMove={handleMouseMove}
-                        onMouseLeave={() => setHoveredCard(null)}
+                        className="flex items-center p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-md relative group cursor-default"
                       >
-                        <div className="w-8 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0 mr-3">
-                          <img src={getImageUrl(card.konamiId)} alt="" className="w-full h-full object-cover" />
+                        <div style={{ width: 36, marginRight: 12, flexShrink: 0 }}>
+                          <CardImage konamiId={card.konamiId} card={card} alt={card.name} />
                         </div>
                         <div className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">{card.name}</div>
                         <button 
@@ -300,35 +304,19 @@ export default function SkillForm({
         onSave={handleSaveModification}
         initialModification={activeModification}
         title={editingModIndex !== null ? 'Edit Modification' : 'Add Card Modification'}
+        formatVariant={formatVariant}
       />
 
       {/* Tooltip */}
       {hoveredCard && (
-        <div 
-          className="fixed z-[70] w-72 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 pointer-events-none"
-          style={{ 
+        <div
+          className="fixed z-[70] w-72 pointer-events-none"
+          style={{
             top: Math.min(mousePos.y + 20, (typeof window !== 'undefined' ? window.innerHeight : 1000) - 450),
             left: Math.min(mousePos.x + 20, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 320)
           }}
         >
-          <img 
-            src={getImageUrl(hoveredCard.card.konamiId)} 
-            alt={hoveredCard.card.name} 
-            className="w-full rounded-lg shadow-md mb-4"
-          />
-          <div className="space-y-2 text-sm">
-            <div className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{hoveredCard.card.name}</div>
-            <div className="text-gray-600 dark:text-gray-400 font-medium">{hoveredCard.card.type}</div>
-            {hoveredCard.card.atk !== undefined && (
-              <div className="flex justify-between text-gray-700 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                <span>ATK/{hoveredCard.card.atk === -1 ? '?' : hoveredCard.card.atk}</span>
-                {hoveredCard.card.def !== undefined && <span>DEF/{hoveredCard.card.def === -1 ? '?' : hoveredCard.card.def}</span>}
-              </div>
-            )}
-            <div className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <CardDescription card={hoveredCard.card} modifications={hoveredCard.modification ? [hoveredCard.modification] : undefined} />
-            </div>
-          </div>
+          <CardPreview card={hoveredCard} className="w-72" />
         </div>
       )}
     </>

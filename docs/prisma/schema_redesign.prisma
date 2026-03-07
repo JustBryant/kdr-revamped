@@ -1,0 +1,370 @@
+// Proposed Prisma schema for the canonical KDR redesign.
+// Use this as a review artifact — don't apply directly to production without a migration plan.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ItemType {
+  CARD
+  SKILL
+  TREASURE
+  RELIC
+  STAT
+  OTHER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String?  @unique
+  email         String?  @unique
+  name          String?
+  password      String?
+  role          Role     @default(USER)
+  image         String?
+
+  // relations
+  playerItems   PlayerItem[]
+  classStats    PlayerClassStats[]
+  stats         PlayerStats?
+  kdrPlayers    KDRPlayer[]
+  createdKdrs   KDR[]      @relation("createdBy")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// Canonical item definition used across the system. Keep metadata flexible.
+model Item {
+  id          String    @id @default(cuid())
+  type        ItemType
+  externalId  String?   @unique
+  name        String
+  description String?
+  metadata    Json?
+  isSellable  Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // relations
+  classItems  ClassItem[]
+  playerItems PlayerItem[]
+  lootPoolItems LootPoolItem[]
+}
+
+// Per-user inventory entry. kdrPlayerId scopes an item to a specific KDR run.
+model PlayerItem {
+  id          String   @id @default(cuid())
+  userId      String
+  kdrPlayerId String?  // nullable: global vs run-scoped
+  itemId      String
+  qty         Int      @default(1)
+  origin      String   // e.g. STARTER | SHOP | TREASURE | BACKFILL
+  locked      Boolean  @default(false)
+  metadata    Json?
+  acquiredAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kdrPlayer  KDRPlayer? @relation(fields: [kdrPlayerId], references: [id], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([kdrPlayerId])
+  @@index([itemId])
+}
+
+model Class {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String?    @unique
+  description String?
+  image       String?
+
+  // relations
+  classItems  ClassItem[]
+  lootPools   LootPool[]
+  skills      Skill[]
+  decks       Deck[]
+  kdrPlayers  KDRPlayer[]
+}
+
+model ClassItem {
+  id       String  @id @default(cuid())
+  classId  String
+  itemId   String
+  category String  // STARTER, UNIQUE, LEGENDARY, TIP
+
+  classRef Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  item     Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, itemId, category])
+}
+
+model LootPool {
+  id          String         @id @default(cuid())
+  name        String
+  formatId    String?
+  classId     String?
+  tier        String         @default("STARTER")
+  tax         Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  format      Format?        @relation(fields: [formatId], references: [id], onDelete: SetNull)
+  classRef    Class?         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  items       LootPoolItem[]
+}
+
+model LootPoolItem {
+  id         String  @id @default(cuid())
+  lootPoolId String
+  itemId     String
+  weight     Int     @default(1)
+  createdAt  DateTime @default(now())
+
+  lootPool  LootPool @relation(fields: [lootPoolId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+// Keep Card & Skill as optional denormalized convenience tables to ease migration.
+model Card {
+  id            String   @id @default(cuid())
+  externalRef   String?  @unique
+  name          String
+  data          Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  cost        Int      @default(0)
+  type        String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modifications SkillCardModification[]
+}
+
+model SkillCardModification {
+  id              String  @id @default(cuid())
+  skillId         String
+  cardId          String
+  type            String
+  highlightedText String?
+  alteredText     String?
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  card  Card  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
+
+model Format {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  settings    GameSettings?
+  classes     Class[]
+  lootPools   LootPool[]
+  kdrs        KDR[]
+}
+
+model GameSettings {
+  id                     String   @id @default(cuid())
+  formatId               String?  @unique
+  levelXpCurve           Int[]
+  skillSelectionCount    Int      @default(3)
+  skillUnlockLevels      Int[]
+  trainingCost           Int      @default(50)
+  trainingXp             Int      @default(100)
+  treasureRarityWeights  Int[]
+  treasureOfferCount     Int      @default(1)
+  goldPerRound           Int      @default(50)
+  xpPerRound             Int      @default(100)
+  modifiers              Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  format Format? @relation(fields: [formatId], references: [id], onDelete: Cascade)
+}
+
+model KDR {
+  id              String      @id @default(cuid())
+  name            String
+  slug            String      @unique
+  formatId        String?
+  settingsSnapshot Json?
+  status          String      @default("OPEN")
+  playerCount     Int?
+  createdById     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  format    Format?     @relation(fields: [formatId], references: [id], onDelete: SetNull)
+  creator   User?       @relation("createdBy", fields: [createdById], references: [id], onDelete: SetNull)
+  players   KDRPlayer[]
+  rounds    KDRRound[]
+  matches   KDRMatch[]
+}
+
+model KDRPlayer {
+  id           String   @id @default(cuid())
+  kdrId        String
+  userId       String
+  classId      String?
+  deckId       String?
+  shopState    Json?
+  shopComplete Boolean  @default(false)
+  gold         Int      @default(0)
+  xp           Int      @default(0)
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  kdr     KDR     @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classRef Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
+  playerItems PlayerItem[]
+  playerAMatches KDRMatch[] @relation("playerA")
+  playerBMatches KDRMatch[] @relation("playerB")
+  wonMatches     KDRMatch[] @relation("winner")
+
+  @@unique([kdrId, userId])
+}
+
+model KDRRound {
+  id        String    @id @default(cuid())
+  kdrId     String
+  number    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  kdr     KDR      @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  matches KDRMatch[]
+}
+
+model KDRMatch {
+  id        String    @id @default(cuid())
+  kdrId     String
+  roundId   String?
+  playerAId String
+  playerBId String?
+  winnerId  String?
+  scoreA    Int       @default(0)
+  scoreB    Int       @default(0)
+  status    String    @default("SCHEDULED")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  kdr     KDR       @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  round   KDRRound? @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  playerA KDRPlayer  @relation("playerA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerB KDRPlayer? @relation("playerB", fields: [playerBId], references: [id], onDelete: Cascade)
+  winner  KDRPlayer? @relation("winner", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  @@index([kdrId])
+  @@index([roundId])
+}
+
+model PlayerStats {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  wins        Int @default(0)
+  losses      Int @default(0)
+  gamesPlayed Int @default(0)
+  elo         Int @default(1500)
+  givenLosses Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerClassStats {
+  id       String @id @default(cuid())
+  userId   String
+  classId  String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classRef Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  wins Int @default(0)
+  losses Int @default(0)
+  picks Int @default(0)
+  mostPickedCardId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, classId])
+}
+
+model Shopkeeper {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  dialogues    ShopkeeperDialogue[]
+  voiceLines   ShopkeeperVoiceLine[]
+}
+
+model ShopkeeperDialogue {
+  id           String   @id @default(cuid())
+  shopkeeperId String
+  type         String
+  text         String
+  createdAt    DateTime @default(now())
+
+  shopkeeper Shopkeeper @relation(fields: [shopkeeperId], references: [id], onDelete: Cascade)
+}
+
+model ShopkeeperVoiceLine {
+  id           String   @id @default(cuid())
+  shopkeeperId String
+  text         String
+  audioUrl     String?
+  createdAt    DateTime @default(now())
+
+  shopkeeper Shopkeeper @relation(fields: [shopkeeperId], references: [id], onDelete: Cascade)
+}
+
+// Simple deck model (keeps compatibility with previous code)
+model Deck {
+  id        String   @id @default(cuid())
+  name      String?
+  userId    String
+  classId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classRef Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  cards DeckCard[]
+}
+
+model DeckCard {
+  id       String @id @default(cuid())
+  deckId   String
+  cardId   String
+  qty      Int    @default(1)
+
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([deckId, cardId])
+}

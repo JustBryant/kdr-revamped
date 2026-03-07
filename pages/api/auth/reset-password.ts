@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../lib/prisma'
 import bcrypt from 'bcryptjs'
+import argon2 from 'argon2'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export default async function handler(
   req: NextApiRequest,
@@ -35,12 +39,21 @@ export default async function handler(
       return res.status(400).json({ message: 'Token expired' })
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    // Hash with argon2 and update Neon auth record
+    const hashedPassword = await argon2.hash(password)
 
-    // Update User Password
+    try {
+      const { updatePasswordByEmail } = await import('../../../lib/neonAuth')
+      await updatePasswordByEmail(pool, resetToken.identifier, hashedPassword)
+    } catch (e) {
+      console.error('Failed to update neon_auth password', e)
+      return res.status(500).json({ message: 'Failed to update password' })
+    }
+
+    // Ensure local record does not store password
     await prisma.user.update({
       where: { email: resetToken.identifier },
-      data: { password: hashedPassword }
+      data: { password: null }
     })
 
     // Delete Token

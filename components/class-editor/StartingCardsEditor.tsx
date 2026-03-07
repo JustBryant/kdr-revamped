@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { Card, DeckCard, Skill, SkillModification } from '../../types/class-editor'
 import CardDescription from './shared/CardDescription'
+import CardPreview from './shared/CardPreview'
 import SkillForm from './shared/SkillForm'
-import { CARD_IMAGE_BASE_URL } from '../../lib/constants'
+import CardGallery from './CardGallery'
+import CardImage, { selectArtworkUrl } from '../common/CardImage'
+import DeckFiltersPanel from '../DeckFiltersPanel'
+import { CardFiltersState, matchCard } from './shared/CardFilters'
+
+type CardFilterState = {
+  category?: 'Any' | 'Monster' | 'Spell' | 'Trap' | 'Extra'
+  attribute?: string | null
+  race?: string | null
+  levelMin?: number | null
+  levelMax?: number | null
+}
 
 // Alias for backward compatibility if needed, but prefer Skill
 export type StartingSkill = Skill
@@ -12,9 +24,14 @@ interface StartingCardsEditorProps {
   onChange: (deck: DeckCard[]) => void
   skills: Skill[]
   onSkillsChange: (skills: Skill[]) => void
+  send?: (payload: any) => void
+  me?: any
+  peers?: Record<string, any>
+  formatSlug?: string | null
+  formatVariant?: string | null
 }
 
-export default function StartingCardsEditor({ deck, onChange, skills, onSkillsChange }: StartingCardsEditorProps) {
+export default function StartingCardsEditor({ deck, onChange, skills, onSkillsChange, send, me, peers, formatSlug, formatVariant }: StartingCardsEditorProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'cards' | 'skills'>('cards')
   const [filterCategory, setFilterCategory] = useState<'Monster' | 'Spell' | 'Trap' | 'Extra' | null>(null)
@@ -24,6 +41,250 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
   const [searchResults, setSearchResults] = useState<Card[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null)
+  const cardCache = React.useRef<Record<string, any>>({})
+  const [filters, setFilters] = useState<CardFilterState>({ category: 'Any' })
+  const [filteredSearchResults, setFilteredSearchResults] = useState<Card[]>([])
+  const [isEnrichingResults, setIsEnrichingResults] = useState(false)
+
+  // Controlled filter state (lifted from DeckBuilderOverlay)
+  const [selectedSubtypes, setSelectedSubtypes] = useState<string[]>([])
+  const toggleSubtype = (s: string) => setSelectedSubtypes(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev,s])
+
+  const TYPES = [
+    'Spellcaster','Dragon','Zombie','Warrior','Beast-Warrior','Beast','Winged Beast','Machine',
+    'Fiend','Fairy','Insect','Dinosaur','Reptile','Fish','Sea Serpent','Aqua',
+    'Pyro','Thunder','Rock','Plant','Psychic','Wyrm','Cyberse','Divine-Beast','Illusion'
+  ]
+
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
+  const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])
+  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([])
+  const toggleAttribute = (a: string) => setSelectedAttributes(prev => prev.includes(a) ? prev.filter(x=>x!==a) : [...prev, a])
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([])
+  const toggleLevel = (lv: number) => setSelectedLevels(prev => prev.includes(lv) ? prev.filter(x=>x!==lv) : [...prev, lv])
+  const [selectedAbilities, setSelectedAbilities] = useState<string[]>([])
+  const toggleAbility = (ab: string) => setSelectedAbilities(prev => prev.includes(ab) ? prev.filter(x=>x!==ab) : [...prev, ab])
+
+  const [selectedPendulumScales, setSelectedPendulumScales] = useState<number[]>([])
+  const togglePendulumScale = (n: number) => setSelectedPendulumScales(prev => prev.includes(n) ? prev.filter(x=>x!==n) : [...prev, n])
+
+  const [selectedLinkRatings, setSelectedLinkRatings] = useState<number[]>([])
+  const toggleLinkRating = (n: number) => setSelectedLinkRatings(prev => prev.includes(n) ? prev.filter(x=>x!==n) : [...prev, n])
+
+  const ARROWS = ['NW','N','NE','W','E','SW','S','SE']
+  const [selectedLinkArrows, setSelectedLinkArrows] = useState<string[]>([])
+  const [linkArrowsMode, setLinkArrowsMode] = useState<'AND'|'OR'>('AND')
+  const toggleLinkArrow = (d: string) => setSelectedLinkArrows(prev => prev.includes(d) ? prev.filter(x=>x!==d) : [...prev, d])
+  const [hoveredLinkArrow, setHoveredLinkArrow] = useState<string | null>(null)
+
+  // ATK/DEF sliders
+  const [atkMin, setAtkMin] = useState<number>(0)
+  const [atkMax, setAtkMax] = useState<number>(5000)
+  const setAtkMinFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setAtkMin(0); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setAtkMin(Math.min(n, atkMax))
+  }
+  const setAtkMaxFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setAtkMax(5000); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setAtkMax(Math.max(n, atkMin))
+  }
+
+  const sliderRef = React.useRef<HTMLDivElement | null>(null)
+  const draggingRef = React.useRef<'min'|'max'|null>(null)
+
+  const clientXFromEvent = (e: MouseEvent | TouchEvent) => {
+    if ((e as TouchEvent).touches && (e as TouchEvent).touches.length) return (e as TouchEvent).touches[0].clientX
+    if ((e as TouchEvent).changedTouches && (e as TouchEvent).changedTouches.length) return (e as TouchEvent).changedTouches[0].clientX
+    return (e as MouseEvent).clientX
+  }
+
+  const onDragMove = (e: MouseEvent | TouchEvent) => {
+    if (!sliderRef.current) return
+    const rect = sliderRef.current.getBoundingClientRect()
+    const clientX = clientXFromEvent(e)
+    if (clientX == null) return
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const raw = Math.round((pct * 5000) / 100) * 100
+    if (draggingRef.current === 'min') {
+      const val = Math.min(raw, atkMax)
+      setAtkMin(val)
+    } else if (draggingRef.current === 'max') {
+      const val = Math.max(raw, atkMin)
+      setAtkMax(val)
+    }
+  }
+
+  const endDrag = () => {
+    draggingRef.current = null
+    window.removeEventListener('mousemove', onDragMove as any)
+    window.removeEventListener('mouseup', endDrag)
+    window.removeEventListener('touchmove', onDragMove as any)
+    window.removeEventListener('touchend', endDrag)
+  }
+
+  const startDrag = (handle: 'min'|'max') => (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    draggingRef.current = handle
+    window.addEventListener('mousemove', onDragMove as any)
+    window.addEventListener('mouseup', endDrag)
+    window.addEventListener('touchmove', onDragMove as any, { passive: false } as any)
+    window.addEventListener('touchend', endDrag)
+  }
+
+  React.useEffect(() => { return () => { endDrag() } }, [])
+
+  // DEF
+  const [defMin, setDefMin] = useState<number>(0)
+  const [defMax, setDefMax] = useState<number>(5000)
+  const setDefMinFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setDefMin(0); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setDefMin(Math.min(n, defMax))
+  }
+  const setDefMaxFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setDefMax(5000); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setDefMax(Math.max(n, defMin))
+  }
+
+  const defSliderRef = React.useRef<HTMLDivElement | null>(null)
+  const defDraggingRef = React.useRef<'min'|'max'|null>(null)
+
+  const defOnDragMove = (e: MouseEvent | TouchEvent) => {
+    if (!defSliderRef.current) return
+    const rect = defSliderRef.current.getBoundingClientRect()
+    const clientX = clientXFromEvent(e)
+    if (clientX == null) return
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const raw = Math.round((pct * 5000) / 100) * 100
+    if (defDraggingRef.current === 'min') {
+      const val = Math.min(raw, defMax)
+      setDefMin(val)
+    } else if (defDraggingRef.current === 'max') {
+      const val = Math.max(raw, defMin)
+      setDefMax(val)
+    }
+  }
+
+  const defEndDrag = () => {
+    defDraggingRef.current = null
+    window.removeEventListener('mousemove', defOnDragMove as any)
+    window.removeEventListener('mouseup', defEndDrag)
+    window.removeEventListener('touchmove', defOnDragMove as any)
+    window.removeEventListener('touchend', defEndDrag)
+  }
+
+  const defStartDrag = (handle: 'min'|'max') => (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    defDraggingRef.current = handle
+    window.addEventListener('mousemove', defOnDragMove as any)
+    window.addEventListener('mouseup', defEndDrag)
+    window.addEventListener('touchmove', defOnDragMove as any, { passive: false } as any)
+    window.addEventListener('touchend', defEndDrag)
+  }
+
+  React.useEffect(() => { return () => { defEndDrag() } }, [])
+
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
+      const getPrefers = () => !!(mq && mq.matches)
+      const getByClass = () => document?.documentElement?.classList?.contains('dark') || false
+      const update = () => setIsDark(getPrefers() || getByClass())
+      update()
+      if (mq && mq.addEventListener) mq.addEventListener('change', update)
+      else if (mq && mq.addListener) mq.addListener(update)
+      const obs = new MutationObserver(() => update())
+      obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+      return () => { if (mq && mq.removeEventListener) mq.removeEventListener('change', update); else if (mq && mq.removeListener) mq.removeListener(update); obs.disconnect() }
+    } catch (e) { setIsDark(false) }
+  }, [])
+
+  const resetAll = () => {
+    setSelectedSubtypes([])
+    setSelectedTypes([])
+    setSelectedAttributes([])
+    setSelectedLevels([])
+    setSelectedAbilities([])
+    setSelectedPendulumScales([])
+    setSelectedLinkRatings([])
+    setSelectedLinkArrows([])
+    setAtkMin(0)
+    setAtkMax(5000)
+    setDefMin(0)
+    setDefMax(5000)
+    setFilterOpen(false)
+  }
+
+  const enrichCard = async (c: any) => {
+    const key = String(c.id || c.konamiId || c.konami_id || '')
+    if (!key) return c
+    if (cardCache.current[key]) return { ...c, ...cardCache.current[key] }
+    try {
+      const res = await fetch(`/api/cards/${encodeURIComponent(key)}`)
+      if (!res.ok) return c
+      const data = await res.json()
+      cardCache.current[key] = data
+      return { ...c, ...data }
+    } catch (e) {
+      return c
+    }
+  }
+
+  // Enrich and filter searchResults when they or the filters change
+  useEffect(() => {
+    let mounted = true
+    const run = async () => {
+      if (!searchResults || searchResults.length === 0) {
+        if (mounted) setFilteredSearchResults([])
+        return
+      }
+      setIsEnrichingResults(true)
+      try {
+        const currentFilters: CardFiltersState = {
+          selectedAttributes: selectedAttributes,
+          selectedTypes: selectedTypes,
+          selectedSubtypes: selectedSubtypes,
+          selectedLevels: selectedLevels,
+          selectedLinkRatings: selectedLinkRatings,
+          selectedLinkArrows: selectedLinkArrows,
+          linkArrowsMode: linkArrowsMode,
+          selectedAbilities: selectedAbilities,
+          selectedPendulumScales: selectedPendulumScales,
+          atkMin,
+          atkMax,
+          defMin,
+          defMax,
+        }
+
+        const enriched = await Promise.all(searchResults.map(async (c) => {
+          // If card already has attribute/type fields, trust it; otherwise fetch detail
+          if ((c as any).attribute !== undefined && (c as any).type !== undefined) return c
+          try {
+            return await enrichCard(c)
+          } catch (e) {
+            return c
+          }
+        }))
+
+        const filtered = enriched.filter(c => matchCard(c, currentFilters))
+        if (mounted) setFilteredSearchResults(filtered)
+      } catch (e) {
+        if (mounted) setFilteredSearchResults([])
+      } finally {
+        if (mounted) setIsEnrichingResults(false)
+      }
+    }
+    run()
+    return () => { mounted = false }
+  }, [searchResults, selectedAttributes, selectedTypes, selectedSubtypes, selectedLevels, selectedLinkRatings, selectedLinkArrows, linkArrowsMode, selectedAbilities, selectedPendulumScales, atkMin, atkMax, defMin, defMax])
 
   // Skill Form State
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
@@ -53,9 +314,71 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
       if (searchQuery.length >= 2) {
         setIsSearching(true)
         try {
-          const res = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}`)
-          const data = await res.json()
-          setSearchResults(data)
+          // Prefer format-scoped search when formatSlug is available to avoid showing cards
+          // from other variants (e.g., Rush) that the format doesn't include.
+          if (formatSlug) {
+            const base = `/api/cards/for-format?slug=${encodeURIComponent(formatSlug)}&q=${encodeURIComponent(searchQuery)}`
+            const url = formatVariant ? `${base}&variant=${encodeURIComponent(formatVariant)}` : base
+            try {
+              let res = await fetch(url, { cache: 'no-store' })
+              if (res.ok) {
+                const data = await res.json()
+                setSearchResults(Array.isArray(data) ? data : [])
+              } else if (res.status === 304) {
+                // Not modified: if we have no results yet, retry with cache-buster
+                if (!searchResults || searchResults.length === 0) {
+                  const retryUrl = `${url}&cb=${Date.now()}`
+                  console.warn('StartingCardsEditor: 304 received, retrying', retryUrl)
+                  const r2 = await fetch(retryUrl, { cache: 'no-store' })
+                  if (r2.ok) {
+                    const d2 = await r2.json()
+                    setSearchResults(Array.isArray(d2) ? d2 : [])
+                  } else {
+                    console.warn('StartingCardsEditor retry failed', r2.status)
+                    setSearchResults([])
+                  }
+                } else {
+                  console.warn('StartingCardsEditor: 304 Not Modified for', url)
+                }
+              } else {
+                console.warn('StartingCardsEditor search failed', res.status)
+                setSearchResults([])
+              }
+            } catch (e) {
+              console.error('Error searching cards (format):', e)
+              setSearchResults([])
+            }
+          } else {
+            try {
+              const searchUrl = `/api/cards/search?q=${encodeURIComponent(searchQuery)}`
+              let res = await fetch(searchUrl, { cache: 'no-store' })
+              if (res.ok) {
+                const data = await res.json()
+                setSearchResults(Array.isArray(data) ? data : [])
+              } else if (res.status === 304) {
+                if (!searchResults || searchResults.length === 0) {
+                  const retryUrl = `${searchUrl}&cb=${Date.now()}`
+                  console.warn('StartingCardsEditor: 304 received on search, retrying', retryUrl)
+                  const r2 = await fetch(retryUrl, { cache: 'no-store' })
+                  if (r2.ok) {
+                    const d2 = await r2.json()
+                    setSearchResults(Array.isArray(d2) ? d2 : [])
+                  } else {
+                    console.warn('StartingCardsEditor search retry failed', r2.status)
+                    setSearchResults([])
+                  }
+                } else {
+                  console.warn('StartingCardsEditor: 304 Not Modified for search', searchUrl)
+                }
+              } else {
+                console.warn('StartingCardsEditor search failed', res.status)
+                setSearchResults([])
+              }
+            } catch (e) {
+              console.error('Error searching cards:', e)
+              setSearchResults([])
+            }
+          }
         } catch (error) {
           console.error('Error searching cards:', error)
         } finally {
@@ -92,8 +415,12 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
     setSkills(prev => prev.filter(s => s.id !== id))
   }
 
-  const getCardCategory = (type: string): 'Monster' | 'Spell' | 'Trap' | 'Extra' => {
-    const lowerType = type.toLowerCase()
+  const getCardCategory = (card: Card): 'Monster' | 'Spell' | 'Trap' | 'Extra' => {
+    const typeStr = (card.type || '').toString().toLowerCase().trim()
+    const descStr = (card.desc || '').toString().toLowerCase()
+
+    const lowerType = typeStr || descStr
+
     if (lowerType.includes('fusion') || lowerType.includes('synchro') || lowerType.includes('xyz') || lowerType.includes('link')) {
       return 'Extra'
     }
@@ -102,8 +429,82 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
     return 'Monster'
   }
 
+  // Filter helper functions (copied/trimmed from DeckBuilderOverlay)
+  const detectMainType = (c: any) => {
+    const token = ((c.cardType || c.type || c.categories || '')).toString().toLowerCase()
+    if (/\bspell\b/.test(token) || token.includes('spell card')) return 'Spell'
+    if (/\btrap\b/.test(token) || token.includes('trap card')) return 'Trap'
+    return 'Monster'
+  }
+
+  const cardHasSubtype = (c: any, subtype: string) => {
+    const s = (subtype || '').toString().toLowerCase()
+    const mt = detectMainType(c)
+
+    if (s === 'spell' || s === 'trap') return mt === (s === 'spell' ? 'Spell' : 'Trap')
+
+    if (s.includes(':')) {
+      const [cat, sub] = s.split(':')
+      if (cat && cat.toLowerCase() === 'spell' && mt !== 'Spell') return false
+      if (cat && cat.toLowerCase() === 'trap' && mt !== 'Trap') return false
+      const t = ((c.type || '') + ' ' + (c.subtype || '') + ' ' + (c.cardType || '') + ' ' + (c.race || '')).toString().toLowerCase()
+      return t.includes((sub || '').toLowerCase().replace('quick-play','quick'))
+    }
+
+    if (s === 'normal') {
+      if (mt !== 'Monster') return false
+      const t = ((c.type || '') + ' ' + (c.subtype || '') + ' ' + (c.cardType || '') + ' ' + (c.race || '')).toString().toLowerCase()
+      return /\bnormal\b/.test(t)
+    }
+
+    const monsterTokens = ['normal','effect','fusion','ritual','synchro','xyz','link','pendulum','toon','spirit','union','gemini','flip','tuner']
+    if (monsterTokens.includes(s) && mt !== 'Monster') return false
+
+    const t = ((c.type || '') + ' ' + (c.subtype || '') + ' ' + (c.cardType || '') + ' ' + (c.race || '')).toString().toLowerCase()
+    return t.includes(s.replace('quick-play','quick'))
+  }
+
+  const cardHasType = (c: any, type: string) => {
+    const raw = ((c.race || '') + ' ' + (c.type || '') + ' ' + (c.cardType || '') + ' ' + (c.categories || '')).toString()
+    const normalizeToken = (s: string) => s.toString().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const cardTok = normalizeToken(raw)
+    const selTok = normalizeToken(type)
+    return cardTok.includes(selTok)
+  }
+
+  const cardHasLevel = (c: any, lv: number) => {
+    const v = c.level ?? c.rank ?? null
+    if (v == null) return false
+    const n = parseInt(String(v), 10)
+    return !Number.isNaN(n) && n === lv
+  }
+
+  const cardHasLinkRating = (c: any, n: number) => {
+    const v = c.linkRating ?? c.link ?? c.linkval ?? null
+    if (v == null) return false
+    const num = parseInt(String(v), 10)
+    return !Number.isNaN(num) && num === n
+  }
+
+  const cardHasLinkArrow = (c: any, dir: string) => {
+    let arr = (c.linkArrows || c.arrows || c.link || '').toString().toLowerCase()
+    arr = arr.replace(/top[\s-]*left/g, 'nw').replace(/top[\s-]*right/g, 'ne')
+    arr = arr.replace(/bottom[\s-]*left/g, 'sw').replace(/bottom[\s-]*right/g, 'se')
+    arr = arr.replace(/top/g, 'n').replace(/bottom/g, 's').replace(/left/g, 'w').replace(/right/g, 'e')
+    arr = arr.replace(/\btl\b/g, 'nw').replace(/\btr\b/g, 'ne').replace(/\bbl\b/g, 'sw').replace(/\bbr\b/g, 'se')
+    const tokens = arr.split(/[^a-z0-9]+/)
+    const map: Record<string,string> = { NW: 'nw', N: 'n', NE: 'ne', W: 'w', E: 'e', SW: 'sw', S: 's', SE: 'se' }
+    const key = map[dir as keyof typeof map] || dir.toLowerCase()
+    return tokens.includes(key)
+  }
+
+  const cardHasAbility = (c: any, ability: string) => {
+    const txt = ((c.abilities || c.categories || c.type || c.desc || c.description || '')).toString().toLowerCase()
+    return txt.includes(ability.toLowerCase().replace(' ', '-')) || txt.includes(ability.toLowerCase())
+  }
+
   const addCard = (card: Card) => {
-    const category = getCardCategory(card.type)
+    const category = getCardCategory(card)
     
     setDeck(prev => {
       if (prev.some(c => c.id === card.id)) return prev
@@ -111,14 +512,16 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
     })
     setSearchQuery('')
     setSearchResults([])
+    // deck is broadcast by parent; no need to send action messages here
   }
 
   const removeCard = (cardId: string) => {
     setDeck(prev => prev.filter(c => c.id !== cardId))
+    // deck is broadcast by parent; no need to send action messages here
   }
 
 
-  const getImageUrl = (konamiId: number) => `${CARD_IMAGE_BASE_URL}/${konamiId}.jpg`
+  const getImageUrl = (konamiId: number) => selectArtworkUrl(undefined, konamiId) || undefined
 
   // Calculate effective skills including the one currently being edited
   const effectiveSkills = React.useMemo(() => {
@@ -134,16 +537,57 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
   }, [skills])
   const renderCardList = (category: 'Monster' | 'Spell' | 'Trap' | 'Extra') => {
     if (filterCategory && filterCategory !== category) return null
-    
-    const cards = deck.filter(c => c.category === category)
-    
-    if (cards.length === 0) return null
+
+    let cards = deck.filter(c => c.category === category)
+    // apply advanced filters
+    if (filters) {
+      if (filters.attribute) {
+        cards = cards.filter(c => String((c as any).attribute || '').toUpperCase() === String(filters.attribute).toUpperCase())
+      }
+      if (filters.race) {
+        cards = cards.filter(c => String((c as any).race || '').toLowerCase().includes(String(filters.race).toLowerCase()))
+      }
+    }
+
+    // Use centralized matchCard to evaluate lifted filters
+    const liftedState: CardFiltersState = {
+      selectedAttributes: selectedAttributes,
+      selectedTypes: selectedTypes,
+      selectedSubtypes: selectedSubtypes,
+      selectedLevels: selectedLevels,
+      selectedLinkRatings: selectedLinkRatings,
+      selectedLinkArrows: selectedLinkArrows,
+      linkArrowsMode: linkArrowsMode,
+      selectedAbilities: selectedAbilities,
+      selectedPendulumScales: selectedPendulumScales,
+      atkMin,
+      atkMax,
+      defMin,
+      defMax,
+    }
+
+    if (liftedState.selectedSubtypes && liftedState.selectedSubtypes.length > 0) {
+      try {
+        // Debug: use console.log so it's visible if console.debug is hidden
+        console.log('CardFilters: selectedSubtypes=', liftedState.selectedSubtypes)
+        for (let i = 0; i < Math.min(5, cards.length); i++) {
+          const c = cards[i]
+          console.log('CardFilters: sample', i, c.name, 'type=', c.type, 'match=', matchCard(c, liftedState))
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const filtered = cards.filter(c => matchCard(c, liftedState))
+
+    if (filtered.length === 0) return null
 
     return (
       <div className="mb-6">
         <div className="flex justify-between items-center mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
           <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            {category}s
+            {category}s <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({filtered.length}/{cards.length})</span>
           </h4>
           {filterCategory && (
             <button 
@@ -155,25 +599,20 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
           )}
         </div>
         <div className="grid grid-cols-1 gap-2">
-          {cards.map(card => (
+          {filtered.map(card => (
             <div 
               key={card.id} 
               className="group relative flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-md hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
-              onMouseEnter={() => setHoveredCard(card)}
-              onMouseLeave={() => setHoveredCard(null)}
+                onMouseEnter={async () => { setHoveredCard(await enrichCard(card)); if (send) send({ section: 'startingCards', data: { section: 'card', itemId: card.id, ts: Date.now(), user: me } }) }}
+                onMouseLeave={() => { setHoveredCard(null); if (send) send({ section: 'startingCards', data: { section: 'card', itemId: undefined, ts: Date.now(), user: me } }) }}
             >
               <div className="flex items-center space-x-3 overflow-hidden">
-                <div className="w-12 h-16 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                  <img 
-                    src={getImageUrl(card.konamiId)} 
-                    alt={card.name} 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/card-back.jpg' }} 
-                  />
-                </div>
+                    <div style={{ width: 40, flexShrink: 0 }}>
+                      <CardImage card={card} konamiId={card.konamiId} alt={card.name} className="w-full h-full object-cover" />
+                    </div>
                 <div className="min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white truncate">{card.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.type}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{card.type || getCardCategory(card)}</div>
                 </div>
               </div>
               
@@ -186,6 +625,12 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+                {/* show peer badges for this card if any */}
+                {(peers ? Object.values(peers).filter((p:any)=>p.section==='startingCards' && p.itemId===card.id) : []).map((p:any, i:number)=> (
+                  <div key={i} className="w-6 h-6 rounded-full overflow-hidden" style={{ background: (p.color || (()=>{let s=(p.user?.email||p.user?.name||''); let h=0; for(let ii=0;ii<s.length;ii++)h=(h*31+s.charCodeAt(ii))%360; return `hsl(${h} 70% 45%)`})()) || '#666' }} title={(p.user && p.user.name) || 'peer'}>
+                    {p.user?.image ? <img src={p.user.image} className="w-full h-full object-cover" alt={p.user?.name||'P'} /> : <div className="text-white text-xs font-bold flex items-center justify-center">{((p.user && p.user.name) || '?')[0]}</div>}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -337,33 +782,79 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                  
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Filters</div>
+                    <button onClick={() => setFilterOpen(true)} className="text-sm px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Open Filters</button>
+                    {filterOpen && (
+                      <DeckFiltersPanel
+                        isDark={isDark}
+                        setFilterOpen={setFilterOpen}
+                        selectedSubtypes={selectedSubtypes}
+                        toggleSubtype={toggleSubtype}
+                        selectedAttributes={selectedAttributes}
+                        toggleAttribute={toggleAttribute}
+                        TYPES={TYPES}
+                        selectedTypes={selectedTypes}
+                        toggleType={toggleType}
+                        selectedLevels={selectedLevels}
+                        toggleLevel={toggleLevel}
+                        selectedLinkRatings={selectedLinkRatings}
+                        toggleLinkRating={toggleLinkRating}
+                        selectedLinkArrows={selectedLinkArrows}
+                        toggleLinkArrow={toggleLinkArrow}
+                        hoveredLinkArrow={hoveredLinkArrow}
+                        setHoveredLinkArrow={setHoveredLinkArrow}
+                        linkArrowsMode={linkArrowsMode}
+                        selectedPendulumScales={selectedPendulumScales}
+                        togglePendulumScale={togglePendulumScale}
+                        atkMin={atkMin}
+                        atkMax={atkMax}
+                        setAtkMinFromInput={setAtkMinFromInput}
+                        setAtkMaxFromInput={setAtkMaxFromInput}
+                        sliderRef={sliderRef}
+                        startDrag={startDrag}
+                        defMin={defMin}
+                        defMax={defMax}
+                        setDefMinFromInput={setDefMinFromInput}
+                        setDefMaxFromInput={setDefMaxFromInput}
+                        defSliderRef={defSliderRef}
+                        defStartDrag={defStartDrag}
+                        selectedAbilities={selectedAbilities}
+                        toggleAbility={toggleAbility}
+                        resetAll={resetAll}
+                        onCancel={() => setFilterOpen(false)}
+                      />
+                    )}
+                  </div>
                   {/* Search Results Dropdown */}
-                  {searchResults.length > 0 && (
-                    <div className="absolute z-20 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-[60vh] overflow-y-auto">
-                      {searchResults.map(card => (
-                        <button
-                          key={card.id}
-                          onClick={() => addCard(card)}
-                          onMouseEnter={() => setHoveredCard(card)}
-                          className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors"
-                        >
-                          <div className="w-10 h-14 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                            <img 
-                              src={getImageUrl(card.konamiId)} 
-                              alt={card.name} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => { (e.target as HTMLImageElement).src = '/card-back.jpg' }}
-                            />
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-900 dark:text-white">{card.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">{card.type}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {searchResults.length > 0 && (() => {
+                    return (
+                      <div className="absolute z-20 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-[60vh] overflow-y-auto">
+                        {(isEnrichingResults) && (
+                          <div className="p-4 text-sm text-gray-500">Loading filtered results...</div>
+                        )}
+                        {!isEnrichingResults && filteredSearchResults.length === 0 && (
+                          <div className="p-4 text-sm text-gray-500">No results</div>
+                        )}
+                        {filteredSearchResults.map(card => (
+                          <button
+                            key={card.id}
+                            onClick={() => addCard(card)}
+                            onMouseEnter={async () => { setHoveredCard(await enrichCard(card)) }}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors"
+                          >
+                            <div style={{ width: 40, flexShrink: 0 }}>
+                              <CardImage src={(card as any).artworkUrl || (card as any).imageUrlCropped || getImageUrl(card.konamiId)} card={card} konamiId={card.konamiId} alt={card.name} />
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900 dark:text-white">{card.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{card.type}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -435,42 +926,12 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
 
         {/* Right Panel: Card Preview (Only visible in Cards tab) */}
         {activeTab === 'cards' && (
-          <div className="w-64 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center">
+          <div className="w-96 md:w-1/3 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center">
             <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 w-full text-center">Card Preview</h3>
             {hoveredCard ? (
-              <div className="w-full">
-                <img 
-                  src={getImageUrl(hoveredCard.konamiId)} 
-                  alt={hoveredCard.name} 
-                  className="w-full rounded-lg shadow-lg mb-4"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/card-back.jpg' }}
-                />
-                <div className="space-y-2 text-sm">
-                  <div className="font-bold text-gray-900 dark:text-white">{hoveredCard.name}</div>
-                  <div className="text-gray-600 dark:text-gray-400">{hoveredCard.type}</div>
-                  {hoveredCard.atk !== undefined && (
-                    <div className="flex justify-between text-gray-700 dark:text-gray-300 font-mono">
-                      <span>ATK/{hoveredCard.atk === -1 ? '?' : hoveredCard.atk}</span>
-                      {hoveredCard.def !== undefined && <span>DEF/{hoveredCard.def === -1 ? '?' : hoveredCard.def}</span>}
+                  <div className="w-full flex-1 flex flex-col min-h-0">
+                      <CardPreview card={hoveredCard} skills={effectiveSkills} className="w-full h-full" />
                     </div>
-                  )}
-                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-h-60 overflow-y-auto">
-                    <CardDescription card={hoveredCard} skills={effectiveSkills} />
-                  </div>
-                  
-                  {(() => {
-                    const modifyingSkill = effectiveSkills.find(s => s.modifications?.some(m => m.card.id === hoveredCard.id));
-                    if (modifyingSkill) {
-                      return (
-                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-blue-600 dark:text-blue-400">
-                          Modified by: <span className="font-bold">{modifyingSkill.name || 'Current Skill'}</span>
-                        </div>
-                      )
-                    }
-                    return null;
-                  })()}
-                </div>
-              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 text-center text-sm">
                 Hover over a card to see details
@@ -486,6 +947,7 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
         onClose={() => setIsSkillFormOpen(false)}
         onSave={handleSaveSkill}
         initialSkill={editingSkill}
+        formatVariant={formatVariant}
       />
     </div>
   )

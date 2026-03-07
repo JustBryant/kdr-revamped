@@ -3,37 +3,60 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import { prisma } from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
+import argon2 from 'argon2'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
 
-  if (!session || !session.user?.email) {
+  if (!session || !(session.user && ((session.user as any).id || session.user.email))) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const userEmail = session.user.email;
+  const userId = (session.user as any).id as string | undefined
+  const sessionEmail = session.user?.email as string | undefined
 
   if (req.method === 'GET') {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email: userEmail },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          favoriteCardId: true,
-          favoriteCard: {
+      // Prefer lookup by session user id (set by NextAuth callbacks). Fall back to email.
+      const user = userId
+        ? await prisma.user.findUnique({ where: { id: userId },
             select: {
               id: true,
-              konamiId: true,
               name: true,
-              imageUrl: true,
-              imageUrlSmall: true,
+              email: true,
+              image: true,
+              favoriteCardId: true,
+              favoriteCard: {
+                select: {
+                  id: true,
+                  konamiId: true,
+                  name: true,
+                  imageUrlCropped: true,
+                }
+              }
             }
-          }
-        },
-      });
+          })
+        : await prisma.user.findUnique({
+            where: { email: sessionEmail },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              favoriteCardId: true,
+              favoriteCard: {
+                select: {
+                  id: true,
+                  konamiId: true,
+                  name: true,
+                  imageUrlCropped: true,
+                }
+              }
+            },
+          });
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -50,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const updatedUser = await prisma.user.update({
-        where: { email: userEmail },
+        where: userId ? { id: userId } : { email: sessionEmail! },
         data: {
           name,
           image,
@@ -72,30 +95,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { email: userEmail },
-      });
+      // Verify against Neon auth; use column-detection helper
+      const { findNeonUserByEmail, updatePasswordById } = await import('../../../lib/neonAuth')
+      // For password updates we may not have an email (users who signed-in with username).
+      // Use session email if present, otherwise fall back to session name.
+      const identifier = sessionEmail || (session.user as any).name
+      if (!identifier) return res.status(400).json({ message: 'No identifier available for password update' })
+      const row = await findNeonUserByEmail(pool, identifier)
+      if (!row) return res.status(404).json({ message: 'User not found' })
 
-      if (!user || !user.password) {
-        return res.status(404).json({ message: 'User not found or no password set' });
+      const hashedKey = Object.keys(row).find(k => k.toLowerCase().includes('hash') || k.toLowerCase().includes('password'))
+      const hashedValue = hashedKey ? row[hashedKey] : null
+      const verified = hashedValue ? await argon2.verify(hashedValue, currentPassword).catch(() => false) : false
+      if (!verified) return res.status(400).json({ message: 'Invalid current password' })
+
+      const newHashed = await argon2.hash(newPassword)
+      await updatePasswordById(pool, row.id, newHashed)
+
+      // Clear any local password storage (prefer id lookup when available)
+      if (userId) {
+        await prisma.user.update({ where: { id: userId }, data: { password: null } })
+      } else if (sessionEmail) {
+        await prisma.user.update({ where: { email: sessionEmail }, data: { password: null } })
       }
 
-      const isValid = await bcrypt.compare(currentPassword, user.password);
-
-      if (!isValid) {
-        return res.status(400).json({ message: 'Invalid current password' });
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      await prisma.user.update({
-        where: { email: userEmail },
-        data: {
-          password: hashedPassword,
-        },
-      });
-
-      return res.status(200).json({ message: 'Password updated' });
+      return res.status(200).json({ message: 'Password updated' })
     } catch (error) {
       console.error('Error updating password:', error);
       return res.status(500).json({ message: 'Internal server error' });
