@@ -392,9 +392,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           where: { 
             type: 'TREASURE',
             formatId: kdr.formatId || undefined
-          }, 
-          include: { card: true, skill: true } 
+          }
         }) as any[]
+
+        // Pre-fetch cards/skills for these items since Item doesn't have direct relations
+        const itemCardIds = treasures.map(t => t.cardId).filter(Boolean) as string[]
+        const itemSkillIds = treasures.map(t => t.skillId).filter(Boolean) as string[]
+        const [itemCards, itemSkills] = await Promise.all([
+          itemCardIds.length ? prisma.card.findMany({ where: { id: { in: itemCardIds } } }) : [],
+          itemSkillIds.length ? prisma.skill.findMany({ where: { id: { in: itemSkillIds } } }) : []
+        ])
+        const itemCardMap = Object.fromEntries(itemCards.map(c => [c.id, c]))
+        const itemSkillMap = Object.fromEntries(itemSkills.map(s => [s.id, s]))
+
+        // Attach them manually
+        treasures.forEach(t => {
+          if (t.cardId) t.card = itemCardMap[t.cardId]
+          if (t.skillId) t.skill = itemSkillMap[t.skillId]
+        })
 
         const RARITIES = ['C', 'R', 'SR', 'UR']
         const rarityWeights = Array.isArray(settings.treasureRarityWeights) ? settings.treasureRarityWeights : [70, 20, 8, 2]
