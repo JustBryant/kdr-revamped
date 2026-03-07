@@ -89,9 +89,18 @@ export default function useShopOrchestration({ id, ensureCardDetails, suppressSt
 
   const showHover = React.useCallback((e: any, cardLike?: any, idKey?: any, skills?: any[]) => {
     try { if (cardLike && ensureCardDetails) { ensureCardDetails(cardLike).catch(() => {}) } } catch (err) {}
-    try { setHoverTooltip({ visible: true, x: (e as any)?.clientX || 0, y: (e as any)?.clientY || 0, idKey, cardLike, skills }) } catch (err) {}
+    const playerStats = (player?.shopState && player.shopState.stats) ? player.shopState.stats : (player?.stats || {})
+    try { setHoverTooltip({ 
+      visible: true, 
+      x: (e as any)?.clientX || 0, 
+      y: (e as any)?.clientY || 0, 
+      idKey, 
+      cardLike, 
+      skills,
+      stats: playerStats
+    }) } catch (err) {}
     try { setHoveredOfferId(idKey || (cardLike && (cardLike.id || cardLike.konamiId) ? String(cardLike.id || cardLike.konamiId) : null)) } catch (err) {}
-  }, [ensureCardDetails])
+  }, [player, ensureCardDetails])
 
   const moveHover = React.useCallback((e: any) => {
     try { setHoverTooltip((prev: any) => ({ ...(prev || {}), x: (e as any)?.clientX || 0, y: (e as any)?.clientY || 0 })) } catch (err) {}

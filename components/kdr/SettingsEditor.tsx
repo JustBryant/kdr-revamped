@@ -411,7 +411,7 @@ export default function SettingsEditor({ settings, onChange, onSave, saving, cla
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {skills?.map((s: any) => {
+              {skills?.filter((s: any) => !s.name.toLowerCase().includes(' (copy)') && !s.name.toLowerCase().includes(' copy')).map((s: any) => {
                 const isDisabled = local.disabledSkillIds?.includes(s.id)
                 return (
                   <button

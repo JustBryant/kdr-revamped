@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Skill } from '../../types/class-editor'
 import SkillForm from './shared/SkillForm'
+import { RichTextRenderer } from '../RichText'
 
 interface TipSkillsEditorProps {
   skills: Skill[]
@@ -71,7 +72,12 @@ export default function TipSkillsEditor({ skills, onChange, send, me, peers, for
                 </button>
               </div>
               <h3 className="font-bold text-gray-900 dark:text-white mb-1">{skill.name}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{skill.description}</p>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                <RichTextRenderer 
+                  content={skill.description} 
+                  requirements={skill.statRequirements as any}
+                />
+              </div>
               {skill.modifications && skill.modifications.length > 0 && (
                 <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
                   Modifies {skill.modifications.length} card{skill.modifications.length > 1 ? 's' : ''}

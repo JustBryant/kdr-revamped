@@ -49,6 +49,12 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
 
   try {
+    if (!resend) {
+      console.warn('Resend API key not configured — logging reset link (dev fallback)')
+      console.log('PASSWORD RESET LINK:', resetLink)
+      return { success: true, data: { debugLink: resetLink } }
+    }
+
     const data = await resend.emails.send({
       from: 'KDR Revamped <onboarding@resend.dev>',
       to: email,
@@ -71,6 +77,10 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return { success: true, data };
   } catch (error) {
     console.error('Failed to send email:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Email send failed; returning debug link in development')
+      return { success: true, data: { debugLink: resetLink }, error }
+    }
     return { success: false, error };
   }
 }

@@ -5,6 +5,7 @@ import CardPreview from './shared/CardPreview'
 import SkillForm from './shared/SkillForm'
 import CardGallery from './CardGallery'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
+import { RichTextRenderer } from '../RichText'
 import DeckFiltersPanel from '../DeckFiltersPanel'
 import { CardFiltersState, matchCard } from './shared/CardFilters'
 
@@ -914,7 +915,12 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                           </button>
                         </div>
                         <h4 className="font-bold text-gray-900 dark:text-white mb-1">{skill.name}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{skill.description}</p>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          <RichTextRenderer 
+                            content={skill.description} 
+                            requirements={skill.statRequirements as any}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>

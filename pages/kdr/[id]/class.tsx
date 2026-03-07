@@ -1169,7 +1169,16 @@ export default function KdrClassPage() {
           />
           {/* Hover tooltip (uses shared HoverTooltip component for consistent UI with shop) */}
           {(() => {
-            const hoverTooltip = hoverItem ? { visible: true, cardLike: hoverItem, x: hoverPos.x, y: hoverPos.y, skills: combinedSkills } : { visible: false }
+            const playerStats = (player?.shopState && player.shopState.stats) ? player.shopState.stats : (player?.stats || {})
+            const hoverTooltip = hoverItem ? { 
+              visible: true, 
+              cardLike: hoverItem, 
+              x: hoverPos.x, 
+              y: hoverPos.y, 
+              skills: combinedSkills,
+              stats: playerStats
+            } : { visible: false }
+
             return (
               <HoverTooltip
                 hoverTooltip={hoverTooltip}
@@ -1180,7 +1189,20 @@ export default function KdrClassPage() {
           })()}
           {/* Hover popup for skills: reuse HoverTooltip for identical cursor placement */}
           {hoverSkill && (() => {
-            const hoverTooltip = hoverSkill ? { visible: true, cardLike: { name: hoverSkill.name || 'Skill', desc: hoverSkill.description || hoverSkill.desc || '' }, x: hoverSkillPos.x, y: hoverSkillPos.y, skills: [] } : { visible: false }
+            const playerStats = (player?.shopState && player.shopState.stats) ? player.shopState.stats : (player?.stats || {})
+            const hoverTooltip = hoverSkill ? { 
+              visible: true, 
+              cardLike: { 
+                name: hoverSkill.name || 'Skill', 
+                desc: hoverSkill.description || hoverSkill.desc || '',
+                statRequirements: hoverSkill.statRequirements
+              }, 
+              x: hoverSkillPos.x, 
+              y: hoverSkillPos.y, 
+              skills: [],
+              stats: playerStats
+            } : { visible: false }
+
             return (
               <HoverTooltip
                 hoverTooltip={hoverTooltip}

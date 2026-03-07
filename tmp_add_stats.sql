@@ -1,0 +1,1 @@
+ALTER TYPE "DialogueType" ADD VALUE 'STATS';

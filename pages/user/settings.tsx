@@ -21,7 +21,7 @@ export default function UserSettingsPage() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [loadingImages, setLoadingImages] = useState(false);
 
-  // Favorite Card Search
+  // Favourite Card Search
   const [cardSearch, setCardSearch] = useState('');
   const [cardResults, setCardResults] = useState<any[]>([]);
   const [searchingCards, setSearchingCards] = useState(false);
@@ -76,44 +76,53 @@ export default function UserSettingsPage() {
     };
 
     if (iconSearchResults && iconSearchResults.length > 0) fetchArtworksFor();
-  }, [iconSearchResults]);
+  }, [iconSearchResults, cardArtworksMap, cardArtworksLoading]);
 
   // Thumbnail component shows a spinner while the image loads
   const Thumbnail = ({ src, konamiId, alt, onClick }: { src?: string; konamiId?: number | null; alt?: string; onClick?: () => void }) => {
     const [loaded, setLoaded] = useState(false);
+    
+    // Preload the image immediately to minimize flicker
+    useEffect(() => {
+      if (src) {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => setLoaded(true);
+      }
+    }, [src]);
+
     return (
       <button
         type="button"
         onClick={onClick}
-        className="w-16 border rounded-full overflow-hidden hover:opacity-90 p-0 bg-gray-100 dark:bg-gray-800 relative"
+        className="w-16 h-16 border rounded-full overflow-hidden hover:opacity-90 p-0 bg-gray-100 dark:bg-gray-800/10 relative flex-shrink-0"
       >
-        {!loaded && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <svg className="w-6 h-6 text-gray-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-          </div>
-        )}
         <CardImage
           src={src || null}
           konamiId={konamiId ?? null}
           alt={alt}
           onLoad={() => setLoaded(true)}
           onError={() => setLoaded(true)}
-          className={`w-full object-cover ${loaded ? '' : 'hidden'}`}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+             <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        )}
       </button>
     );
   };
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('/api/user/profile');
-      const user = res.data;
-      setName(user.name || '');
-      setImage(user.image || '');
-      setFavoriteCard(user.favoriteCard);
+      const res = await axios.get('/api/user/me');
+      const user = res.data.user || res.data; // Fallback if data structure varies
+      if (user) {
+        setName(user.name || '');
+        setImage(user.image || '');
+        setFavoriteCard(user.favoriteCard);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch profile', error);
@@ -124,7 +133,7 @@ export default function UserSettingsPage() {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.put('/api/user/profile', {
+      await axios.put('/api/user/me', {
         name,
         image,
         favoriteCardId: favoriteCard?.id
@@ -157,7 +166,7 @@ export default function UserSettingsPage() {
     }
 
     try {
-      await axios.patch('/api/user/profile', {
+      await axios.patch('/api/user/me', {
         currentPassword,
         newPassword
       });
@@ -170,17 +179,17 @@ export default function UserSettingsPage() {
     }
   };
 
-  const searchCards = async (query: string, type: 'favorite' | 'icon') => {
-    if (type === 'favorite') setCardSearch(query);
+  const searchCards = async (query: string, type: 'favourite' | 'icon') => {
+    if (type === 'favourite') setCardSearch(query);
     else setIconSearch(query);
 
     if (query.length < 2) {
-      if (type === 'favorite') setCardResults([]);
+      if (type === 'favourite') setCardResults([]);
       else setIconSearchResults([]);
       return;
     }
 
-    if (type === 'favorite') {
+    if (type === 'favourite') {
       setSearchingCards(true);
       setCardSearchError(null);
     } else {
@@ -189,7 +198,7 @@ export default function UserSettingsPage() {
     }
 
     try {
-      if (type === 'favorite') {
+      if (type === 'favourite') {
         const res = await axios.get(`/api/cards/search?q=${encodeURIComponent(query)}`);
         setCardResults(res.data);
       } else {
@@ -199,10 +208,10 @@ export default function UserSettingsPage() {
     } catch (error) {
       console.error('Error searching cards', error);
       const msg = (error as any)?.response?.data?.message || 'Search failed';
-      if (type === 'favorite') setCardSearchError(msg);
+      if (type === 'favourite') setCardSearchError(msg);
       else setIconSearchError(msg);
     } finally {
-      if (type === 'favorite') setSearchingCards(false);
+      if (type === 'favourite') setSearchingCards(false);
       else setSearchingIcons(false);
     }
   };
@@ -278,7 +287,7 @@ export default function UserSettingsPage() {
                         onClick={() => setShowIconSearch(true)}
                         className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-500 transition-colors"
                        >
-                         Change Avatar Icon
+                         Change Avatar
                        </button>
                     </div>
                   </div>
@@ -322,7 +331,12 @@ export default function UserSettingsPage() {
                                 return { key: `${card.id}-${idx}`, url, label: card.name };
                               }).filter(Boolean);
                             }
-                            return [{ key: `card-${card.id}`, url: card.imageUrlCropped, konamiId: card.konamiId, label: card.name }];
+                            return [{ 
+                              key: `card-${card.id}`, 
+                              url: card.imageUrlCropped || `https://images.ygoprodeck.com/images/cards_cropped/${card.konamiId}.jpg`, 
+                              konamiId: card.konamiId, 
+                              label: card.name 
+                            }];
                           })
                           .map((opt: any) => (
                             <Thumbnail
@@ -352,20 +366,24 @@ export default function UserSettingsPage() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">Favorite Card</label>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">Favourite Card</label>
                     <div className="relative group">
                       <input
                         type="text"
                         placeholder="Search for your signature card..."
                         value={cardSearch}
-                        onChange={(e) => searchCards(e.target.value, 'favorite')}
+                        onChange={(e) => searchCards(e.target.value, 'favourite')}
                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 text-base font-black italic uppercase tracking-tighter focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                       />
                       
                       {cardSearch.length < 2 && favoriteCard && (
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-white/10 shadow-lg">
-                           <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-100 dark:border-white/5">
-                             <CardImage konamiId={favoriteCard.konamiId} card={favoriteCard} className="w-full h-full object-cover" />
+                           <div className="w-10 h-14 rounded-md overflow-hidden border border-gray-100 dark:border-white/5">
+                             <img 
+                                src={favoriteCard.imageUrlSmall || favoriteCard.imageUrl || `https://images.ygoprodeck.com/images/cards_small/${favoriteCard.konamiId}.jpg`}
+                                alt={favoriteCard.name}
+                                className="w-full h-full object-contain bg-black/20"
+                             />
                            </div>
                            <span className="text-xs font-black italic uppercase tracking-tight pr-4">{favoriteCard.name}</span>
                         </div>
@@ -384,8 +402,12 @@ export default function UserSettingsPage() {
                               setCardSearch('');
                             }}
                           >
-                            <div className="w-12 h-16 rounded-lg overflow-hidden border border-gray-100 dark:border-white/5 flex-shrink-0 group-hover:scale-105 transition-transform">
-                              <CardImage konamiId={card.konamiId} card={card} className="w-full h-full object-cover" />
+                            <div className="w-12 h-16 rounded-md overflow-hidden border border-gray-100 dark:border-white/5 flex-shrink-0 group-hover:scale-105 transition-transform bg-black/10">
+                              <img 
+                                src={card.imageUrlSmall || card.imageUrl || `https://images.ygoprodeck.com/images/cards_small/${card.konamiId}.jpg`}
+                                alt={card.name}
+                                className="w-full h-full object-contain"
+                              />
                             </div>
                             <div>
                                <div className="text-sm font-black italic uppercase tracking-tighter text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{card.name}</div>

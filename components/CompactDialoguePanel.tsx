@@ -31,18 +31,29 @@ export default function CompactDialoguePanel({ open, type, dialogues, onClose, o
         </div>
 
         <div className="mb-2 flex gap-2">
-          <input value={newText} onChange={e => setNewText(e.target.value)} placeholder={`New ${type} line`} className="flex-1 border p-2 text-sm" />
-          <button onClick={async () => { if (!newText) return; await onAdd(newText); setNewText('') }} className="px-3 py-1 bg-green-600 text-white rounded text-sm">Add</button>
+          <textarea 
+            value={newText} 
+            onChange={e => setNewText(e.target.value)} 
+            placeholder={`New ${type} line`} 
+            rows={2}
+            className="flex-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white" 
+          />
+          <button onClick={async () => { if (!newText) return; await onAdd(newText); setNewText('') }} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm self-end">Add</button>
         </div>
 
-        <div className="max-h-64 overflow-auto space-y-2">
+        <div className="max-h-96 overflow-auto space-y-2 pr-1">
           {dialogues.map(d => (
-            <div key={d.id} className="p-2 border rounded flex items-start gap-3">
+            <div key={d.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg flex items-start gap-3 group">
               <div className="flex-1">
                 {editingId === d.id ? (
-                  <input value={editingText} onChange={e => setEditingText(e.target.value)} className="w-full border p-2 text-sm" />
+                  <textarea 
+                    value={editingText} 
+                    onChange={e => setEditingText(e.target.value)} 
+                    rows={2}
+                    className="w-full bg-white dark:bg-gray-800 border border-blue-500 rounded p-2 text-sm text-gray-900 dark:text-white" 
+                  />
                 ) : (
-                  <div className="text-sm whitespace-pre-wrap">{d.text}</div>
+                  <div className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300 italic">"{d.text}"</div>
                 )}
               </div>
               <div className="flex items-center gap-2">

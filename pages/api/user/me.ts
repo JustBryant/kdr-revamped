@@ -75,13 +75,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
       })
 
+      // Calculate aggregate wins and losses from class stats as a fallback/verification
+      const aggregateWins = enrichedClassStats.reduce((sum, cs) => sum + cs.wins, 0)
+      const aggregateLosses = enrichedClassStats.reduce((sum, cs) => sum + cs.losses, 0)
+
       // Get global wins, losses, and elo from global stats JSON
       const globalStatsJson = (stats?.stats as any) || {}
       const enrichedStats = {
         ...stats,
         elo: Number(globalStatsJson.elo ?? 1500),
-        wins: Number(globalStatsJson.wins || 0),
-        losses: Number(globalStatsJson.losses || 0)
+        wins: Math.max(Number(globalStatsJson.wins || 0), aggregateWins),
+        losses: Math.max(Number(globalStatsJson.losses || 0), aggregateLosses)
       }
 
       // Determine most played class
@@ -99,6 +103,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
       console.error(error)
       return res.status(500).json({ message: "Internal Server Error" })
+    }
+  } else if (req.method === 'PUT') {
+    const { name, image, favoriteCardId } = req.body
+    try {
+      const userId = session.user.id
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          image,
+          favoriteCardId: favoriteCardId || null,
+        },
+      })
+      return res.status(200).json({ message: 'Profile updated', user: updatedUser })
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      return res.status(500).json({ message: 'Internal server error' })
+    }
+  } else if (req.method === 'PATCH') {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Missing fields' })
+    }
+    try {
+      const userId = session.user.id
+      const { findNeonUserByEmail, updatePasswordById } = await import('../../../lib/neonAuth')
+      const user = await prisma.user.findUnique({ where: { id: userId } })
+      if (!user || !user.email) return res.status(404).json({ message: 'User not found' })
+
+      const neonUser = await findNeonUserByEmail(user.email)
+      if (!neonUser) return res.status(404).json({ message: 'Auth profile not found' })
+
+      const bc = await import('bcryptjs')
+      const isCorrect = await bc.compare(currentPassword, neonUser.password)
+      if (!isCorrect) return res.status(401).json({ message: 'Incorrect current password' })
+
+      const hashed = await bc.hash(newPassword, 10)
+      await updatePasswordById(neonUser.id, hashed)
+
+      return res.status(200).json({ message: 'Password updated successfully' })
+    } catch (error) {
+      console.error('Error updating password:', error)
+      return res.status(500).json({ message: 'Internal server error' })
     }
   }
 

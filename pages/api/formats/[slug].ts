@@ -114,14 +114,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         where: { slug },
         include: {
           formatClasses: {
-            where: isAdmin ? {} : {
-              class: { isPublic: true }
-            },
             include: {
               class: {
                 include: {
                   skills: true,
                   subclasses: {
+                    where: isAdmin ? {} : { isPublic: true },
                     include: {
                       skills: true
                     }
@@ -134,12 +132,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       if (!format) return res.status(404).json({ error: 'Format not found' })
 
+      // Filter the formatClasses in memory to ensure parent classes are also public
+      if (!isAdmin) {
+        format.formatClasses = format.formatClasses.filter(fc => fc.class.isPublic)
+      }
+
       // Also fetch generic skills
       const genericSkills = await prisma.skill.findMany({
         where: {
           OR: [
             { type: 'GENERIC', classId: null },
             { type: 'TIP', classId: null }
+          ],
+          NOT: [
+            { name: { contains: ' (copy)' } },
+            { name: { contains: ' copy' } }
           ]
         },
         include: {

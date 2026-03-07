@@ -51,31 +51,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const hashedPassword = await argon2.hash(password)
 
-    let imageUrl: string | null = null
-    try {
-      const cardCount = await prisma.card.count({ where: { konamiId: { not: null } } })
-      if (cardCount > 0) {
-        const skip = Math.floor(Math.random() * cardCount)
-        const randomCard = await prisma.card.findFirst({ where: { konamiId: { not: null } }, skip, select: { konamiId: true } })
-        // Do not synthesize a full image URL here; do not store constructed konami/raw URLs server-side.
-        // If desired, we could store randomCard.konamiId for the client to render via CardImage, but
-        // for now we leave imageUrl null so the client can decide how to pick a profile image.
-      }
-    } catch (e) {
-      console.error('profile image pick failed', e)
-    }
+    // Default to Blue-Eyes White Dragon
+    const imageUrl = "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/89631139.jpg"
 
     let neonUserId: string | null = null
     try {
       const neonRes = await insertNeonUser(pool, email, hashedPassword, { name: displayName })
-      if (neonRes) neonUserId = (neonRes.id ?? neonRes.user_id ?? neonRes.uid ?? null) as string | null
+      if (!neonRes) {
+        throw new Error('Neon auth insertion returned null')
+      }
+      neonUserId = (neonRes.id ?? neonRes.user_id ?? neonRes.uid ?? null) as string | null
+      if (!neonUserId) {
+        throw new Error('Neon auth insertion did not return a valid user ID')
+      }
     } catch (e) {
       console.error('insertNeonUser failed', e)
       return res.status(500).json({ message: 'Failed to create user in auth store' })
     }
 
     try {
-      await prisma.user.create({ data: { email, name: displayName, neonId: neonUserId ?? undefined, password: null, image: imageUrl ?? undefined } })
+      await prisma.user.create({ data: { email, name: displayName, neonId: neonUserId, password: null, image: imageUrl ?? undefined } })
     } catch (e) {
       console.error('prisma.user.create failed', e)
       return res.status(500).json({ message: 'Failed to create local user record' })

@@ -75,13 +75,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
       })
 
+      // Calculate aggregate wins and losses from class stats as a fallback/verification
+      const aggregateWins = enrichedClassStats.reduce((sum, cs) => sum + cs.wins, 0)
+      const aggregateLosses = enrichedClassStats.reduce((sum, cs) => sum + cs.losses, 0)
+
       // Get global wins, losses, and elo from global stats JSON
       const globalStatsJson = (stats?.stats as any) || {}
       const enrichedStats = {
         ...stats,
         elo: Number(globalStatsJson.elo ?? 1500),
-        wins: Number(globalStatsJson.wins || 0),
-        losses: Number(globalStatsJson.losses || 0)
+        wins: Math.max(Number(globalStatsJson.wins || 0), aggregateWins),
+        losses: Math.max(Number(globalStatsJson.losses || 0), aggregateLosses)
       }
 
       // Determine most played class

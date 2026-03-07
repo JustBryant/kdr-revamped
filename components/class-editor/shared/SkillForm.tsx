@@ -132,9 +132,12 @@ export default function SkillForm({
                 value={skillForm.description}
                 onChange={e => setSkillForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Skill effect..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                placeholder="Skill effect... Use [if DEX>=4]text[/if] for stat-based effects."
               />
+              <p className="mt-1 text-[10px] text-gray-500">
+                You can highlight text in the description above to mark it as a "Stat Locked" section.
+              </p>
             </div>
 
             {/* Options */}
@@ -288,6 +291,97 @@ export default function SkillForm({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Stat Requirements */}
+              <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Stat Requirements</label>
+                  <button 
+                    type="button"
+                    onClick={() => setSkillForm(prev => ({ 
+                      ...prev, 
+                      statRequirements: [...(prev.statRequirements || []), { stat: 'STR', value: 1 }] 
+                    }))}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                  >
+                    + Add Requirement
+                  </button>
+                </div>
+                
+                {skillForm.statRequirements && skillForm.statRequirements.length > 0 ? (
+                  <div className="space-y-2">
+                    {skillForm.statRequirements.map((req, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                        <select
+                          value={req.stat}
+                          onChange={e => {
+                            const newReqs = [...(skillForm.statRequirements || [])]
+                            newReqs[idx] = { ...req, stat: e.target.value as any }
+                            setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                          }}
+                          className="text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
+                        >
+                          {['STR', 'DEX', 'INT', 'LUK', 'FOR', 'CON'].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          value={req.value}
+                          min={1}
+                          onChange={e => {
+                            const newReqs = [...(skillForm.statRequirements || [])]
+                            newReqs[idx] = { ...req, value: Number(e.target.value) }
+                            setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                          }}
+                          className="w-16 text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
+                        />
+                        <input
+                          type="text"
+                          value={req.affectedTextSnippet || ''}
+                          placeholder="Snippet to lock (optional)..."
+                          onChange={e => {
+                            const newReqs = [...(skillForm.statRequirements || [])]
+                            newReqs[idx] = { ...req, affectedTextSnippet: e.target.value }
+                            setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                          }}
+                          className="flex-1 text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const textarea = document.querySelector('textarea')
+                            if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+                              const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd)
+                              const newReqs = [...(skillForm.statRequirements || [])]
+                              newReqs[idx] = { ...req, affectedTextSnippet: selectedText }
+                              setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                            }
+                          }}
+                          title="Auto-fill with highlighted text"
+                          className="p-1 text-amber-600 hover:text-amber-800"
+                        >
+                          ⚓
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setSkillForm(prev => ({ 
+                            ...prev, 
+                            statRequirements: prev.statRequirements?.filter((_, i) => i !== idx) 
+                          }))}
+                          className="ml-auto text-amber-400 hover:text-red-500"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic text-center py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+                    No stat requirements
+                  </div>
+                )}
               </div>
             </div>
           </div>

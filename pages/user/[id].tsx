@@ -150,7 +150,7 @@ export default function PublicProfilePage() {
                       <CardImage card={user.favoriteCard} className="w-full aspect-[2/3] object-contain shadow-2xl" />
                       <div className="mt-4 text-center">
                         <p className="text-lg font-black uppercase italic text-gray-900 dark:text-white mb-1">{user.favoriteCard.name}</p>
-                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Favorite Pickup</p>
+                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Favourite Pickup</p>
                       </div>
                     </div>
                   ) : (

@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import CardDescription from '../class-editor/shared/CardDescription'
+import { RichTextRenderer } from '../RichText'
 
 type HoverTooltipProps = {
   hoverTooltip: any
@@ -96,7 +97,11 @@ const HoverTooltip: React.FC<HoverTooltipProps> = ({ hoverTooltip, cardDetailsCa
           {skills && skills.length > 0 ? (
             <CardDescription card={resolved} skills={skills} />
           ) : (
-            resolved?.desc || resolved?.text || resolved?.description || ''
+            <RichTextRenderer 
+              content={resolved?.desc || resolved?.text || resolved?.description || ''} 
+              stats={hoverTooltip.stats}
+              requirements={resolved?.statRequirements}
+            />
           )}
         </div>
       </div>

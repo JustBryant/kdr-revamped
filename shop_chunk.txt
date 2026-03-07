@@ -1,0 +1,150 @@
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-16 items-start justify-center">
+                    {player.shopState.treasureOffers.map((t: any, idx: number) => {
+                      const card = t.card || {}
+                      const idKey = card && (card.id || (card.konamiId ? String(card.konamiId) : null))
+
+                      const isThirdParty = (url?: string | null) => {
+                        if (!url) return false
+                        try {
+                          const u = new URL(String(url))
+                          const host = u.hostname.toLowerCase()
+                          if (host.includes('ygoprodeck.com') || host.includes('db.ygoprodeck.com') || host.includes('yugiohapi.com')) return true
+                        } catch (e) {}
+                        return false
+                      }
+
+                      const chooseLocal = (u?: string | null) => {
+                        if (!u) return null
+                        if (isThirdParty(u)) return null
+                        return u
+                      }
+
+                      const rarityStr = String(t.rarity || t.card?.rarity || t.card?.rarityStr || '').toLowerCase().trim()
+                      const isRare = (rarityStr === 'r' || rarityStr === 'rare' || rarityStr === 'r_rare')
+                      const isSuperRare = (rarityStr === 'sr' || rarityStr === 'super rare' || rarityStr === 'super_rare')
+                      const isUltraRare = (rarityStr === 'ur' || rarityStr === 'ultra rare' || rarityStr === 'ultra_rare')
+                      const delayMs = Math.round(idx * (TREASURE_POP_MS + TREASURE_STAGGER_GAP))
+
+                      return (
+                        <TreasureOfferCard
+                          key={t.id}
+                          t={t}
+                          idx={idx}
+                          cardObj={card}
+                          isRare={isRare}
+                          isSuperRare={isSuperRare}
+                          isUltraRare={isUltraRare}
+                          delayMs={delayMs}
+                          treasureAnimateIn={treasureAnimateIn}
+                          exitPhase={exitPhase}
+                          chosenTreasureId={chosenTreasureId}
+                          treasureFlyDelta={treasureFlyDelta}
+                          useLootArt={true}
+                          treasureRef={(el) => { try { setTreasureRef(t.id, el) } catch (e) {} }}
+                          onMouseEnter={(e: any) => { try { showHover(e, card, idKey) } catch (err) {} }}
+                          onMouseMove={(e: any) => { try { moveHover(e) } catch (err) {} }}
+                          onMouseLeave={() => { try { hideHover() } catch (err) {} }}
+                          onWheel={(e: any) => { try { onTooltipWheel(e) } catch (err) {} }}
+                          onClick={async (e: any) => { e.stopPropagation(); if (selecting || exitPhase > 0) return; try { await selectTreasure(t.id) } catch (err) {} }}
+                          onPreview={(cardLike: any) => { try { previewCard(card || cardLike, card || cardLike) } catch (e) {} }}
+                        />
+                      )
+                    })}
+                  </div>
+
+                  {/* treasure styles moved to global CSS to avoid nested styled-jsx */}
+
+                  {/* removed modal: replaced with hover-info for performance and UX */}
+
+                </div>
+              )}
+
+              {/* Case: Stage is DONE, player has finished everything */}
+              {player?.shopState?.stage === 'DONE' && (
+                <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+                  <div className="text-4xl">👋</div>
+                  <h2 className="text-2xl font-bold text-white">Shop Complete!</h2>
+                  <p className="text-gray-400 max-w-sm">
+                    You've finished your shop session. You can now close this window or continue to review your gains.
+                  </p>
+                  <button
+                    onClick={() => router.push(`/kdr/${id}`)}
+                    className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-8 py-3 rounded-lg shadow-lg"
+                  >
+                    Close Shop
+                  </button>
+                </div>
+              )}
+
+              {/* Loot offers (purchasable pools) */}
+              {(player?.shopState?.stage === 'LOOT' || (player?.shopState?.stage === 'DONE' && lootExitPhase)) && player?.shopState?.lootOffers && player.shopState.lootOffers.length > 0 && (() => {
+                console.log('=== RENDERING LOOT POOLS ===', player.shopState.lootOffers.length, 'pools')
+                
+                const getTierLabel = (tier: string, isGeneric: boolean) => {
+                  if (isGeneric) {
+                    const genericLabels: Record<string, string> = {
+                      'STARTER': 'Staples',
+                      'MID': 'Removal/Disruption',
+                      'HIGH': 'Engine'
+                    }
+                    return genericLabels[tier] || tier
+                  } else {
+                    const classLabels: Record<string, string> = {
+                      'STARTER': 'Starter Packs',
+                      'MID': 'Mid Quality',
+                      'HIGH': 'High Quality'
+                    }
+                    return classLabels[tier] || tier
+                  }
+                }
+                
+              // Group pools by tier AND type (generic vs class)
+              const groupKey = (pool: any) => `${pool.tier}_${pool.isGeneric ? 'generic' : 'class'}`
+              const groups: Record<string, any[]> = {}
+              player.shopState.lootOffers.forEach((pool: any) => {
+                const key = groupKey(pool)
+                if (!groups[key]) groups[key] = []
+                groups[key].push(pool)
+              })
+              
+              // Sort keys: class pools first, then generic pools (within each, sort by tier)
+                const tierOrder = ['STARTER', 'MID', 'HIGH']
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                  const [tierA, typeA] = a.split('_')
+                  const [tierB, typeB] = b.split('_')
+                  
+                  // Different types: class before generic
+                  if (typeA !== typeB) {
+                    return typeA === 'class' ? -1 : 1
+                  }
+                  
+                  // Within same type, sort by tier
+                  return tierOrder.indexOf(tierA) - tierOrder.indexOf(tierB)
+                })
+                
+                return (
+                <div className="mb-4 space-y-6 relative" ref={(el) => { try { /* container for pools area */ } catch (e) {} }}>
+                  {/* Render heading for each group */}
+                  <div className="transition-opacity duration-300" style={{ opacity: showPoolPurchasedBanner ? 0.18 : 1 }}>
+                  {sortedKeys.map((key) => {
+                    const [tier, type] = key.split('_')
+                    const poolsInGroup = groups[key]
+                    const isGeneric = type === 'generic'
+                    const tierLabel = getTierLabel(tier, isGeneric)
+                    const tierKey = key // Use the combined key for unique typing state
+                    const typedChars = lootTierTyping[tierKey] || 0
+                    const lineProgress = lootLineProgress[tierKey] || 0
+                    const dropProgress = lootPoolDropProgress[tierKey] || 0
+                    
+                    const purchases = player?.shopState?.purchases || []
+                    const poolIds = poolsInGroup.map((p: any) => String(p.id))
+                    const allPurchased = poolIds.length > 0 && poolIds.every(id => purchases.some((p: any) => String(p.lootPoolId) === id))
+                    
+                    return (
+                        <div key={`${key}-${resyncKey}`} className="mb-14">
+                          <div className={`flex items-center justify-between mb-4 border-b-2 ${
+                            key.startsWith('STARTER') ? 'border-blue-500/30' :
+                            key.startsWith('MID') ? 'border-purple-500/30' :
+                            'border-amber-500/30'
+                          } pb-2`}>

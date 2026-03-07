@@ -3,6 +3,12 @@
 
 import ClassImage from './common/ClassImage'
 
+export interface StatRequirement {
+  stat: 'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'
+  value: number
+  affectedTextSnippet?: string
+}
+
 export function parseMarkdown(text: string) {
   if (!text) return ''
 
@@ -52,28 +58,75 @@ export function parseMarkdown(text: string) {
   return html
 }
 
-export function ClassIcon({ name, size = "xs" }: { name: string, size?: "xs" | "sm" | "md" }) {
-  const sizes = {
-    xs: 'w-5 h-5',
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12'
-  }
-  
-  return (
-    <span className="inline-flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 mx-1 align-middle group hover:bg-white/10 transition-colors">
-      <div className={`${sizes[size]} flex-shrink-0`}>
-        <ClassImage image={`${name}.png`} alt={name} />
-      </div>
-      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 group-hover:text-blue-300 transition-colors">{name}</span>
-    </span>
-  )
+export interface PlayerStats {
+  STR?: number
+  DEX?: number
+  INT?: number
+  LUK?: number
+  FOR?: number
+  CON?: number
+  [key: string]: number | undefined
 }
 
-export function RichTextRenderer({ content }: { content: string }) {
+export function RichTextRenderer({ content, stats, requirements }: { content: string; stats?: PlayerStats; requirements?: StatRequirement[] }) {
+  // 1. Handle Conditional Blocks: [if DEX>=4]This text appears if DEX is at least 4[/if]
+  // Pattern: [if STAT OP VAL]content[/if]
+  const processConditions = (text: string) => {
+    let processedText = text;
+
+    if (!stats) {
+      processedText = processedText.replace(/\[if .*?\](.*?)\[\/if\]/gs, (match, inner) => {
+        // If no stats provided (e.g. in editor preview), show as "inactive" or dimmed
+        return `<span class="opacity-40 italic border-l-2 border-white/10 pl-2 block my-1">${inner}</span>`
+      })
+    } else {
+      processedText = processedText.replace(/\[if (STR|DEX|INT|LUK|FOR|CON)([><]=?|=)(\d+)\](.*?)\[\/if\]/gs, (match, stat, op, val, inner) => {
+        const playerVal = stats[stat as keyof PlayerStats] || 0
+        const threshold = parseInt(val)
+        
+        let met = false
+        if (op === '>') met = playerVal > threshold
+        else if (op === '<') met = playerVal < threshold
+        else if (op === '>=') met = playerVal >= threshold
+        else if (op === '<=') met = playerVal <= threshold
+        else if (op === '=') met = playerVal === threshold
+
+        if (met) {
+          return `<span class="text-blue-400 font-bold border-l-2 border-blue-500 pl-2 block my-1 animate-pulse-slow">${inner}</span>`
+        }
+        return `<span class="opacity-30 line-through decoration-white/20 block my-1 text-xs">${inner}</span>`
+      })
+    }
+
+    // 2. Handle Snippet-based requirements (The New System)
+    if (requirements && requirements.length > 0) {
+      requirements.forEach(req => {
+        if (!req.affectedTextSnippet) return
+
+        const playerVal = stats ? (stats[req.stat] || 0) : 0
+        const met = playerVal >= req.value
+
+        // Escape regex special chars in the snippet
+        const escapedSnippet = req.affectedTextSnippet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedSnippet, 'g');
+
+        if (met) {
+          processedText = processedText.replace(regex, `<span class="text-amber-400 font-bold drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] transition-all duration-500">${req.affectedTextSnippet}</span>`)
+        } else {
+          processedText = processedText.replace(regex, `<span class="opacity-30 grayscale blur-[0.5px] line-through decoration-amber-900/40 select-none cursor-not-allowed" title="Requires ${req.value} ${req.stat}">${req.affectedTextSnippet}</span>`)
+        }
+      })
+    }
+
+    return processedText
+  }
+
+  const processedContent = processConditions(content)
+  
   // Handle Class Embedding: {class:Name}
   // Handle Card Embedding: {card:ID}
   
-  const parts = content.split(/(\{class:.*?\}|\{card:.*?\})/g)
+  const parts = processedContent.split(/(\{class:.*?\}|\{card:.*?\})/g)
 
   return (
     <div className="rich-text-content leading-relaxed">
@@ -98,3 +151,4 @@ export function RichTextRenderer({ content }: { content: string }) {
     </div>
   )
 }
+

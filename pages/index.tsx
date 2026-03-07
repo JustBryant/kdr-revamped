@@ -9,9 +9,9 @@ export default function Home() {
   const [classes, setClasses] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState(0)
   const tabs = [
-    { title: 'Patch Notes', content: 'KDR 2.1 is now live! Featuring brand new class mechanics, updated shop prices, and better balancing for Fairy and Fiend decks.', link: '/patch-notes' },
-    { title: 'New Classes', content: 'Check out the new "Time Traveler" class! Use the Hourglass of Life to reset the game state and outlast your opponents.' },
-    { title: 'Format Info', content: 'KDR (King of the Deck: Revamped) is a custom Yu-Gi-Oh! format focused on progression, shop-based deck building, and unique class skills.' }
+    { title: 'Patch Notes', content: '...', link: '/patch-notes' },
+    { title: 'New Classes', content: '...' },
+    { title: 'Format Info', content: '...' }
   ]
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function Home() {
             <Link href="/kdr" className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(79,70,229,0.5)] text-sm">
               Play KDR
             </Link>
-            <Link href="/classes/list" className="px-10 py-4 bg-white/5 dark:bg-white/5 light:bg-gray-200 hover:bg-white/10 dark:hover:bg-white/10 light:hover:bg-gray-300 text-white dark:text-white light:text-gray-900 font-black uppercase tracking-widest rounded-xl border border-white/10 dark:border-white/10 light:border-gray-300 backdrop-blur-md transition-all hover:scale-105 text-sm">
+            <Link href="/classes" className="px-10 py-4 bg-white/5 dark:bg-white/5 light:bg-gray-200 hover:bg-white/10 dark:hover:bg-white/10 light:hover:bg-gray-300 text-white dark:text-white light:text-gray-900 font-black uppercase tracking-widest rounded-xl border border-white/10 dark:border-white/10 light:border-gray-300 backdrop-blur-md transition-all hover:scale-105 text-sm">
               Explore Classes
             </Link>
           </div>
@@ -93,14 +93,11 @@ export default function Home() {
             
             <div className="min-h-[200px] flex flex-col justify-center animate-fadeIn text-gray-100 dark:text-gray-100 light:text-gray-900">
               <h2 className="text-3xl font-bold mb-4">{tabs[activeTab].title}</h2>
-              <p className="text-gray-400 dark:text-gray-400 light:text-gray-600 text-lg leading-relaxed italic mb-6">
-                "{tabs[activeTab].content}"
-              </p>
-              {tabs[activeTab].title === 'Patch Notes' && (
-                <Link href="/patch-notes" className="text-indigo-400 hover:text-indigo-300 text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2 group">
-                  View Full Patch Notes <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </Link>
-              )}
+              <div className="flex flex-col gap-4">
+                <div className="h-2 w-full max-w-md bg-white/5 rounded-full animate-pulse"></div>
+                <div className="h-2 w-full max-w-sm bg-white/5 rounded-full animate-pulse"></div>
+                <div className="h-2 w-full max-w-xs bg-white/5 rounded-full animate-pulse"></div>
+              </div>
             </div>
           </div>
 

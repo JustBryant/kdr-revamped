@@ -148,6 +148,7 @@ model Skill {
   modifications SkillCardModification[]
   decks         Deck[]                  @relation("DeckSkills")
   providesCards Card[]                  @relation("SkillProvidesCards")
+  statRequirements Json?
   items         Item[]
 }
 
