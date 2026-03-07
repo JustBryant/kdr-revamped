@@ -32,7 +32,8 @@ export interface Skill {
   isSellable: boolean
   modifications: SkillModification[]
   providesCards?: Card[]
-  type?: 'MAIN' | 'TIP' | 'GENERIC'
+  type: 'MAIN' | 'TIP' | 'GENERIC' | 'UNIQUE'
+  uniqueRound?: number
 }
 
 export type Tier = 'STARTER' | 'MID' | 'HIGH'
