@@ -1755,7 +1755,7 @@ export default function KdrShopPage() {
               )}
 
               {/* Stat choice UI: appears after skill selection; remain visible while player has stat points */}
-              {(statChooserActive && (showStatChoices || statPoints > 0)) && (
+              {(statChooserActive && (showStatChoices || statPoints > 0) && (!player?.shopState?.pendingSkillChoices || player.shopState.pendingSkillChoices.length === 0)) && (
                 <StatChooser
                   statButtonsExit={statButtonsExit}
                   statPoints={statPoints}
@@ -2377,70 +2377,7 @@ export default function KdrShopPage() {
             cardDetailsCacheRef={cardDetailsCacheRef}
             tooltipScrollRef={tooltipScrollRef}
             ensureCardDetails={ensureCardDetails}
-            onPurchase={!isBoughtFlag ? async () => {
-              try {
-                if (loading) return
-                // Close the modal immediately (capture selected pool for animation)
-                const poolToBuy = selectedPool
-                setSelectedPool(null)
-                setLoading(true)
-                try {
-                  // Prevent the centralized `call` helper from auto-applying player updates
-                  try { suppressStageEffectRef.current = true } catch (e) {}
-                  const res = await call('purchaseLootPool', { lootPoolId: poolToBuy.id })
-                  if (res && res.error) {
-                    alert(`Purchase failed: ${res.error}${res.have !== undefined ? ` (have ${res.have}G, need ${res.required}G)` : ''}`)
-                  } else {
-                      try {
-                        const groupKey = `${poolToBuy.tier}_${poolToBuy.isGeneric ? 'generic' : 'class'}`
-                        let targetEl = groupNodeRefs.current[groupKey]
-                        if (!targetEl) targetEl = poolNodeRefs.current[String(poolToBuy.id)]
-                        if (targetEl) {
-                        try {
-                          const gRect = (targetEl as HTMLElement).getBoundingClientRect()
-                          if (shopWindowRef && shopWindowRef.current) {
-                            const containerRect = shopWindowRef.current.getBoundingClientRect()
-                            const relative = {
-                              left: Math.round(gRect.left - containerRect.left),
-                              top: Math.round(gRect.top - containerRect.top),
-                              width: Math.round(gRect.width),
-                              height: Math.round(gRect.height),
-                              containerWidth: Math.round(containerRect.width),
-                              containerHeight: Math.round(containerRect.height)
-                            }
-                            setPoolBannerRect(relative)
-                          } else {
-                            const relative = { left: Math.round(gRect.left), top: Math.round(gRect.top), width: Math.round(gRect.width), height: Math.round(gRect.height) }
-                            setPoolBannerRect(relative)
-                          }
-                        } catch (e) { setPoolBannerRect(null) }
-                        } else {
-                          setPoolBannerRect(null)
-                        }
-                        setPurchasedBannerPoolId(String(poolToBuy.id))
-                        setShowPoolPurchasedBanner(true)
-                        if (res && res.player) pendingPlayerUpdateRef.current = res.player
-                        try {
-                          const groupKey2 = `${poolToBuy.tier}_${poolToBuy.isGeneric ? 'generic' : 'class'}`
-                          const targetGroup = groupNodeRefs.current[groupKey2]
-                          if (targetGroup) {
-                            purchasedBannerGroupKeyRef.current = groupKey2
-                            window.setTimeout(() => {
-                              try { targetGroup.classList.add('pool-purchase-slide-out') } catch (e) {}
-                            }, BANNER_OUT_DELAY)
-                          }
-                        } catch (e) {}
-                      } catch (e) {}
-                  }
-                } catch (err: any) {
-                  alert('Purchase failed; see console for details')
-                }
-                finally {
-                  try { suppressStageEffectRef.current = false } catch (e) {}
-                }
-              } catch (e) {}
-              finally { try { setLoading(false) } catch (e) {} }
-            } : undefined}
+            onPurchase={undefined}
             loading={loading}
           />
         )

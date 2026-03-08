@@ -11,17 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const list = await prisma.kDR.findMany({
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          playerCount: true,
-          settingsSnapshot: true,
-          formatId: true,
-          createdById: true
+        include: {
+          _count: { select: { players: true } },
+          format: { select: { name: true } }
         }
       })
       return res.status(200).json(list)

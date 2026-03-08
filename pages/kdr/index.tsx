@@ -19,9 +19,30 @@ function formatDate(d: string) {
   }
 }
 
-export default function Lobby({ openTournaments, ongoingTournaments }: Props) {
+export default function Lobby({ openTournaments: initialOpen, ongoingTournaments: initialOngoing }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const [myKdrsOpen, setMyKdrsOpen] = useState(false)
+  const [openTournaments, setOpenTournaments] = useState(initialOpen)
+  const [ongoingTournaments, setOngoingTournaments] = useState(initialOngoing)
+
+  useEffect(() => {
+    let mounted = true
+    async function fetchKdrs() {
+      try {
+        const r = await fetch('/api/kdr')
+        const all = await r.json()
+        if (mounted && Array.isArray(all)) {
+          setOpenTournaments(all.filter((t: any) => t.status === 'OPEN'))
+          setOngoingTournaments(all.filter((t: any) => t.status === 'STARTED'))
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const iv = setInterval(fetchKdrs, 5000)
+    return () => { mounted = false; clearInterval(iv) }
+  }, [])
   
   // RecentMatches component (client-side live-updating)
   function RecentMatches() {

@@ -294,12 +294,16 @@ export default function KdrViewPage() {
 
   const hasClaimedStartingLoot = (() => {
     if (!currentPlayer) return false
-    // Check the shopState JSON field for the flag set in the API
-    return !!(currentPlayer.shopState as any)?.startingLootClaimed
+    // Check multiple flags to ensure starting loot is never shown again once claimed
+    return !!(
+      (currentPlayer.shopState as any)?.startingLootClaimed || 
+      currentPlayer.startingLootClaimed || 
+      currentPlayer.playerDeckId
+    )
   })()
 
   const openLootModal = async () => {
-    if (!id) return
+    if (!id || hasClaimedStartingLoot) return
     setLoading(true)
     try {
       const lootRes = await axios.get(`/api/kdr/player/starting-loot-options?kdrId=${id}`)
@@ -948,8 +952,12 @@ export default function KdrViewPage() {
                       packId: selectedPackId
                     })
                     setLootOpen(false)
+                    // REFETCH IMMEDIATELY to sync the local state so the banner disappears
+                    const res = await axios.get(`/api/kdr/${id}`)
+                    setKdr(res.data)
+                    
                     // Redirect after claim
-                    const pk = kdr?.currentPlayer?.playerKey || ''
+                    const pk = res.data?.currentPlayer?.playerKey || kdr?.currentPlayer?.playerKey || ''
                     router.push(`/kdr/${id}/class` + (pk ? `?playerKey=${pk}` : ''))
                   } catch (e: any) {
                     setMessage(e?.response?.data?.error || 'Failed to claim loot')

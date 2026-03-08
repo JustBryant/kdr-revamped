@@ -124,14 +124,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       case 'start': {
-        // Force reset shop if this is a new round
-        // We detect this if the player's current stage is DONE or they have shopComplete: true
-        // FIX: Also check if the current round has increased since last shop visit
+        // DETECT CURRENT TOURNAMENT CONTEXT
         const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: "desc" }, select: { number: true } })
-        const lastShopRound = Number((player as any).lastShopRound || 0)
         const currentRound = Number(latestRound?.number || 0)
+        const lastShopRound = Number((player as any).lastShopRound || 0)
 
-        // HARD LOCK: If user already finished the shop for THIS round, do NOT let them in.
+        // HARD LOCK: If user already finished the shop for THIS round, they cannot enter again.
         if (player.shopComplete && currentRound <= lastShopRound) {
           return res.status(403).json({ 
             error: 'Shop already completed for this round', 
@@ -140,24 +138,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           })
         }
 
-        if (shopState.stage === 'DONE' || player.shopComplete || currentRound > lastShopRound) {
-          // Reset shopState but preserve history and statPoints
-          const resetState = { 
+        // FORCE RESET: If it is a new round, or they indicate they are "DONE" but it's time for a fresh shop.
+        if (currentRound > lastShopRound || shopState.stage === 'DONE' || player.shopComplete) {
+          // Record what they've already earned so we don't wipe history/stats
+          const preservedHistory = (shopState.history || [])
+          const preservedStats = (shopState.statPoints || 0)
+
+          // BRAND NEW SHOP STATE
+          const freshState = { 
+            stage: 'SKILL',
             chosenSkills: [], 
             purchases: [], 
             tipAmount: 0,
             lootOffers: [],
             pendingSkillChoices: [],
-            statPoints: shopState.statPoints || 0,
-            history: (shopState.history || []),
-            stage: 'SKILL'
+            statPoints: preservedStats,
+            history: preservedHistory
           }
-          await prisma.kDRPlayer.update({ 
+
+          // Apply to Database immediately
+          const resetPlayer = await prisma.kDRPlayer.update({ 
             where: { id: player.id }, 
-            data: { shopComplete: false, shopState: resetState, lastShopRound: currentRound } 
+            data: { 
+              shopComplete: false, 
+              lastShopRound: currentRound,
+              shopState: freshState as any
+            } 
           })
-          // Update local shopState reference for the rest of this handler
-          Object.assign(shopState, resetState)
+
+          // Update pointers for the rest of this handler
+          Object.assign(shopState, freshState)
+          player.shopComplete = false
+          
+          // Re-attach the updated player for the response later
+          player.lastShopRound = currentRound
         }
 
         // award gold/xp
@@ -1289,19 +1303,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case 'finish': {
-          const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: 'desc' }, select: { number: true } })
-          const currentRoundNumber = Number(latestRound?.number || 0)
-          
-          const { updated } = await persistState({ stage: 'DONE' })
-          // mark shopComplete flag and store WHICH round it was completed for
-          const final = await prisma.kDRPlayer.update({ 
-            where: { id: player.id }, 
-            data: { 
-              shopComplete: true, 
-              lastShopRound: currentRoundNumber,
-              shopState: updated.shopState 
-            } 
-          })
+        const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: 'desc' }, select: { number: true } })
+        const currentRoundNumber = Number(latestRound?.number || 0)
+        
+        // Finalize state to DONE
+        const { updated } = await persistState({ stage: 'DONE' })
+        
+        // Mark shopComplete flag and store WHICH round it was completed for.
+        // This ensures they cannot re-enter the shop until roundNumber changes.
+        const final = await prisma.kDRPlayer.update({ 
+          where: { id: player.id }, 
+          data: { 
+            shopComplete: true, 
+            lastShopRound: currentRoundNumber,
+            shopState: updated.shopState as any
+          } 
+        })
+        return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final) })
       }
 
       case 'getPlayerSkills': {

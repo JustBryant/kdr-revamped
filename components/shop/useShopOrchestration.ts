@@ -13,6 +13,39 @@ export default function useShopOrchestration({ id, ensureCardDetails, suppressSt
   const [loading, setLoading] = React.useState<boolean>(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [autoStarted, setAutoStarted] = React.useState<boolean>(false)
+  const [playerFetched, setPlayerFetched] = React.useState<boolean>(false)
+
+  // Initialization: Always trigger 'start' on component mount to sync with the current session
+  React.useEffect(() => {
+    if (!id || playerFetched) return
+    let mounted = true
+    const init = async () => {
+      console.log('[SHOP DEBUG] Initializing shop session for KDR:', id);
+      try {
+        const res = await axios.post('/api/kdr/shop', { kdrId: String(id), action: 'start' })
+        if (!mounted) return
+        console.log('[SHOP DEBUG] Start response:', res.data);
+        if (res.data?.player) {
+          setPlayer(res.data.player)
+          setPlayerFetched(true)
+          if (res.data.player.shopState?.stage) setAutoStarted(true)
+        }
+      } catch (err: any) {
+        console.error('[SHOP DEBUG] Start failed:', err?.response?.data || err.message);
+        // Fallback for 403 (Shop already completed)
+        if (err?.response?.status === 403 && err.response.data?.player) {
+          setPlayer(err.response.data.player)
+          setPlayerFetched(true)
+        }
+        setMessage(err?.response?.data?.error || 'Failed to initialize shop')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    init()
+    return () => { mounted = false }
+  }, [id, playerFetched])
+
   const [huginMessage, setHuginMessage] = React.useState<string | null>(null)
   const [shopkeeperDialogues, setShopkeeperDialogues] = React.useState<any[] | null>(null)
   const [shopkeeperGreeting, setShopkeeperGreeting] = React.useState<string | null>(null)
@@ -32,7 +65,6 @@ export default function useShopOrchestration({ id, ensureCardDetails, suppressSt
   const [bumpedStat, setBumpedStat] = React.useState<string | null>(null)
   const [localPendingChoices, setLocalPendingChoices] = React.useState<any[] | null>(null)
   const [selectedCardModal, setSelectedCardModal] = React.useState<any | null>(null)
-  const [playerFetched, setPlayerFetched] = React.useState<boolean>(false)
   const [displayedShopkeeper, setDisplayedShopkeeper] = React.useState<any | null>(null)
   const [classDetails, setClassDetails] = React.useState<any | null>(null)
   const [classLoading, setClassLoading] = React.useState<boolean>(false)
