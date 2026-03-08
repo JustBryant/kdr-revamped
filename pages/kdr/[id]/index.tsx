@@ -145,14 +145,45 @@ export default function KdrViewPage() {
   const joinKdr = async (password?: string) => {
     if (!id) return
     setLoading(true)
+
+    // Optimistically update the UI to show the player has joined
+    // This makes the transition feel instant even if the server is slow
+    const tempUser = { 
+      id: session?.user?.id || 'temp-id', 
+      name: session?.user?.name || 'Joining...', 
+      email: session?.user?.email || '',
+      image: session?.user?.image || null
+    }
+    const tempPlayer = {
+      id: 'temp-player-id',
+      userId: tempUser.id,
+      user: tempUser,
+      status: 'ACTIVE',
+      gold: 0,
+      xp: 0,
+      shopComplete: false,
+      kdrId: id
+    }
+
+    if (kdr) {
+      setKdr({
+        ...kdr,
+        players: [...(kdr.players || []), tempPlayer]
+      })
+    }
+
     try {
       await axios.post('/api/kdr/join', { kdrId: id, password })
+      // Refetch for real data
       const res = await axios.get(`/api/kdr/${id}`)
       setKdr(res.data)
       setMessage('Joined KDR')
       setPasswordOpen(false)
       setTypedPassword('')
     } catch (e: any) {
+      // Revert if it failed
+      const refresh = await axios.get(`/api/kdr/${id}`)
+      setKdr(refresh.data)
       setMessage(e?.response?.data?.error || 'Failed to join KDR')
     } finally { setLoading(false) }
   }
@@ -210,13 +241,25 @@ export default function KdrViewPage() {
   const leaveKdr = async () => {
     if (!id || !confirm('Leave this KDR? You will not be able to rejoin unless the host invite stays open.')) return
     setLoading(true)
+
+    // Optimistic leave: remove ourselves immediately.
+    if (kdr) {
+      setKdr({
+        ...kdr,
+        players: (kdr.players || []).filter((p: any) => p.user?.id !== session?.user?.id && p.user?.email !== session?.user?.email)
+      })
+    }
+
     try {
       await axios.post('/api/kdr/leave', { kdrId: id })
       setMessage('You have left the KDR')
-      // Refetch
+      // Refetch confirmed state
       const res = await axios.get(`/api/kdr/${id}`)
       setKdr(res.data)
     } catch (e: any) {
+      // Revert if it failed
+      const refresh = await axios.get(`/api/kdr/${id}`)
+      setKdr(refresh.data)
       setMessage(e?.response?.data?.error || 'Failed to leave')
     } finally { setLoading(false) }
   }
