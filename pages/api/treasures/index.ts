@@ -36,13 +36,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           type: 'TREASURE',
           formatId: formatId || undefined
         },
-        include: {
-          card: true
-        },
         orderBy: {
           createdAt: 'desc'
         }
-      })
+      }) as any[]
+
+      // Manually attach card data since Item model has no direct relation
+      const cardIds = treasures.map(t => t.cardId).filter(Boolean) as string[]
+      if (cardIds.length) {
+        const cards = await prisma.card.findMany({
+          where: { id: { in: cardIds } }
+        })
+        const cardMap = Object.fromEntries(cards.map(c => [c.id, c]))
+        treasures.forEach(t => {
+          if (t.cardId) t.card = cardMap[t.cardId]
+        })
+      }
       // Debug: list found treasures for quick inspection
       try {
         console.info('[TREASURE-DEBUG] GET treasures', { formatId, count: treasures.length })
