@@ -1534,12 +1534,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 if (!check) throw new Error('ALREADY_SOLD')
 
                 await tx.playerItem.delete({ where: { id: foundPl.id } })
-            // FIX: Remove from shopState.purchases if it's there, to ensure immediate UI removal in the modal
-            const currentPurchases = Array.isArray(shopState.purchases) ? [...shopState.purchases] : []
-            const newPurchases = currentPurchases.filter((p: any) => p.itemId !== item.id && p.id !== item.id)
-            const newState = { ...shopState, purchases: newPurchases }
-            
-            await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure }, shopState: newState } })
+                
+                // FIX: Remove from shopState.purchases if it's there, to ensure immediate UI removal in the modal
+                const currentPurchases = Array.isArray(shopState.purchases) ? [...shopState.purchases] : []
+                const newPurchases = currentPurchases.filter((p: any) => p.itemId !== item.id && p.id !== item.id)
+                const newState = { ...shopState, purchases: newPurchases }
+                
+                await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure }, shopState: newState } })
+              })
               const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
               return res.status(200).json({ message: 'Treasure sold', player: attachPlayerKey(fresh) })
             }
