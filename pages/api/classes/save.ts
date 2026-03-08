@@ -193,8 +193,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: mainSkill.description || skillDescription || '',
             type: 'MAIN',
             classId,
-            isSellable: mainSkill.isSellable ?? true,
-            providesCards: {
+            isSellable: mainSkill.isSellable ?? true,            statRequirements: mainSkill.statRequirements ?? null,            providesCards: {
               connect: (mainSkill.providesCards || []).filter((c:any) => c && c.id).map((c:any) => ({ id: c.id }))
             }
           }
@@ -264,6 +263,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'UNIQUE',
             classId,
             uniqueRound: s.uniqueRound ?? null,
+            statRequirements: s.statRequirements ?? null
           }))
         })
       }
@@ -281,6 +281,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               providesCards: {
                 connect: s.providesCards?.map((c: any) => ({ id: c.id })) || []
               },
+              statRequirements: s.statRequirements ?? null
             }
           })
 
@@ -363,6 +364,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         name: item.skill.name,
                         description: item.skill.description,
                         isSellable: item.skill.isSellable ?? true,
+                        statRequirements: item.skill.statRequirements ?? null
                       }
                     })
                   } else {
@@ -374,6 +376,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         isSellable: item.skill.isSellable ?? true,
                         type: 'LOOT_POOL',
                         classId: classId,
+                        statRequirements: item.skill.statRequirements ?? null
                       }
                     })
                     skillId = createdSkill.id
@@ -407,6 +410,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                       isSellable: item.skill.isSellable ?? true,
                       type: 'LOOT_POOL',
                       classId: classId,
+                      statRequirements: item.skill.statRequirements ?? null
                     }
                   })
                   skillId = createdSkill.id

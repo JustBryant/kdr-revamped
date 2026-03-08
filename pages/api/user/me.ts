@@ -14,7 +14,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Get global user info (for signature card)
       const user = await prisma.user.findUnique({
           where: { id: userId },
-          include: { favoriteCard: true }
+          include: { 
+            favoriteCard: true,
+            border: true,
+            frame: true,
+            title: true,
+            background: true,
+            profileIcon: true
+          }
       })
 
       // Get global stats

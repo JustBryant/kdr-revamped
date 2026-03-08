@@ -45,7 +45,7 @@ export default function ProfilePage() {
     );
   }
 
-  const { stats, classStats, recentMatches, mostPlayedClass, signatureCard } = userData || {};
+  const { stats, classStats, recentMatches, mostPlayedClass, signatureCard, user: detailedUser } = userData || {};
 
   // Calculate win rate
   const totalMatches = (stats?.wins || 0) + (stats?.losses || 0);
@@ -66,16 +66,22 @@ export default function ProfilePage() {
           
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8 pb-8 border-b border-gray-100 dark:border-white/5">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-3xl overflow-hidden border-2 border-white dark:border-white/10 shadow-2xl transition-transform group-hover:scale-105 duration-500">
+              {/* Profile Frame Overlay */}
+              {detailedUser?.frame?.imageUrl && (
+                <div className="absolute inset-[-12px] z-20 pointer-events-none">
+                  <img src={detailedUser.frame.imageUrl} className="w-full h-full object-contain" alt="Frame" />
+                </div>
+              )}
+              <div className={`w-32 h-32 rounded-3xl overflow-hidden border-2 border-white dark:border-white/10 shadow-2xl transition-transform group-hover:scale-105 duration-500 ${detailedUser?.border?.imageUrl ? 'p-1 bg-gradient-to-br from-blue-400 to-purple-500' : ''}`}>
                 <img 
                   src={session.user?.image || '/images/default-avatar.png'} 
                   alt={session.user?.name || 'User'} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-[1.4rem]"
                 />
               </div>
               <Link 
                 href="/user/settings" 
-                className="absolute -bottom-2 -right-2 w-10 h-10 bg-white dark:bg-gray-900 rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors border border-gray-100 dark:border-white/10"
+                className="absolute -bottom-2 -right-2 z-30 w-10 h-10 bg-white dark:bg-gray-900 rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors border border-gray-100 dark:border-white/10"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -89,6 +95,11 @@ export default function ProfilePage() {
                 <h1 className="text-4xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">
                   {session.user?.name}
                 </h1>
+                {detailedUser?.title && (
+                    <span className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-500 italic">
+                        {detailedUser.title.name}
+                    </span>
+                )}
               </div>
               <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-6">
                 ELO {stats?.elo ?? 1500}

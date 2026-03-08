@@ -22,6 +22,8 @@ export default function KdrViewPage() {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [lootOpen, setLootOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [selectedMatchForReport, setSelectedMatchForReport] = useState<any>(null)
   const [lootOptions, setLootOptions] = useState<{ skills: any[], packs: any[] } | null>(null)
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null)
   const [selectedSkillItemId, setSelectedSkillItemId] = useState<string | null>(null)
@@ -237,7 +239,7 @@ export default function KdrViewPage() {
   }
 
   const visiblePlayers = (kdr?.players || []).filter((p: any) => p?.status === 'ACTIVE')
-  const currentPlayer = (kdr?.players || []).find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
+  const currentPlayer = kdr?.players?.find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
   const amIJoined = !!currentPlayer
 
   const hasClaimedStartingLoot = (() => {
@@ -526,14 +528,23 @@ export default function KdrViewPage() {
                           const isWinnerB = m.status === 'COMPLETED' && m.scoreB > m.scoreA
 
                           return (
-                            <div key={m.id} className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}>
+                            <div 
+                              key={m.id} 
+                              onClick={() => {
+                                if (isMe && pB && m.status !== 'COMPLETED') {
+                                  setSelectedMatchForReport({ ...m, pA, pB });
+                                  setReportOpen(true);
+                                }
+                              }}
+                              className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${isMe && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
+                            >
                               {isMe && <div className="absolute top-0 right-0 px-4 py-1.5 bg-indigo-600 text-[10px] font-black text-white uppercase tracking-widest rounded-bl-xl shadow-lg">Your Match</div>}
                               
                               <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                                 
                                 <div className="flex items-center gap-6 flex-1 w-full md:w-auto">
                                   {/* Player A Info */}
-                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pa" onClick={() => pA?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pA.playerKey}`)}>
+                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pa" onClick={(e) => { e.stopPropagation(); pA?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pA.playerKey}`); }}>
                                     <div className="relative">
                                       {pA?.user?.image ? (
                                         <img src={pA.user.image} alt="A" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] object-cover shadow-2xl transition-all duration-500 group-hover/pa:scale-110 group-hover/pa:rotate-2 ${isWinnerA ? 'ring-4 ring-yellow-400 shadow-yellow-400/20' : 'ring-2 ring-white/10'}`} />
@@ -553,10 +564,13 @@ export default function KdrViewPage() {
                                     <div className={`mt-4 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all ${m.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-500' : m.status === 'DISPUTED' ? 'bg-red-500 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-white/5 border-white/5 text-gray-500'}`}>
                                       {m.status}
                                     </div>
+                                    {isMe && pB && m.status !== 'COMPLETED' && (
+                                      <div className="mt-4 text-[10px] font-black text-indigo-500 uppercase animate-pulse">Click to Report</div>
+                                    )}
                                   </div>
 
                                   {/* Player B Info */}
-                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pb" onClick={() => pB?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pB.playerKey}`)}>
+                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pb" onClick={(e) => { e.stopPropagation(); pB?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pB.playerKey}`); }}>
                                     <div className="relative">
                                       {pB ? (
                                         <>
@@ -577,42 +591,9 @@ export default function KdrViewPage() {
                                   </div>
                                 </div>
 
-                                {/* Controls for reporting */}
-                                {isMe && pB && m.status !== 'COMPLETED' && (
-                                  <div className="flex flex-col items-stretch gap-3 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 w-full md:w-64 animate-in slide-in-from-right-4">
-                                    <div className="text-[10px] font-black uppercase text-center text-indigo-400 tracking-widest">Report Score (DuelingBook Link Required)</div>
-                                    <div className="flex gap-2">
-                                      <input type="number" placeholder="Me" value={matchScores[m.id]?.scoreA ?? ''} onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), scoreA: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} className="w-full h-12 text-center font-black text-xl rounded-xl bg-white dark:bg-black/60 border-2 border-indigo-200 dark:border-white/10 focus:border-indigo-500 outline-none transition-all tabular-nums shadow-inner" />
-                                      <input type="number" placeholder="Them" value={matchScores[m.id]?.scoreB ?? ''} onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), scoreB: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} className="w-full h-12 text-center font-black text-xl rounded-xl bg-white dark:bg-black/60 border-2 border-indigo-200 dark:border-white/10 focus:border-indigo-500 outline-none transition-all tabular-nums shadow-inner" />
-                                    </div>
-                                    <input 
-                                      type="text" 
-                                      placeholder="https://www.duelingbook.com/replay?id=..." 
-                                      className="w-full h-10 px-3 text-xs bg-white dark:bg-black/40 border border-indigo-500/20 rounded-lg outline-none focus:border-indigo-500" 
-                                      value={(matchScores[m.id] as any)?.replayUrl || ''} 
-                                      onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), replayUrl: e.target.value } }))}
-                                    />
-                                    <button onClick={async (e) => {
-                                      e.preventDefault();
-                                      const sA = matchScores[m.id]?.scoreA ?? null
-                                      const sB = matchScores[m.id]?.scoreB ?? null
-                                      const rUrl = (matchScores[m.id] as any)?.replayUrl || ''
-                                      if (sA == null || sB == null) return setMessage('Input score!')
-                                      if (!rUrl) return setMessage('Replay link required!')
-                                      setLoading(true);
-                                      try {
-                                        await axios.post('/api/kdr/match/report', { matchId: m.id, scoreA: sA, scoreB: sB, replayUrl: rUrl })
-                                        const refreshRes = await axios.get(`/api/kdr/${id}`)
-                                        setKdr(refreshRes.data)
-                                        setMessage('Match Report Shared!')
-                                      } catch (err: any) { setMessage(err.response?.data?.error || 'Failed') }
-                                      finally { setLoading(false) }
-                                    }} className="w-full h-12 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 active:scale-95 transition-all">Submit Results</button>
-                                  </div>
-                                )}
-
                                 {isHost && pB && (m.status === 'COMPLETED' || m.status === 'DISPUTED') && (
-                                  <button onClick={async () => {
+                                  <button onClick={async (e) => {
+                                    e.stopPropagation();
                                     setLoading(true)
                                     try {
                                       await axios.post('/api/kdr/match/reopen', { matchId: m.id })
@@ -901,6 +882,138 @@ export default function KdrViewPage() {
               >
                 {loading ? 'Manifesting Loot...' : 'CLAIM REWARDS'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reportOpen && selectedMatchForReport && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] p-4">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" />
+          <div className={`relative z-10 w-full max-w-4xl rounded-[2.5rem] p-10 border border-white/20 ${isDark ? 'bg-[#0a0f1a] shadow-[0_0_100px_rgba(79,70,229,0.3)]' : 'bg-white shadow-2xl'}`}>
+            
+            <div className="flex justify-between items-center mb-10">
+              <div>
+                <h2 className="text-5xl font-black italic uppercase tracking-tighter text-indigo-500 mb-2">Report Match</h2>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-black uppercase tracking-[0.3em] text-white/40">Match ID: {selectedMatchForReport.id}</span>
+                  <div className="h-1 w-1 rounded-full bg-white/20" />
+                  <span className="text-sm font-black uppercase tracking-[0.3em] text-indigo-400">Round {selectedMatchForReport.round}</span>
+                </div>
+              </div>
+              <button 
+                className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/10 text-white group" 
+                onClick={() => setReportOpen(false)}
+              >
+                <svg className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+              {/* Player A */}
+              <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreA > selectedMatchForReport.scoreB ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
+                    <img src={selectedMatchForReport.pA?.image_url || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{selectedMatchForReport.pA?.username}</h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">Player 1</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/80 mb-1">Games Won</label>
+                  <div className="flex gap-3">
+                    {[0, 1, 2].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setSelectedMatchForReport({...selectedMatchForReport, scoreA: val})}
+                        className={`flex-1 py-4 rounded-xl font-black text-2xl transition-all duration-300 ${selectedMatchForReport.scoreA === val ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40 scale-105' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Player B */}
+              <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreB > selectedMatchForReport.scoreA ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
+                    <img src={selectedMatchForReport.pB?.image_url || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{selectedMatchForReport.pB?.username}</h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">Player 2</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/80 mb-1">Games Won</label>
+                  <div className="flex gap-3">
+                    {[0, 1, 2].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setSelectedMatchForReport({...selectedMatchForReport, scoreB: val})}
+                        className={`flex-1 py-4 rounded-xl font-black text-2xl transition-all duration-300 ${selectedMatchForReport.scoreB === val ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40 scale-105' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="relative group">
+                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-3 ml-2">DuelingBook Replay URL (Optional)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-indigo-500 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="https://www.duelingbook.com/replay?id=..."
+                    className="w-full bg-white/5 border-2 border-white/5 focus:border-indigo-500/50 focus:bg-white/10 rounded-2xl py-5 pl-14 pr-6 text-white font-medium transition-all outline-none placeholder:text-white/10"
+                    value={selectedMatchForReport.replayUrl || ''}
+                    onChange={(e) => setSelectedMatchForReport({...selectedMatchForReport, replayUrl: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  disabled={loading}
+                  onClick={() => setReportOpen(false)}
+                  className="flex-1 py-5 rounded-2xl font-black uppercase italic tracking-widest text-white/40 bg-white/5 hover:bg-white/10 transition-all border border-white/5"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      await axios.post('/api/kdr/match/report', {
+                        matchId: selectedMatchForReport.id,
+                        scoreA: selectedMatchForReport.scoreA,
+                        scoreB: selectedMatchForReport.scoreB,
+                        replayUrl: selectedMatchForReport.replayUrl
+                      });
+                      setReportOpen(false);
+                      router.reload();
+                    } catch (e: any) {
+                      alert(e?.response?.data?.error || 'Failed to report score');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="flex-[2] py-5 rounded-2xl font-black uppercase italic tracking-widest text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {loading ? 'Transmitting Data...' : 'Submit Final Report'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
