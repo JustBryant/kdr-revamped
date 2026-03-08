@@ -126,7 +126,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'start': {
         // Force reset shop if this is a new round
         // We detect this if the player's current stage is DONE or they have shopComplete: true
-        if (shopState.stage === 'DONE' || player.shopComplete) {
+        // FIX: Also check if the current round has increased since last shop visit
+        const currentKDR = await prisma.kDR.findUnique({ where: { id: kdr.id }, select: { round: true } })
+        const lastShopRound = Number(player.lastShopRound || 0)
+        const currentRound = Number(currentKDR?.round || 0)
+
+        if (shopState.stage === 'DONE' || player.shopComplete || currentRound > lastShopRound) {
           // Reset shopState but preserve history and statPoints
           const resetState = { 
             chosenSkills: [], 
@@ -139,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
           await prisma.kDRPlayer.update({ 
             where: { id: player.id }, 
-            data: { shopComplete: false, shopState: resetState } 
+            data: { shopComplete: false, shopState: resetState, lastShopRound: currentRound } 
           })
           // Update local shopState reference for the rest of this handler
           Object.assign(shopState, resetState)
@@ -256,14 +261,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } catch (e) {
           console.warn('Failed to pick shopkeeper', e)
         }
-        if (newLevel > prevLevel) {
           // pick skill choices
           // Only offer generic skills on level-up here — do NOT include class or loot-pool skills
           // We filter for type: 'GENERIC' specifically to ensure no specialty or loot-exclusive skills leak in.
+          // FIX: Filter out skills the player already has in their inventory
+          const ownedSkillIds = await prisma.playerItem.findMany({
+            where: { userId: user.id, kdrId: kdr.id, NOT: { skillId: null } },
+            select: { skillId: true }
+          }).then(list => list.map(li => li.skillId).filter(Boolean) as string[])
+
           const availableSkills = await prisma.skill.findMany({ 
             where: { 
               classId: null,
-              type: 'GENERIC' 
+              type: 'GENERIC',
+              id: { notIn: ownedSkillIds }
             } 
           }) as any[]
           const choices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description }))
@@ -383,10 +394,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (newLevel > prevLevel) {
           // Only offer generic skills on level-up from training — do NOT include class or loot-pool skills
           // We filter for type: 'GENERIC' specifically to ensure no specialty or loot-exclusive skills leak in.
+          // FIX: Filter out skills the player already has in their inventory
+          const ownedSkillIds = await prisma.playerItem.findMany({
+            where: { userId: user.id, kdrId: kdr.id, NOT: { skillId: null } },
+            select: { skillId: true }
+          }).then(list => list.map(li => li.skillId).filter(Boolean) as string[])
+
           const availableSkills = await prisma.skill.findMany({ 
             where: { 
               classId: null,
-              type: 'GENERIC'
+              type: 'GENERIC',
+              id: { notIn: ownedSkillIds }
             } 
           }) as any[]
           const choices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description }))
@@ -591,7 +609,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             })
 
             const newState = { ...shopState, purchases, stage: 'LOOT', treasureOffers: [] }
-            return await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState } })
+            // FIX: Ensure we return the state so the client can refresh immediately
+            const result = await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState } })
+            return result
           })
         } catch (e) {
           console.error('Failed to choose treasure', e)
@@ -599,6 +619,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         try { await appendHistoryServer({ type: 'treasure', text: `Player chose treasure: ${treasure.name || treasure.card?.name || treasure.skill?.name}` }) } catch (e) {}
+        // Use updatedPlayer from transaction to ensure next state is correct
         return res.status(200).json({ message: 'Treasure chosen', player: attachPlayerKey(updatedPlayer) })
       }
 
@@ -1512,8 +1533,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 if (!check) throw new Error('ALREADY_SOLD')
 
                 await tx.playerItem.delete({ where: { id: pl.id } })
-                await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure } } })
-              })
+            // FIX: Remove from shopState.purchases if it's there, to ensure immediate UI removal in the modal
+            const currentPurchases = Array.isArray(shopState.purchases) ? [...shopState.purchases] : []
+            const newPurchases = currentPurchases.filter((p: any) => p.itemId !== item.id && p.id !== item.id)
+            const newState = { ...shopState, purchases: newPurchases }
+            
+            await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure }, shopState: newState } })
               const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
               return res.status(200).json({ message: 'Treasure sold', player: attachPlayerKey(fresh) })
             }
