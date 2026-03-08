@@ -25,9 +25,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
     if (!user) return res.status(404).json({ error: 'User not found' })
 
-    const kdr = await findKdr(kdrId)
+    const kdr = await findKdr(kdrId, {
+      include: {
+        rounds: { include: { matches: true } }
+      }
+    })
     if (!kdr) return res.status(404).json({ error: 'KDR not found' })
     const canonicalKdrId = kdr.id
+
+    // Check if the tournament is already completed
+    if (kdr.status === 'COMPLETED') return res.status(400).json({ error: 'Tournament is already finished' })
 
     // Only admins or the KDR creator can generate
     if (user.role !== 'ADMIN' && kdr.createdById !== user.id) return res.status(403).json({ error: 'Forbidden' })
@@ -36,9 +43,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const players = await prisma.kDRPlayer.findMany({ where: { kdrId: canonicalKdrId }, orderBy: { createdAt: 'asc' } })
     if (!players || players.length === 0) return res.status(400).json({ error: 'No players to create matches for' })
 
-    // Next round number
-    const lastRound = await prisma.kDRRound.findFirst({ where: { kdrId: canonicalKdrId }, orderBy: { number: 'desc' }, select: { number: true } })
+    // Verify all current round matches are done before generating next round
+    const lastRound = await prisma.kDRRound.findFirst({ where: { kdrId: canonicalKdrId }, orderBy: { number: 'desc' }, include: { matches: true } })
+    if (lastRound && lastRound.matches.some(m => m.status !== 'COMPLETED')) {
+      return res.status(400).json({ error: 'Finish all current matches before generating a new round' })
+    }
+
     const roundNumber = lastRound ? lastRound.number + 1 : 1
+
+    // ROUND ROBIN LIMITER: 
+    // In a round robin tournament with N players, there are N-1 rounds (if N is even) 
+    // or N rounds (if N is odd, with one player sitting out each round).
+    // Let's cap it at N-1 (even) or N (odd) to prevent infinite rounds.
+    const maxRounds = players.length % 2 === 0 ? players.length - 1 : players.length
+    if (roundNumber > maxRounds) {
+      // Finalize the tournament status if we've reached the limit
+      await prisma.kDR.update({ where: { id: canonicalKdrId }, data: { status: 'COMPLETED' } })
+      return res.status(400).json({ error: 'Tournament completed. All rounds have been played.' })
+    }
 
     // Build playerKey map and shuffle/pair
     const playerKeyMap = new Map<string, string | null>(players.map(p => [p.id, (p.userId && kdr.id) ? generatePlayerKey(p.userId, kdr.id) : null]))

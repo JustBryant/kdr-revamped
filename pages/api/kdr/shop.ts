@@ -124,6 +124,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       case 'start': {
+        // Force reset shop if this is a new round
+        // We detect this if the player's current stage is DONE or they have shopComplete: true
+        if (shopState.stage === 'DONE' || player.shopComplete) {
+          // Reset shopState but preserve history and statPoints
+          const resetState = { 
+            chosenSkills: [], 
+            purchases: [], 
+            tipAmount: 0,
+            lootOffers: [],
+            pendingSkillChoices: [],
+            statPoints: shopState.statPoints || 0,
+            history: (shopState.history || [])
+          }
+          await prisma.kDRPlayer.update({ 
+            where: { id: player.id }, 
+            data: { shopComplete: false, shopState: resetState } 
+          })
+          // Update local shopState reference for the rest of this handler
+          Object.assign(shopState, resetState)
+        }
+
         // award gold/xp
         const awardedGold = settings.goldPerRound
         const awardedXp = settings.xpPerRound
