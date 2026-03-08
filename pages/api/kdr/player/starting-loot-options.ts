@@ -12,6 +12,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!kdrId || typeof kdrId !== 'string') return res.status(400).json({ error: 'Missing kdrId' })
 
   try {
+    // Set cache headers - loot options only change when session/KDR changes
+    // 30 seconds should be safe to prevent hammering
+    res.setHeader('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=10')
+
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
     if (!user) return res.status(404).json({ error: 'User not found' })
 

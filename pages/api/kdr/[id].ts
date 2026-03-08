@@ -13,6 +13,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
+      // Set cache headers for GET requests:
+      // s-maxage=1: shared cache (CDN) for 1 second
+      // stale-while-revalidate=5: serve stale content up to 5s while fetching fresh update in background
+      res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate=5')
+
       const kdr = await findKdr(id, {
         include: {
           format: true,
