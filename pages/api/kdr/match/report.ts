@@ -52,13 +52,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         data: {
           scoreA,
           scoreB,
-          status: 'REPORTED',
+          status: 'COMPLETED',
           replayUrl,
           reportedById: user.id,
           reportedAt: new Date(),
+          winnerId: scoreA > scoreB ? match.playerAId : (scoreB > scoreA ? match.playerBId : null)
         },
       })
-      return res.status(200).json({ message: 'Report recorded', match: updated })
+
+      // Update Stats on Finalization
+      const winnerId = scoreA > scoreB ? match.playerAId : (scoreB > scoreA ? match.playerBId : null)
+      if (winnerId) {
+        const loserId = winnerId === match.playerAId ? match.playerBId : match.playerAId
+        const winPlayer = await prisma.kDRPlayer.findUnique({ where: { id: winnerId }, select: { userId: true, classId: true } })
+        
+        // Winner Stats
+        if (winPlayer?.userId) {
+          const ps = await prisma.playerStats.findFirst({ where: { userId: winPlayer.userId } })
+          if (ps) {
+            const s = (ps.stats as any) || {}
+            await prisma.playerStats.update({
+              where: { id: ps.id },
+              data: { stats: { ...s, wins: (s.wins || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
+            })
+          }
+        }
+
+        // Loser Stats
+        if (loserId) {
+          const losePlayer = await prisma.kDRPlayer.findUnique({ where: { id: loserId }, select: { userId: true } })
+          if (losePlayer?.userId) {
+            const ps = await prisma.playerStats.findFirst({ where: { userId: losePlayer.userId } })
+            if (ps) {
+              const s = (ps.stats as any) || {}
+              await prisma.playerStats.update({
+                where: { id: ps.id },
+                data: { stats: { ...s, losses: (s.losses || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
+              })
+            }
+          }
+        }
+      }
+
+      return res.status(200).json({ message: 'Report recorded and finalized', match: updated })
     }
 
     // If there is an existing provisional report, compare values

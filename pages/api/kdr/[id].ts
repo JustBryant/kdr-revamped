@@ -28,9 +28,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             include: { 
               matches: { 
                 include: { 
-                  playerA: { include: { user: { select: { id: true, name: true, image: true } } } },
-                  playerB: { include: { user: { select: { id: true, name: true, image: true } } } },
-                  winner: { include: { user: { select: { id: true, name: true, image: true } } } }
+                  playerA: { 
+                    include: { 
+                      user: { select: { id: true, name: true, image: true } },
+                      playerClass: { select: { id: true, name: true, image: true } }
+                    } 
+                  },
+                  playerB: { 
+                    include: { 
+                      user: { select: { id: true, name: true, image: true } },
+                      playerClass: { select: { id: true, name: true, image: true } }
+                    } 
+                  },
+                  winner: { 
+                    include: { 
+                      user: { select: { id: true, name: true, image: true } },
+                      playerClass: { select: { id: true, name: true, image: true } }
+                    } 
+                  }
                 } 
               } 
             }, 

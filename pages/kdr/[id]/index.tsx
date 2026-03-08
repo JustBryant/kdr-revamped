@@ -918,7 +918,7 @@ export default function KdrViewPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pA?.user?.name || 'Player 1'}</h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pA?.class?.name || 'Class Pending'}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pA?.playerClass?.name || 'Class Pending'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -945,7 +945,7 @@ export default function KdrViewPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pB?.user?.name || 'Player 2'}</h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pB?.class?.name || 'Class Pending'}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pB?.playerClass?.name || 'Class Pending'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
