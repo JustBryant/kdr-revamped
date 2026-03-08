@@ -1524,16 +1524,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             if (item && String(item.type || '').toUpperCase() === 'TREASURE') {
               // It's a treasure. Find corresponding playerItem.
-              const pl = await prisma.playerItem.findFirst({ 
+              const foundPl = await prisma.playerItem.findFirst({ 
                 where: { userId: user.id, kdrId: kdr.id, itemId: item.id } 
               })
-              if (!pl) return res.status(404).json({ error: 'Treasure not found in your inventory' })
+              if (!foundPl) return res.status(404).json({ error: 'Treasure not found in your inventory' })
               
               await prisma.$transaction(async (tx) => {
-                const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+                const check = await tx.playerItem.findUnique({ where: { id: foundPl.id } })
                 if (!check) throw new Error('ALREADY_SOLD')
 
-                await tx.playerItem.delete({ where: { id: pl.id } })
+                await tx.playerItem.delete({ where: { id: foundPl.id } })
             // FIX: Remove from shopState.purchases if it's there, to ensure immediate UI removal in the modal
             const currentPurchases = Array.isArray(shopState.purchases) ? [...shopState.purchases] : []
             const newPurchases = currentPurchases.filter((p: any) => p.itemId !== item.id && p.id !== item.id)
