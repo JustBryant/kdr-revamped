@@ -76,7 +76,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let winnerId: string | null = null
         if (scoreA > scoreB) winnerId = match.playerAId
         else if (scoreB > scoreA && match.playerBId) winnerId = match.playerBId
+        
         const finalized = await prisma.kDRMatch.update({ where: { id: matchId }, data: { status: 'COMPLETED', winnerId } })
+
+        // Update Stats on Finalization
+        if (winnerId) {
+          const loserId = winnerId === match.playerAId ? match.playerBId : match.playerAId
+          const winPlayer = await prisma.kDRPlayer.findUnique({ where: { id: winnerId }, select: { userId: true, classId: true } })
+          const losePlayer = loserId ? await prisma.kDRPlayer.findUnique({ where: { id: loserId }, select: { userId: true, classId: true } }) : null
+
+          // Winner Stats
+          if (winPlayer?.userId) {
+            const ps = await prisma.playerStats.findFirst({ where: { userId: winPlayer.userId } })
+            if (ps) {
+              const s = (ps.stats as any) || {}
+              await prisma.playerStats.update({
+                where: { id: ps.id },
+                data: { stats: { ...s, wins: (s.wins || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
+              })
+            }
+            if (winPlayer.classId) {
+              const cs = await prisma.playerClassStats.findFirst({ where: { userId: winPlayer.userId, classId: winPlayer.classId } })
+              if (cs) {
+                const s = (cs.stats as any) || {}
+                await prisma.playerClassStats.update({
+                  where: { id: cs.id },
+                  data: { stats: { ...s, wins: (s.wins || 0) + 1 } }
+                })
+              }
+            }
+          }
+
+          // Loser Stats
+          if (losePlayer?.userId) {
+            const ps = await prisma.playerStats.findFirst({ where: { userId: losePlayer.userId } })
+            if (ps) {
+              const s = (ps.stats as any) || {}
+              await prisma.playerStats.update({
+                where: { id: ps.id },
+                data: { stats: { ...s, losses: (s.losses || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
+              })
+            }
+            if (losePlayer.classId) {
+              const cs = await prisma.playerClassStats.findFirst({ where: { userId: losePlayer.userId, classId: losePlayer.classId } })
+              if (cs) {
+                const s = (cs.stats as any) || {}
+                await prisma.playerClassStats.update({
+                  where: { id: cs.id },
+                  data: { stats: { ...s, losses: (s.losses || 0) + 1 } }
+                })
+              }
+            }
+          }
+        }
+
         return res.status(200).json({ message: 'Match result confirmed and finalized', match: finalized })
       }
 

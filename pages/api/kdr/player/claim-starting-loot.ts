@@ -55,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await prisma.playerItem.create({
           data: {
             userId: user.id,
-            kdrId: kdrId,
+            kdrId: kdr.id,
             cardId: item.cardId,
             qty: 1
           }
@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await prisma.playerItem.create({
           data: {
             userId: user.id,
-            kdrId: kdrId,
+            kdrId: kdr.id,
             skillId: item.skillId,
             qty: 1
           }

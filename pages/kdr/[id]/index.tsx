@@ -579,23 +579,32 @@ export default function KdrViewPage() {
 
                                 {/* Controls for reporting */}
                                 {isMe && pB && m.status !== 'COMPLETED' && (
-                                  <div className="flex flex-col items-stretch gap-3 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 w-full md:w-48 animate-in slide-in-from-right-4">
-                                    <div className="text-[10px] font-black uppercase text-center text-indigo-400 tracking-widest">Report Score</div>
+                                  <div className="flex flex-col items-stretch gap-3 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 w-full md:w-64 animate-in slide-in-from-right-4">
+                                    <div className="text-[10px] font-black uppercase text-center text-indigo-400 tracking-widest">Report Score (DuelingBook Link Required)</div>
                                     <div className="flex gap-2">
                                       <input type="number" placeholder="Me" value={matchScores[m.id]?.scoreA ?? ''} onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), scoreA: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} className="w-full h-12 text-center font-black text-xl rounded-xl bg-white dark:bg-black/60 border-2 border-indigo-200 dark:border-white/10 focus:border-indigo-500 outline-none transition-all tabular-nums shadow-inner" />
                                       <input type="number" placeholder="Them" value={matchScores[m.id]?.scoreB ?? ''} onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), scoreB: e.target.value === '' ? null : parseInt(e.target.value, 10) } }))} className="w-full h-12 text-center font-black text-xl rounded-xl bg-white dark:bg-black/60 border-2 border-indigo-200 dark:border-white/10 focus:border-indigo-500 outline-none transition-all tabular-nums shadow-inner" />
                                     </div>
+                                    <input 
+                                      type="text" 
+                                      placeholder="https://www.duelingbook.com/replay?id=..." 
+                                      className="w-full h-10 px-3 text-xs bg-white dark:bg-black/40 border border-indigo-500/20 rounded-lg outline-none focus:border-indigo-500" 
+                                      value={(matchScores[m.id] as any)?.replayUrl || ''} 
+                                      onChange={(e) => setMatchScores(prev => ({ ...prev, [m.id]: { ...(prev[m.id]||{}), replayUrl: e.target.value } }))}
+                                    />
                                     <button onClick={async (e) => {
                                       e.preventDefault();
                                       const sA = matchScores[m.id]?.scoreA ?? null
                                       const sB = matchScores[m.id]?.scoreB ?? null
+                                      const rUrl = (matchScores[m.id] as any)?.replayUrl || ''
                                       if (sA == null || sB == null) return setMessage('Input score!')
+                                      if (!rUrl) return setMessage('Replay link required!')
                                       setLoading(true);
                                       try {
-                                        await axios.post('/api/kdr/match/report', { matchId: m.id, scoreA: sA, scoreB: sB })
+                                        await axios.post('/api/kdr/match/report', { matchId: m.id, scoreA: sA, scoreB: sB, replayUrl: rUrl })
                                         const refreshRes = await axios.get(`/api/kdr/${id}`)
                                         setKdr(refreshRes.data)
-                                        setMessage('Match Logged!')
+                                        setMessage('Match Report Shared!')
                                       } catch (err: any) { setMessage(err.response?.data?.error || 'Failed') }
                                       finally { setLoading(false) }
                                     }} className="w-full h-12 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 active:scale-95 transition-all">Submit Results</button>
