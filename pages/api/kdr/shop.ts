@@ -1457,6 +1457,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             await prisma.$transaction(async (tx) => {
+              // Re-verify the existence of the playerItem inside the transaction
+              const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
               await tx.playerItem.delete({ where: { id: pl.id } })
               await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
             })
@@ -1483,6 +1487,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               if (!pl) return res.status(404).json({ error: 'Treasure not found in your inventory' })
               
               await prisma.$transaction(async (tx) => {
+                const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+                if (!check) throw new Error('ALREADY_SOLD')
+
                 await tx.playerItem.delete({ where: { id: pl.id } })
                 await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure } } })
               })
@@ -1507,6 +1514,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             })
             if (!pl) return res.status(404).json({ error: 'Inventory item not found for lootItemId' })
             await prisma.$transaction(async (tx) => {
+              const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
               await tx.playerItem.delete({ where: { id: pl.id } })
               await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
             })
@@ -1533,9 +1543,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const newChosen = shopSkills.filter((id: string) => id !== sid)
                 const newState = { ...shopState, chosenSkills: newChosen }
                 
-                await prisma.$transaction([
-                  prisma.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState, gold: { increment: goldGain } } })
-                ])
+                await prisma.$transaction(async (tx) => {
+                  const check = await tx.kDRPlayer.findUnique({ where: { id: player.id } })
+                  const checkState = (check?.shopState as any) || {}
+                  const checkSkills = Array.isArray(checkState.chosenSkills) ? checkState.chosenSkills : []
+                  if (!checkSkills.includes(sid)) throw new Error('ALREADY_SOLD')
+
+                  await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState, gold: { increment: goldGain } } })
+                })
                 const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
                 return res.status(200).json({ message: 'Shop skill sold', player: attachPlayerKey(fresh) })
               }
@@ -1562,17 +1577,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
             }
             
-            await prisma.$transaction([
-              prisma.playerItem.delete({ where: { id: ps.id } }),
-              prisma.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
-            ])
+            await prisma.$transaction(async (tx) => {
+              const check = await tx.playerItem.findFirst({ where: { id: ps.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
+              await tx.playerItem.delete({ where: { id: ps.id } })
+              await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
+            })
             const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
             return res.status(200).json({ message: 'Skill sold', player: attachPlayerKey(fresh) })
           }
 
           return res.status(400).json({ error: 'Invalid sell type' })
-        } catch (e) {
+        } catch (e: any) {
           console.error('Failed to sell item', e)
+          if (e.message === 'ALREADY_SOLD') {
+            return res.status(400).json({ error: 'Item already sold' })
+          }
           return res.status(500).json({ error: 'Failed to sell item' })
         }
       }
