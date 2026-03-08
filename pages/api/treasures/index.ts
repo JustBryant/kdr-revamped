@@ -122,11 +122,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           rarity: normalizedRarity,
           formatId: formatId || undefined,
           name: cardRow.name || `Card ${cardRow.id}`
-        },
-        include: {
-          card: true
         }
-      })
+      }) as any
+
+      // Attach card data manually for the response
+      treasure.card = cardRow
 
       // Debug: log the created row for authoritative evidence
       console.info('[TREASURE-DEBUG] created', {
