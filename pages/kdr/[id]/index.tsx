@@ -523,112 +523,113 @@ export default function KdrViewPage() {
                       )}
 
                       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-[#0f1724] border-white/5 shadow-2xl' : 'bg-white border-gray-200 shadow-sm'}`}>
-                      <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'bg-white/2 border-white/5' : 'bg-gray-50 border-gray-100 shadow-inner'}`}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black italic shadow-lg shadow-indigo-600/30 transform -rotate-1 skew-x-[-10deg]">
-                            {current.number}
-                          </div>
-                          <div>
-                            <div className="text-[10px] font-black uppercase text-indigo-500 tracking-widest leading-none mb-1">Current Active Phase</div>
-                            <h2 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Round {current.number}</h2>
-                          </div>
-                        </div>
-                        <div className="hidden sm:block text-right">
-                          <div className="text-[10px] font-black uppercase opacity-40 tracking-widest">Match Progress</div>
-                          <div className="font-mono text-sm font-bold">{matches.filter((m: any) => m.status === 'COMPLETED').length} / {matches.length} Done</div>
-                        </div>
-                      </div>
-
-                      <div className="p-4 space-y-4">
-                        {matches.length === 0 && <div className="py-20 text-center opacity-30 italic text-sm">No encounters charted for this phase.</div>}
-                        {matches.map((m: any) => {
-                          const pA = (kdr.players || []).find((pp: any) => pp.id === (m.playerA?.id || m.playerAId)) || m.playerA || null
-                          const pB = (kdr.players || []).find((pp: any) => pp.id === (m.playerB?.id || m.playerBId)) || m.playerB || null
-                          const isMe = (meId === pA?.id || meId === pB?.id)
-                          const isWinnerA = m.status === 'COMPLETED' && m.scoreA > m.scoreB
-                          const isWinnerB = m.status === 'COMPLETED' && m.scoreB > m.scoreA
-
-                          return (
-                            <div 
-                              key={m.id} 
-                              onClick={() => {
-                                if (isMe && pB && m.status !== 'COMPLETED') {
-                                  setSelectedMatchForReport({ ...m, pA, pB });
-                                  setReportOpen(true);
-                                }
-                              }}
-                              className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${isMe && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
-                            >
-                              {isMe && <div className="absolute top-0 right-0 px-4 py-1.5 bg-indigo-600 text-[10px] font-black text-white uppercase tracking-widest rounded-bl-xl shadow-lg">Your Match</div>}
-                              
-                              <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                                
-                                <div className="flex items-center gap-6 flex-1 w-full md:w-auto">
-                                  {/* Player A Info */}
-                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pa" onClick={(e) => { e.stopPropagation(); pA?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pA.playerKey}`); }}>
-                                    <div className="relative">
-                                      {pA?.user?.image ? (
-                                        <img src={pA.user.image} alt="A" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] object-cover shadow-2xl transition-all duration-500 group-hover/pa:scale-110 group-hover/pa:rotate-2 ${isWinnerA ? 'ring-4 ring-yellow-400 shadow-yellow-400/20' : 'ring-2 ring-white/10'}`} />
-                                      ) : (
-                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-gray-200 dark:bg-gray-800 flex items-center justify-center font-black text-2xl shadow-inner border-2 border-white/5">A</div>
-                                      )}
-                                      {isWinnerA && <div className="absolute -top-4 -right-4 text-3xl drop-shadow-2xl animate-bounce-slow">👑</div>}
-                                    </div>
-                                    <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerA ? 'text-yellow-500' : 'opacity-60 group-hover/pa:opacity-100 transition-opacity'}`}>{pA?.user?.name || 'Player A'}</div>
-                                  </div>
-
-                                  <div className="flex flex-col items-center justify-center flex-1 py-4">
-                                    <div className="text-[10px] font-black uppercase opacity-20 mb-3 tracking-[0.2em]">Versus</div>
-                                    <div className={`text-4xl sm:text-6xl font-black italic tracking-tighter tabular-nums leading-none ${m.status === 'COMPLETED' ? 'text-indigo-600 dark:text-indigo-400 drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]' : 'text-gray-200 dark:text-white/5'}`}>
-                                      {m.scoreA} <span className="mx-1 opacity-20">:</span> {m.scoreB}
-                                    </div>
-                                    <div className={`mt-4 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all ${m.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-500' : m.status === 'DISPUTED' ? 'bg-red-500 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-white/5 border-white/5 text-gray-500'}`}>
-                                      {m.status}
-                                    </div>
-                                    {isMe && pB && m.status !== 'COMPLETED' && (
-                                      <div className="mt-4 text-[10px] font-black text-indigo-500 uppercase animate-pulse">Click to Report</div>
-                                    )}
-                                  </div>
-
-                                  {/* Player B Info */}
-                                  <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pb" onClick={(e) => { e.stopPropagation(); pB?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pB.playerKey}`); }}>
-                                    <div className="relative">
-                                      {pB ? (
-                                        <>
-                                          {pB.user?.image ? (
-                                            <img src={pB.user.image} alt="B" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] object-cover shadow-2xl transition-all duration-500 group-hover/pb:scale-110 group-hover/pb:rotate-[-2deg] ${isWinnerB ? 'ring-4 ring-yellow-400 shadow-yellow-400/20' : 'ring-2 ring-white/10'}`} />
-                                          ) : (
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-gray-200 dark:bg-gray-800 flex items-center justify-center font-black text-2xl shadow-inner border-2 border-white/5">B</div>
-                                          )}
-                                          {isWinnerB && <div className="absolute -top-4 -right-4 text-3xl drop-shadow-2xl animate-bounce-slow">👑</div>}
-                                        </>
-                                      ) : (
-                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] border-2 border-dashed border-gray-300 dark:border-white/10 flex items-center justify-center opacity-20 overflow-hidden">
-                                          <span className="text-xs font-black uppercase tracking-widest rotate-[-45deg] scale-150">BYE</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerB ? 'text-yellow-500' : 'opacity-60 group-hover/pb:opacity-100 transition-opacity'}`}>{pB?.user?.name || (pB ? 'Player B' : 'OPEN SLOT')}</div>
-                                  </div>
-                                </div>
-
-                                {isHost && pB && (m.status === 'COMPLETED' || m.status === 'DISPUTED') && (
-                                  <button onClick={async (e) => {
-                                    e.stopPropagation();
-                                    setLoading(true)
-                                    try {
-                                      await axios.post('/api/kdr/match/reopen', { matchId: m.id })
-                                      const refreshRes = await axios.get(`/api/kdr/${id}`)
-                                      setKdr(refreshRes.data)
-                                      setMessage('Match Reopened')
-                                    } catch (err: any) { setMessage('Failed') }
-                                    finally { setLoading(false) }
-                                  }} className="text-[10px] font-black uppercase text-indigo-500 hover:text-indigo-400 bg-indigo-500/5 px-3 py-2 rounded-lg border border-indigo-500/10 transition-all">Unlock Edit</button>
-                                )}
-                              </div>
+                        <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'bg-white/2 border-white/5' : 'bg-gray-50 border-gray-100 shadow-inner'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black italic shadow-lg shadow-indigo-600/30 transform -rotate-1 skew-x-[-10deg]">
+                              {current.number}
                             </div>
-                          )
-                        })}
+                            <div>
+                              <div className="text-[10px] font-black uppercase text-indigo-500 tracking-widest leading-none mb-1">Current Active Phase</div>
+                              <h2 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Round {current.number}</h2>
+                            </div>
+                          </div>
+                          <div className="hidden sm:block text-right">
+                            <div className="text-[10px] font-black uppercase opacity-40 tracking-widest">Match Progress</div>
+                            <div className="font-mono text-sm font-bold">{matches.filter((m: any) => m.status === 'COMPLETED').length} / {matches.length} Done</div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                          {matches.length === 0 && <div className="py-20 text-center opacity-30 italic text-sm">No encounters charted for this phase.</div>}
+                          {matches.map((m: any) => {
+                            const pA = (kdr.players || []).find((pp: any) => pp.id === (m.playerA?.id || m.playerAId)) || m.playerA || null
+                            const pB = (kdr.players || []).find((pp: any) => pp.id === (m.playerB?.id || m.playerBId)) || m.playerB || null
+                            const isMe = (meId === pA?.id || meId === pB?.id)
+                            const isWinnerA = m.status === 'COMPLETED' && m.scoreA > m.scoreB
+                            const isWinnerB = m.status === 'COMPLETED' && m.scoreB > m.scoreA
+
+                            return (
+                              <div 
+                                key={m.id} 
+                                onClick={() => {
+                                  if (isMe && pB && m.status !== 'COMPLETED') {
+                                    setSelectedMatchForReport({ ...m, pA, pB });
+                                    setReportOpen(true);
+                                  }
+                                }}
+                                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${isMe && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
+                              >
+                                {isMe && <div className="absolute top-0 right-0 px-4 py-1.5 bg-indigo-600 text-[10px] font-black text-white uppercase tracking-widest rounded-bl-xl shadow-lg">Your Match</div>}
+                                
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                                  
+                                  <div className="flex items-center gap-6 flex-1 w-full md:w-auto">
+                                    {/* Player A Info */}
+                                    <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pa" onClick={(e) => { e.stopPropagation(); pA?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pA.playerKey}`); }}>
+                                      <div className="relative">
+                                        {pA?.user?.image ? (
+                                          <img src={pA.user.image} alt="A" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] object-cover shadow-2xl transition-all duration-500 group-hover/pa:scale-110 group-hover/pa:rotate-2 ${isWinnerA ? 'ring-4 ring-yellow-400 shadow-yellow-400/20' : 'ring-2 ring-white/10'}`} />
+                                        ) : (
+                                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-gray-200 dark:bg-gray-800 flex items-center justify-center font-black text-2xl shadow-inner border-2 border-white/5">A</div>
+                                        )}
+                                        {isWinnerA && <div className="absolute -top-4 -right-4 text-3xl drop-shadow-2xl animate-bounce-slow">👑</div>}
+                                      </div>
+                                      <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerA ? 'text-yellow-500' : 'opacity-60 group-hover/pa:opacity-100 transition-opacity'}`}>{pA?.user?.name || 'Player A'}</div>
+                                    </div>
+
+                                    <div className="flex flex-col items-center justify-center flex-1 py-4">
+                                      <div className="text-[10px] font-black uppercase opacity-20 mb-3 tracking-[0.2em]">Versus</div>
+                                      <div className={`text-4xl sm:text-6xl font-black italic tracking-tighter tabular-nums leading-none ${m.status === 'COMPLETED' ? 'text-indigo-600 dark:text-indigo-400 drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]' : 'text-gray-200 dark:text-white/5'}`}>
+                                        {m.scoreA} <span className="mx-1 opacity-20">:</span> {m.scoreB}
+                                      </div>
+                                      <div className={`mt-4 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all ${m.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-500' : m.status === 'DISPUTED' ? 'bg-red-500 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-white/5 border-white/5 text-gray-500'}`}>
+                                        {m.status}
+                                      </div>
+                                      {isMe && pB && m.status !== 'COMPLETED' && (
+                                        <div className="mt-4 text-[10px] font-black text-indigo-500 uppercase animate-pulse">Click to Report</div>
+                                      )}
+                                    </div>
+
+                                    {/* Player B Info */}
+                                    <div className="flex flex-col items-center gap-3 w-28 sm:w-32 text-center cursor-pointer group/pb" onClick={(e) => { e.stopPropagation(); pB?.playerKey && router.push(`/kdr/${id}/class?playerKey=${pB.playerKey}`); }}>
+                                      <div className="relative">
+                                        {pB ? (
+                                          <>
+                                            {pB.user?.image ? (
+                                              <img src={pB.user.image} alt="B" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] object-cover shadow-2xl transition-all duration-500 group-hover/pb:scale-110 group-hover/pb:rotate-[-2deg] ${isWinnerB ? 'ring-4 ring-yellow-400 shadow-yellow-400/20' : 'ring-2 ring-white/10'}`} />
+                                            ) : (
+                                              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-gray-200 dark:bg-gray-800 flex items-center justify-center font-black text-2xl shadow-inner border-2 border-white/5">B</div>
+                                            )}
+                                            {isWinnerB && <div className="absolute -top-4 -right-4 text-3xl drop-shadow-2xl animate-bounce-slow">👑</div>}
+                                          </>
+                                        ) : (
+                                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] border-2 border-dashed border-gray-300 dark:border-white/10 flex items-center justify-center opacity-20 overflow-hidden">
+                                            <span className="text-xs font-black uppercase tracking-widest rotate-[-45deg] scale-150">BYE</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerB ? 'text-yellow-500' : 'opacity-60 group-hover/pb:opacity-100 transition-opacity'}`}>{pB?.user?.name || (pB ? 'Player B' : 'OPEN SLOT')}</div>
+                                    </div>
+                                  </div>
+
+                                  {isHost && pB && (m.status === 'COMPLETED' || m.status === 'DISPUTED') && (
+                                    <button onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setLoading(true)
+                                      try {
+                                        await axios.post('/api/kdr/match/reopen', { matchId: m.id })
+                                        const refreshRes = await axios.get(`/api/kdr/${id}`)
+                                        setKdr(refreshRes.data)
+                                        setMessage('Match Reopened')
+                                      } catch (err: any) { setMessage('Failed') }
+                                      finally { setLoading(false) }
+                                    }} className="text-[10px] font-black uppercase text-indigo-500 hover:text-indigo-400 bg-indigo-500/5 px-3 py-2 rounded-lg border border-indigo-500/10 transition-all">Unlock Edit</button>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
                     </div>
                   )
