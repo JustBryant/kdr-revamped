@@ -127,9 +127,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Force reset shop if this is a new round
         // We detect this if the player's current stage is DONE or they have shopComplete: true
         // FIX: Also check if the current round has increased since last shop visit
-        const currentKDR = await prisma.kDR.findUnique({ where: { id: kdr.id }, select: { round: true } })
+        const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: "desc" }, select: { number: true } })
         const lastShopRound = Number(player.lastShopRound || 0)
-        const currentRound = Number(currentKDR?.round || 0)
+        const currentRound = Number(latestRound?.number || 0)
 
         if (shopState.stage === 'DONE' || player.shopComplete || currentRound > lastShopRound) {
           // Reset shopState but preserve history and statPoints
