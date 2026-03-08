@@ -193,7 +193,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: mainSkill.description || skillDescription || '',
             type: 'MAIN',
             classId,
-            isSellable: mainSkill.isSellable ?? true,            statRequirements: mainSkill.statRequirements ?? null,            providesCards: {
+            isSellable: mainSkill.isSellable ?? true,
+            providesCards: {
               connect: (mainSkill.providesCards || []).filter((c:any) => c && c.id).map((c:any) => ({ id: c.id }))
             }
           }
