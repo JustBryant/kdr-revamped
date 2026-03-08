@@ -914,11 +914,11 @@ export default function KdrViewPage() {
               <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreA > selectedMatchForReport.scoreB ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
-                    <img src={selectedMatchForReport.pA?.image_url || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                    <img src={selectedMatchForReport.pA?.user?.image || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{selectedMatchForReport.pA?.username}</h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">Player 1</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pA?.user?.name || 'Player 1'}</h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pA?.class?.name || 'Class Pending'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -941,11 +941,11 @@ export default function KdrViewPage() {
               <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreB > selectedMatchForReport.scoreA ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
-                    <img src={selectedMatchForReport.pB?.image_url || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                    <img src={selectedMatchForReport.pB?.user?.image || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{selectedMatchForReport.pB?.username}</h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">Player 2</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pB?.user?.name || 'Player 2'}</h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pB?.class?.name || 'Class Pending'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
