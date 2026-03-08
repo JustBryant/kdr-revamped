@@ -68,6 +68,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const createdRound = await prisma.kDRRound.create({ data: { kdrId: canonicalKdrId, number: roundNumber } })
 
+    // When generating a new round, we must mark all player shops as completed for the PREVIOUS state.
+    // This allows them to enter a FRESH shop for the new round.
+    await prisma.kDRPlayer.updateMany({
+      where: { kdrId: canonicalKdrId },
+      data: { 
+        shopComplete: false,
+        lastShopRound: roundNumber - 1 // Mark that they've 'already finished' all rounds prior to this new one
+      }
+    })
+
     const createdMatches = [] as any[]
     for (let i = 0; i < playerIds.length; i += 2) {
       const a = playerIds[i]
