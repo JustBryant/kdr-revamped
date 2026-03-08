@@ -495,7 +495,7 @@ export default function KdrViewPage() {
                   let current = rounds.find((r: any) => (r.matches || []).some((m: any) => m.status !== 'COMPLETED')) || rounds[rounds.length - 1]
                   if (!current) return null
                   const matches = current.matches || []
-                  const mePlayer = (kdr.players || []).find((p: any) => p.user?.id === session?.user?.id) || null
+                  const mePlayer = (kdr.players || []).find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email) || null
                   const meId = mePlayer?.id || null
                   
                   return (
