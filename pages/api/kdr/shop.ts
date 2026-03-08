@@ -1470,8 +1470,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             // First check if it's a TREASURE (Item model instance)
             const item = await prisma.item.findUnique({ 
-              where: { id: sellId },
-              include: { card: true }
+              where: { id: sellId }
             })
 
             const goldGainTreasure = 1 // Corrected: All items sell for 1 gold
