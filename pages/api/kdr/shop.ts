@@ -149,7 +149,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             lootOffers: [],
             pendingSkillChoices: [],
             statPoints: shopState.statPoints || 0,
-            history: (shopState.history || [])
+            history: (shopState.history || []),
+            stage: 'SKILL'
           }
           await prisma.kDRPlayer.update({ 
             where: { id: player.id }, 
@@ -1288,10 +1289,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case 'finish': {
-        const { updated } = await persistState({ stage: 'DONE' })
-        // mark shopComplete flag as well
-        const final = await prisma.kDRPlayer.update({ where: { id: player.id }, data: { shopComplete: true, shopState: updated.shopState } })
-        return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final) })
+          const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: 'desc' }, select: { number: true } })
+          const currentRoundNumber = Number(latestRound?.number || 0)
+          
+          const { updated } = await persistState({ stage: 'DONE' })
+          // mark shopComplete flag and store WHICH round it was completed for
+          const final = await prisma.kDRPlayer.update({ 
+            where: { id: player.id }, 
+            data: { 
+              shopComplete: true, 
+              lastShopRound: currentRoundNumber,
+              shopState: updated.shopState 
+            } 
+          })
       }
 
       case 'getPlayerSkills': {
