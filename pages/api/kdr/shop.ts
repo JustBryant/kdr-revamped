@@ -294,7 +294,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
           return res.status(200).json({ message: 'Shop started', player: attachPlayerKey(updated), next: 'SKILL', pendingSkillChoices: choices, prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, shopGreeting: chosenGreeting })
         }
-        }
 
         // no level up => always grant 1 stat point for playing the match / starting the shop
         // move to STATS stage first (so player can use their stat point), then to TRAINING
@@ -310,29 +309,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           try { await appendHistoryServer({ type: 'award', text: `Player gained ${awardedGold} gold and ${awardedXp} XP this round.`, gold: awardedGold, xp: awardedXp }) } catch (e) {}
           return res.status(200).json({ message: 'Shop started', player: attachPlayerKey(updated), next: 'STATS', prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, shopGreeting: chosenGreeting })
         }
-        
       }
 
-        case 'markReturned': {
-          // Append a 'RETURNING' dialogue (if available) when a player returns to the shop
-          try {
-            const sk = (player.shopState as any)?.shopkeeper || null
-            const skId = sk && sk.id ? sk.id : null
-            if (!skId) return res.status(200).json({ message: 'No shopkeeper to mark return' })
-            const lines = await prisma.shopkeeperDialogue.findMany({ where: { shopkeeperId: skId, type: 'RETURNING' } })
-            if (!lines || lines.length === 0) return res.status(200).json({ message: 'No returning lines available' })
-            const pick = sampleArray(lines, 1)[0]
-            if (pick && pick.text) {
-              // Do not append returning dialogue to history. Persist as current shopkeeperGreeting
-              const { updated, shopState: newState } = await persistState({ shopkeeperGreeting: pick.text })
-              return res.status(200).json({ message: 'Returning dialogue set', player: attachPlayerKey(updated), returningText: pick.text })
-            }
-            return res.status(200).json({ message: 'No returning dialogue picked' })
-          } catch (e) {
-            console.error('Failed to mark returned', e)
-            return res.status(500).json({ error: 'Failed to mark returned' })
+      case 'markReturned': {
+        // Append a 'RETURNING' dialogue (if available) when a player returns to the shop
+        try {
+          const sk = (player.shopState as any)?.shopkeeper || null
+          const skId = sk && sk.id ? sk.id : null
+          if (!skId) return res.status(200).json({ message: 'No shopkeeper to mark return' })
+          const lines = await prisma.shopkeeperDialogue.findMany({ where: { shopkeeperId: skId, type: 'RETURNING' } })
+          if (!lines || lines.length === 0) return res.status(200).json({ message: 'No returning lines available' })
+          const pick = sampleArray(lines, 1)[0]
+          if (pick && pick.text) {
+            // Do not append returning dialogue to history. Persist as current shopkeeperGreeting
+            const { updated, shopState: newState } = await persistState({ shopkeeperGreeting: pick.text })
+            return res.status(200).json({ message: 'Returning dialogue set', player: attachPlayerKey(updated), returningText: pick.text })
           }
+          return res.status(200).json({ message: 'No returning dialogue picked' })
+        } catch (e) {
+          console.error('Failed to mark returned', e)
+          return res.status(500).json({ error: 'Failed to mark returned' })
         }
+      }
 
       case 'chooseSkill': {
         const { skillId } = payload || {}
