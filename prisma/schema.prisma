@@ -418,6 +418,7 @@ model KDRPlayer {
   gold           Int        @default(0)
   xp             Int        @default(0)
   status         String     @default("ACTIVE")
+  lastShopRound  Int?       @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   tippedAmount   Int        @default(0)
