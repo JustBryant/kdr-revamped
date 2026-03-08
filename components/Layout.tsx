@@ -36,6 +36,9 @@ export default function Layout({ children }: Props) {
             <Link href="/leaderboard" className="text-xs font-black uppercase tracking-widest text-gray-500 hover:text-blue-500 transition-colors">
               Rankings
             </Link>
+            <Link href="/shop/cosmetics" className="text-xs font-black uppercase tracking-widest text-gray-500 hover:text-blue-500 transition-colors">
+              Shop
+            </Link>
           </nav>
         </div>
         
