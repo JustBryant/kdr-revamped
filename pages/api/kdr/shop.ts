@@ -261,6 +261,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } catch (e) {
           console.warn('Failed to pick shopkeeper', e)
         }
+
+        if (newLevel > prevLevel) {
           // pick skill choices
           // Only offer generic skills on level-up here — do NOT include class or loot-pool skills
           // We filter for type: 'GENERIC' specifically to ensure no specialty or loot-exclusive skills leak in.
@@ -278,19 +280,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             } 
           }) as any[]
           const choices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description }))
-            // award stat points: always grant 1 for playing the match/shop,
-            // plus additional points for level gains (1 per level gained)
-            const levelGain = newLevel - prevLevel
-            const existingPoints = (shopState && (shopState.statPoints || 0)) || 0
-            const newPoints = existingPoints + 1 + levelGain
-            const { updated, shopState: newState } = await persistState({ stage: 'SKILL', pendingSkillChoices: choices, chosenSkills: shopState.chosenSkills || [], shopkeeper: chosenShopkeeper, shopkeeperGreeting: chosenGreeting, shopAward: { gold: awardedGold, xp: awardedXp }, statPoints: newPoints })
-            // persist award into history server-side; do NOT persist shopkeeper dialogue lines
-            try { await appendHistoryServer({ type: 'award', text: `Player gained ${awardedGold} gold and ${awardedXp} XP this round.`, gold: awardedGold, xp: awardedXp }) } catch (e) {}
-            // if level up, record it as well
-            if (newLevel > prevLevel) {
-              try { await appendHistoryServer({ type: 'level', text: `Level ${newLevel + 1} Reached!`, level: newLevel + 1 }) } catch (e) {}
-            }
-            return res.status(200).json({ message: 'Shop started', player: attachPlayerKey(updated), next: 'SKILL', pendingSkillChoices: choices, prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, shopGreeting: chosenGreeting })
+          // award stat points: always grant 1 for playing the match/shop,
+          // plus additional points for level gains (1 per level gained)
+          const levelGain = newLevel - prevLevel
+          const existingPoints = (shopState && (shopState.statPoints || 0)) || 0
+          const newPoints = existingPoints + 1 + levelGain
+          const { updated, shopState: newState } = await persistState({ stage: 'SKILL', pendingSkillChoices: choices, chosenSkills: shopState.chosenSkills || [], shopkeeper: chosenShopkeeper, shopkeeperGreeting: chosenGreeting, shopAward: { gold: awardedGold, xp: awardedXp }, statPoints: newPoints })
+          // persist award into history server-side; do NOT persist shopkeeper dialogue lines
+          try { await appendHistoryServer({ type: 'award', text: `Player gained ${awardedGold} gold and ${awardedXp} XP this round.`, gold: awardedGold, xp: awardedXp }) } catch (e) {}
+          // if level up, record it as well
+          if (newLevel > prevLevel) {
+            try { await appendHistoryServer({ type: 'level', text: `Level ${newLevel + 1} Reached!`, level: newLevel + 1 }) } catch (e) {}
+          }
+          return res.status(200).json({ message: 'Shop started', player: attachPlayerKey(updated), next: 'SKILL', pendingSkillChoices: choices, prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, shopGreeting: chosenGreeting })
+        }
         }
 
         // no level up => always grant 1 stat point for playing the match / starting the shop
