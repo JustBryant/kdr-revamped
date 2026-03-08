@@ -131,6 +131,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const lastShopRound = Number((player as any).lastShopRound || 0)
         const currentRound = Number(latestRound?.number || 0)
 
+        // HARD LOCK: If user already finished the shop for THIS round, do NOT let them in.
+        if (player.shopComplete && currentRound <= lastShopRound) {
+          return res.status(403).json({ 
+            error: 'Shop already completed for this round', 
+            code: 'SHOP_LOCKED', 
+            player: attachPlayerKey(player) 
+          })
+        }
+
         if (shopState.stage === 'DONE' || player.shopComplete || currentRound > lastShopRound) {
           // Reset shopState but preserve history and statPoints
           const resetState = { 

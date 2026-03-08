@@ -546,24 +546,28 @@ export default function KdrViewPage() {
                   const myMatch = matches.find((m: any) => m.playerAId === meId || m.playerBId === meId)
                   const isMyMatchCompleted = myMatch && myMatch.status === 'COMPLETED'
                   
-                  return (
-                    <div className="space-y-6">
-                      {isMyMatchCompleted && (
-                        <div className="p-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 animate-pulse-slow">
-                          <div className={`p-6 rounded-[14px] flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-[#080c14]' : 'bg-white'}`}>
-                            <div>
-                              <div className="text-indigo-500 text-2xl font-black uppercase tracking-widest mb-1 italic">Match Concluded</div>
-                              <div className="text-sm opacity-50 font-bold uppercase tracking-widest">You have completed your matches for this round.</div>
+                    const latestRoundNumber = rounds[rounds.length - 1]?.number || 0;
+                    const lastShopRound = Number((currentPlayer as any)?.lastShopRound || 0);
+                    const isShopLocked = !!currentPlayer?.shopComplete && latestRoundNumber <= lastShopRound;
+
+                    return (
+                      <div className="space-y-6">
+                        {isMyMatchCompleted && !isShopLocked && (
+                          <div className="p-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 animate-pulse-slow">
+                            <div className={`p-6 rounded-[14px] flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-[#080c14]' : 'bg-white'}`}>
+                              <div>
+                                <div className="text-indigo-500 text-2xl font-black uppercase tracking-widest mb-1 italic">Match Concluded</div>
+                                <div className="text-sm opacity-50 font-bold uppercase tracking-widest">You have completed your matches for this round.</div>
+                              </div>
+                              <button 
+                                className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black italic shadow-xl shadow-indigo-500/20 active:scale-95 transition-all text-lg"
+                                onClick={() => router.push(`/kdr/${id}/shop?playerKey=${currentPlayer?.playerKey}`)}
+                              >
+                                ENTER SHOP
+                              </button>
                             </div>
-                            <button 
-                              className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black italic shadow-xl shadow-indigo-500/20 active:scale-95 transition-all text-lg" 
-                              onClick={() => router.push(`/kdr/${id}/shop?playerKey=${currentPlayer?.playerKey}`)}
-                            >
-                              ENTER SHOP
-                            </button>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-[#0f1724] border-white/5 shadow-2xl' : 'bg-white border-gray-200 shadow-sm'}`}>
                         <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'bg-white/2 border-white/5' : 'bg-gray-50 border-gray-100 shadow-inner'}`}>
