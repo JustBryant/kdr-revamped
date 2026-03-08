@@ -13,10 +13,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      // Set cache headers for GET requests:
-      // s-maxage=1: shared cache (CDN) for 1 second
-      // stale-while-revalidate=5: serve stale content up to 5s while fetching fresh update in background
-      res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate=5')
+      // Set cache headers to prevent stale data for KDR status/lobby updates
+      res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Expires', '0')
 
       const kdr = await findKdr(id, {
         include: {

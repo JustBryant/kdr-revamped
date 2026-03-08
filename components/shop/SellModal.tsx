@@ -27,12 +27,13 @@ export default function SellModal({ open, onClose, player, call, setPlayer, show
   // Treasures & Card Packs
   // Prefer treasures explicitly returned by the server (`r.treasures`).
   // Fallback: include any inventory rows marked `isTreasure` for older responses.
-  const treasures = initiallyFetched
-    ? [
-        ...(Array.isArray(fetchedTreasures) ? fetchedTreasures.map((f: any) => ({ ...f, _from: 'treasures' })) : []),
-        ...fetchedInventory.filter((f: any) => !!f.isTreasure && !f.skillId).map((f: any) => ({ ...f, _from: 'inventory' }))
-      ].filter((v, i, a) => a.findIndex(t => (t.id || t.itemId || t.lootItemId) === (v.id || v.itemId || v.lootItemId)) === i)
-    : []
+  const treasures = [
+    ...(Array.isArray(fetchedTreasures) ? fetchedTreasures.map((f: any) => ({ ...f, _from: 'treasures' })) : []),
+    ...(Array.isArray(fetchedInventory) ? fetchedInventory.filter((f: any) => !!f.isTreasure && !f.skillId).map((f: any) => ({ ...f, _from: 'inventory' })) : [])
+  ].filter((v, i, a) => {
+    const vId = String(v.id || v.itemId || v.lootItemId || v.playerItemId)
+    return a.findIndex(t => String(t.id || t.itemId || t.lootItemId || t.playerItemId) === vId) === i
+  })
 
   // Skills: Prefer fetched results which already resolved names, sources, and class restrictions.
   const skills = fetchedSkills // NEVER fallback here, always use the filtered set
@@ -42,19 +43,15 @@ export default function SellModal({ open, onClose, player, call, setPlayer, show
     try {
       setSellingId(id)
       
+      const targetId = String(id)
       // OPTIMISTICALLY REMOVE FROM UI IMMEDIATELY
       // This is the absolute fix to prevent double-selling
       if (type === 'playerSkill') {
-        const sId = String(id)
-        setFetchedSkills(prev => prev.filter(s => String(s.playerSkillId || s.id) !== sId))
-      } else if (type === 'lootItem' || type === 'playerLoot') {
-        const targetId = String(id)
-        // Remove from ALL possible local storage arrays immediately
-        setFetchedTreasures(prev => prev.filter(it => String(it.id || it.itemId || it.lootItemId) !== targetId))
-        setFetchedInventory(prev => prev.filter(it => String(it.id || it.itemId || it.lootItemId) !== targetId))
+        setFetchedSkills(prev => prev.filter(s => String(s.playerSkillId || s.id) !== targetId))
       } else {
-        const targetId = String(id)
-        setFetchedInventory(prev => prev.filter(it => String(it.id || it.itemId || it.lootItemId) !== targetId))
+        // Remove from ALL possible local storage arrays immediately
+        setFetchedTreasures(prev => prev.filter(it => String(it.id || it.itemId || it.lootItemId || it.playerItemId) !== targetId))
+        setFetchedInventory(prev => prev.filter(it => String(it.id || it.itemId || it.lootItemId || it.playerItemId) !== targetId))
       }
 
       // PREPARE GOLD POP ANIMATION
@@ -158,12 +155,13 @@ export default function SellModal({ open, onClose, player, call, setPlayer, show
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {treasures.map((it: any) => {
                 const hoverObj = it.card || it.skill || it
+                const treasureId = String(it.id || it.itemId || it.lootItemId || it.playerItemId)
                 const itemName = it.name || it.card?.name || it.skill?.name || it.lootName || (it.itemId ? `Treasure ${String(it.itemId).slice(0,6)}` : (it.lootItemId ? `Treasure ${String(it.lootItemId).slice(0,6)}` : 'Unknown Treasure'))
-                const isSelling = sellingId === String(it.id || it.itemId || it.lootItemId)
+                const isSelling = sellingId === treasureId
                 
                 return (
                   <div 
-                    key={(it.id || it.itemId || it.lootItemId)} 
+                    key={treasureId} 
                     className={`flex items-center justify-between bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 p-5 rounded-xl border border-gray-100 dark:border-white/10 transition-all group hover:border-amber-500/30 ${isSelling ? 'opacity-0 scale-95 translate-x-4 pointer-events-none' : 'opacity-100'}`}
                     onMouseEnter={(e) => showHover(e, hoverObj)}
                     onMouseMove={(e) => moveHover(e)}
@@ -194,23 +192,18 @@ export default function SellModal({ open, onClose, player, call, setPlayer, show
                       </div>
                     </div>
                     <div className="pl-4">
-                      {it._from === 'inventory' ? (
-                        <button 
-                          disabled={sellingId !== null} 
-                          onClick={(e) => { e.stopPropagation(); hideHover(); doSell('playerLoot', String(it.id), e) }} 
-                          className="px-6 py-2 bg-amber-600 dark:bg-amber-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-all hover:bg-amber-500 shadow-lg shadow-amber-900/10 dark:shadow-amber-900/20 active:scale-95 disabled:grayscale"
-                        >
-                          {isSelling ? '...' : 'Sell'}
-                        </button>
-                      ) : (
-                        <button 
-                          disabled={sellingId !== null} 
-                          onClick={(e) => { e.stopPropagation(); hideHover(); doSell('lootItem', String(it.itemId || it.lootItemId), e) }} 
-                          className="px-6 py-2 bg-amber-600 dark:bg-amber-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-all hover:bg-amber-500 shadow-lg shadow-amber-900/10 dark:shadow-amber-900/20 active:scale-95 disabled:grayscale"
-                        >
-                          {isSelling ? '...' : 'Sell'}
-                        </button>
-                      )}
+                      <button 
+                        disabled={sellingId !== null} 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          hideHover(); 
+                          const type = it._from === 'inventory' ? 'playerLoot' : 'lootItem';
+                          doSell(type, treasureId, e);
+                        }} 
+                        className="px-6 py-2 bg-amber-600 dark:bg-amber-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-all hover:bg-amber-500 shadow-lg shadow-amber-900/10 dark:shadow-amber-900/20 active:scale-95 disabled:grayscale"
+                      >
+                        {isSelling ? '...' : 'Sell'}
+                      </button>
                     </div>
                   </div>
                 )

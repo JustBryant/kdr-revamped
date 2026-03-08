@@ -84,7 +84,14 @@ export default function KdrViewPage() {
       }
     }
     fetch()
-    return () => { mounted = false }
+    
+    // Set up polling to keep the lobby state fresh without manual refreshes
+    const pollInterval = setInterval(fetch, 5000)
+    
+    return () => { 
+      mounted = false 
+      clearInterval(pollInterval)
+    }
   }, [id])
 
   useEffect(() => {
