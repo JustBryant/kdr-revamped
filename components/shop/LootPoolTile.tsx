@@ -156,15 +156,12 @@ const LootPoolTile: React.FC<LootPoolTileProps> = ({ pool, onSelect, isPurchased
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-1 mt-auto pt-2 border-t border-white/5">
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name="layers" className="text-blue-400/50" />
-            <span className="text-[10px] font-bold text-white/60">{cardCount}</span>
+            <span className="text-[10px] font-bold text-white/60">{cardCount} Cards</span>
           </div>
           <div className="flex items-center justify-center gap-1.5 border-x border-white/5">
-            <Icon name="zap" className="text-purple-400/50" />
-            <span className="text-[10px] font-bold text-white/60">{skillCount}</span>
+            <span className="text-[10px] font-bold text-white/60">{skillCount} Skills</span>
           </div>
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name="circle-dollar-sign" className="text-amber-400/50" />
             <span className="text-[10px] font-bold text-white/60">{goldValue > 0 ? `${goldValue}G` : '-'}</span>
           </div>
         </div>

@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const skill = await prisma.skill.findUnique({ where: { id: skillId } })
     if (!skill) return res.status(404).json({ error: 'Skill not found' })
 
-    await prisma.playerItem.create({
+    await (prisma.playerItem as any).create({
       data: {
         userId: user.id,
         kdrId: kdr.id,
@@ -45,49 +45,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2. Grant Selected Starter Pack (LootPool)
     const pack = await prisma.lootPool.findUnique({ 
       where: { id: packId },
-      include: { items: true }
+      include: { items: { include: { card: true, skill: true } } }
     })
     if (!pack) return res.status(404).json({ error: 'Pack not found' })
 
     // Award all items in the pack
     for (const item of pack.items) {
       if (item.cardId) {
-        await prisma.playerItem.create({
+        await (prisma.playerItem as any).create({
           data: {
             userId: user.id,
             kdrId: kdr.id,
             cardId: item.cardId,
+            lootPoolId: pack.id,
             qty: 1
           }
         })
       } else if (item.skillId) {
-        await prisma.playerItem.create({
+        await (prisma.playerItem as any).create({
           data: {
             userId: user.id,
             kdrId: kdr.id,
             skillId: item.skillId,
+            lootPoolId: pack.id,
             qty: 1
           }
         })
       }
     }
 
-    // 3. Mark Choice as Complete (Optionally we can store this in player shopState or other JSON field)
-    // For now we'll just track it by the fact that items were added.
-    // We'll use the existing shopState field or just a local flag in the session/frontend.
+    // 3. Mark Choice as Complete
     await prisma.kDRPlayer.update({
       where: { id: player.id },
       data: {
+        startingLootClaimed: true,
         shopState: {
           ...(player.shopState as any || {}),
-          startingLootClaimed: true,
           startingLoot: {
+            skillId: skill.id,
             skillName: skill.name,
+            packId: pack.id,
             packName: pack.name,
             claimedAt: new Date().toISOString()
           }
         }
-      }
+      } as any
     })
 
     return res.status(200).json({ success: true, message: 'Starting loot claimed' })

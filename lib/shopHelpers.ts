@@ -1,4 +1,4 @@
-export type ShopStage = 'TRAINING' | 'TREASURE' | 'LOOT' | 'TIP' | 'DONE'
+export type ShopStage = 'START' | 'SKILL' | 'STATS' | 'TRAINING' | 'TREASURE' | 'LOOT' | 'TIP' | 'DONE'
 
 export function computeLevel(xp: number, xpCurve: number[] | undefined) {
   if (!Array.isArray(xpCurve) || xpCurve.length === 0) return 0

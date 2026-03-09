@@ -1112,12 +1112,18 @@ export default function KdrShopPage() {
     setLoading(true)
     try {
       setAutoStarted(true)
+      // Pass { confirmed: true } to trigger the actual awarding on the server
+      const res = await call('start', { confirmed: true })
+      if (!res) {
+        setAutoStarted(false)
+        return
+      }
+      const updated = res.player
+      
       const beforeGold = Number(player.gold || 0)
       const beforeXp = Number(player.xp || 0)
-      const prevLevel = computeLevel((player?.xp || 0), settings.levelXpCurve)
-      const res = await call('start')
-      if (!res) return
-      const updated = res.player
+      const prevLevel = computeLevel(beforeXp, settings.levelXpCurve)
+      
       const afterGold = Number(updated?.gold || 0)
       const afterXp = Number(updated?.xp || 0)
       const gainedGold = (res.awarded && typeof res.awarded.gold === 'number') ? res.awarded.gold : Math.max(0, afterGold - beforeGold)
@@ -1143,20 +1149,9 @@ export default function KdrShopPage() {
         setRecentGains({ gold: gainedGold, xp: gainedXp, visible: true })
         recentGainsTimeoutRef.current = window.setTimeout(() => {
           setRecentGains(prev => prev ? { ...prev, visible: false } : null)
-            // Detect returning visits: if sessionStorage previously visited this shop, notify server to append a RETURNING dialogue
-            try {
-              if (typeof window !== 'undefined' && storageKey) {
-                const visited = window.sessionStorage.getItem(storageKey + ':visited')
-                if (visited) {
-                  // fire-and-forget
-                  axios.post('/api/kdr/shop', { kdrId: String(id), action: 'markReturned' }).catch(() => {})
-                } else {
-                  window.sessionStorage.setItem(storageKey + ':visited', '1')
-                }
-              }
-            } catch (e) {}
           recentGainsTimeoutRef.current = null
         }, 3000)
+        
         // check for level up
         try {
           const newLevel = computeLevel((updated?.xp || 0), settings.levelXpCurve)
@@ -1178,6 +1173,7 @@ export default function KdrShopPage() {
         } catch (e) {}
       }
     } catch (e) {
+      setAutoStarted(false)
       // ignore errors here; call() already surfaces messages
     } finally {
       setLoading(false)
@@ -1703,7 +1699,7 @@ export default function KdrShopPage() {
               </div>
 
               {/* Skill choices: appear directly under the shopkeeper's skill offer dialogue */}
-              {(!trainingButtonsExit && ((player?.shopState?.pendingSkillChoices && player.shopState.pendingSkillChoices.length > 0) || (localPendingChoices && localPendingChoices.length > 0 && (animateSkills || skillButtonsExit)))) && (
+              {player?.shopState?.stage !== 'START' && !trainingButtonsExit && ((player?.shopState?.pendingSkillChoices && player.shopState.pendingSkillChoices.length > 0) || (localPendingChoices && localPendingChoices.length > 0 && (animateSkills || skillButtonsExit))) && (
                 <SkillChoicesContainer
                   choices={player?.shopState?.pendingSkillChoices || []}
                   localPendingChoices={localPendingChoices}
@@ -1755,7 +1751,7 @@ export default function KdrShopPage() {
               )}
 
               {/* Stat choice UI: appears after skill selection; remain visible while player has stat points */}
-              {(statChooserActive && (showStatChoices || statPoints > 0) && (!player?.shopState?.pendingSkillChoices || player.shopState.pendingSkillChoices.length === 0)) && (
+              {player?.shopState?.stage !== 'START' && (statChooserActive && (showStatChoices || statPoints > 0) && (!player?.shopState?.pendingSkillChoices || player.shopState.pendingSkillChoices.length === 0)) && (
                 <StatChooser
                   statButtonsExit={statButtonsExit}
                   statPoints={statPoints}
@@ -1861,7 +1857,7 @@ export default function KdrShopPage() {
               )}
 
               {/* Training choice UI: render when shop is in TRAINING stage */}
-              {showTrainingChoices && (
+              {player?.shopState?.stage !== 'START' && showTrainingChoices && (
                 <TrainingChoices
                   trainingButtonsExit={trainingButtonsExit}
                   loading={loading}
@@ -1933,7 +1929,7 @@ export default function KdrShopPage() {
               )}
 
               {/* Start Shop button: show below greeting/dialogues, right-aligned in the Shop Window */}
-              {(!player?.shopState || !player.shopState.stage) && !autoStarted && (
+              {(player?.shopState?.stage === 'START' || !player?.shopState?.stage || (player?.shopState?.stage === 'SKILL' && !player?.shopState?.shopAwarded)) && !autoStarted && (
                 <StartShopButton onStart={startShop} disabled={loading} />
               )}
 
@@ -1944,7 +1940,7 @@ export default function KdrShopPage() {
               {/* Gold sarcophagus reveal removed */}
               <LevelUpOverlay showLevelUp={showLevelUp} levelUpMessage={levelUpMessage} statCenter={statCenter} />
               {/* Treasure offers (free picks) - show card images inline (no inner window). Hide completely once exitPhase resets after server clears offers. */}
-              {!trainingButtonsExit && player?.shopState?.treasureOffers && player.shopState.treasureOffers.length > 0 && (
+              {player?.shopState?.stage !== 'START' && !trainingButtonsExit && player?.shopState?.treasureOffers && player.shopState.treasureOffers.length > 0 && (
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-16 items-start justify-center">
                     {player.shopState.treasureOffers.map((t: any, idx: number) => {
@@ -2256,13 +2252,13 @@ export default function KdrShopPage() {
                             </span>
                             <div className="h-4 w-px bg-emerald-500/20" />
                             <span className="flex items-center gap-1 opacity-80">
-                              <Icon name="layers" /> {poolsInGroup.reduce((acc, p) => acc + (p.cards?.length || 0), 0)} Cards
+                              {poolsInGroup.reduce((acc, p) => acc + (p.cards?.length || 0), 0)} Cards
                             </span>
                             <span className="flex items-center gap-1 opacity-80">
-                              <Icon name="zap" /> {poolsInGroup.reduce((acc, p) => acc + (p.items?.filter((i:any) => i.type === 'Skill').length || 0), 0)} Skills
+                              {poolsInGroup.reduce((acc, p) => acc + (p.items?.filter((i:any) => i.type === 'Skill').length || 0), 0)} Skills
                             </span>
                             <span className="flex items-center gap-1 opacity-80 font-bold">
-                              <Icon name="circle-dollar-sign" /> {poolsInGroup.reduce((acc, p) => acc + (p.items?.reduce((a:number, i:any) => a + (i.type === 'Gold' ? (i.amount || 0) : 0), 0) || 0), 0)}G Total
+                              {poolsInGroup.reduce((acc, p) => acc + (p.items?.reduce((a:number, i:any) => a + (i.type === 'Gold' ? (i.amount || 0) : 0), 0) || 0), 0)}G Total
                             </span>
                           </div>
                         )}

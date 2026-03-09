@@ -16,6 +16,15 @@ export async function findKdr(idOrSlug: string, opts?: KdrFindOptions): Promise<
   }
   if (opts?.select) query.select = opts.select
   if (opts?.include) query.include = opts.include
+  
+  // Try finding by UUID ID first, then fallback to slug
+  const byId = await prisma.kDR.findUnique({ 
+    where: { id: idOrSlug },
+    select: opts?.select,
+    include: opts?.include
+  })
+  if (byId) return byId
+
   return prisma.kDR.findFirst(query) as any
 }
 

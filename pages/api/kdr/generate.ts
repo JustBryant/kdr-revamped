@@ -70,23 +70,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // When generating a new round, we must mark all player shops as completed for the PREVIOUS state.
     // This allows them to enter a FRESH shop for the new round.
-    // DESTRUCTIVE RESET: Wipe the shopState JSON to move everyone back to SKILL stage.
-    const freshShopState = {
-      stage: 'SKILL',
-      chosenSkills: [],
-      purchases: [],
-      tipAmount: 0,
-      lootOffers: [],
-      pendingSkillChoices: [],
-      history: []
-    }
-
     await prisma.kDRPlayer.updateMany({
       where: { kdrId: canonicalKdrId },
       data: { 
         shopComplete: false,
-        lastShopRound: roundNumber - 1, // Mark that they've 'already finished' all rounds prior to this new one
-        shopState: freshShopState as any
+        lastShopRound: roundNumber - 1 // Mark that they've 'already finished' all rounds prior to this new one
       }
     })
 

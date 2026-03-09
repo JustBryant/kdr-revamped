@@ -363,6 +363,7 @@ model PlayerItem {
   purchased Boolean  @default(false)
   seen      Boolean  @default(false)
   skillId   String?
+  lootPoolId String?
 }
 
 model PlayerStats {
@@ -407,29 +408,45 @@ model KDR {
 }
 
 model KDRPlayer {
-  id             String     @id @default(cuid())
+  id             String            @id @default(cuid())
   kdrId          String
   userId         String
   classId        String?
   deckId         String?
-  bye            Boolean    @default(false)
-  shopComplete   Boolean    @default(false)
-  shopState      Json?
-  gold           Int        @default(0)
-  xp             Int        @default(0)
-  status         String     @default("ACTIVE")
-  lastShopRound  Int?       @default(0)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  tippedAmount   Int        @default(0)
-  offeredClasses String[]   @default([])
-  matchesA       KDRMatch[] @relation("MatchesA")
-  matchesB       KDRMatch[] @relation("MatchesB")
-  matchesWon     KDRMatch[] @relation("MatchesWon")
-  playerClass    Class?     @relation(fields: [classId], references: [id])
-  playerDeck     Deck?      @relation(fields: [deckId], references: [id])
-  kdr            KDR        @relation(fields: [kdrId], references: [id], onDelete: Cascade)
-  user           User       @relation(fields: [userId], references: [id])
+  bye            Boolean           @default(false)
+  shopComplete        Boolean           @default(false)
+  startingLootClaimed Boolean           @default(false)
+  shopState           Json?
+  stats               Json?
+  gold           Int               @default(0)
+  xp             Int               @default(0)
+  status         String            @default("ACTIVE")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  tippedAmount   Int               @default(0)
+  offeredClasses String[]          @default([])
+  lastShopRound  Int?              @default(0)
+  matchesA       KDRMatch[]        @relation("MatchesA")
+  matchesB       KDRMatch[]        @relation("MatchesB")
+  matchesWon     KDRMatch[]        @relation("MatchesWon")
+  playerClass    Class?            @relation(fields: [classId], references: [id])
+  playerDeck     Deck?             @relation(fields: [deckId], references: [id])
+  kdr            KDR               @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id])
+  shopInstances  KDRShopInstance[]
+}
+
+model KDRShopInstance {
+  id          String    @id @default(cuid())
+  roundNumber Int
+  shopState   Json?
+  isComplete  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  playerId    String
+  kdrPlayer   KDRPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, roundNumber])
 }
 
 model KDRRound {

@@ -292,18 +292,10 @@ export default function KdrViewPage() {
   const currentPlayer = kdr?.players?.find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
   const amIJoined = !!currentPlayer
 
-  const hasClaimedStartingLoot = (() => {
-    if (!currentPlayer) return false
-    // Check multiple flags to ensure starting loot is never shown again once claimed
-    return !!(
-      (currentPlayer.shopState as any)?.startingLootClaimed || 
-      currentPlayer.startingLootClaimed || 
-      currentPlayer.playerDeckId
-    )
-  })()
+  const hasClaimedStartingLoot = !!(currentPlayer?.startingLootClaimed || (currentPlayer?.shopState as any)?.startingLoot);
 
   const openLootModal = async () => {
-    if (!id || hasClaimedStartingLoot) return
+    if (!id) return
     setLoading(true)
     try {
       const lootRes = await axios.get(`/api/kdr/player/starting-loot-options?kdrId=${id}`)
@@ -610,12 +602,12 @@ export default function KdrViewPage() {
                               <div 
                                 key={m.id} 
                                 onClick={() => {
-                                  if (isMe && pB && m.status !== 'COMPLETED') {
+                                  if ((isMe || isHost) && pB && m.status !== 'COMPLETED') {
                                     setSelectedMatchForReport({ ...m, pA, pB });
                                     setReportOpen(true);
                                   }
                                 }}
-                                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${isMe && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
+                                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${(isMe || isHost) && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
                               >
                                 {isMe && <div className="absolute top-0 right-0 px-4 py-1.5 bg-indigo-600 text-[10px] font-black text-white uppercase tracking-widest rounded-bl-xl shadow-lg">Your Match</div>}
                                 
@@ -643,7 +635,7 @@ export default function KdrViewPage() {
                                       <div className={`mt-4 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all ${m.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-500' : m.status === 'DISPUTED' ? 'bg-red-500 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-white/5 border-white/5 text-gray-500'}`}>
                                         {m.status}
                                       </div>
-                                      {isMe && pB && m.status !== 'COMPLETED' && (
+                                      {(isMe || isHost) && pB && m.status !== 'COMPLETED' && (
                                         <div className="mt-4 text-[10px] font-black text-indigo-500 uppercase animate-pulse">Click to Report</div>
                                       )}
                                     </div>
@@ -952,12 +944,8 @@ export default function KdrViewPage() {
                       packId: selectedPackId
                     })
                     setLootOpen(false)
-                    // REFETCH IMMEDIATELY to sync the local state so the banner disappears
-                    const res = await axios.get(`/api/kdr/${id}`)
-                    setKdr(res.data)
-                    
                     // Redirect after claim
-                    const pk = res.data?.currentPlayer?.playerKey || kdr?.currentPlayer?.playerKey || ''
+                    const pk = kdr?.currentPlayer?.playerKey || ''
                     router.push(`/kdr/${id}/class` + (pk ? `?playerKey=${pk}` : ''))
                   } catch (e: any) {
                     setMessage(e?.response?.data?.error || 'Failed to claim loot')

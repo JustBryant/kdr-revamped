@@ -22,16 +22,27 @@ export default function useShopOrchestration({ id, ensureCardDetails, suppressSt
     const init = async () => {
       console.log('[SHOP DEBUG] Initializing shop session for KDR:', id);
       try {
-        const res = await axios.post('/api/kdr/shop', { kdrId: String(id), action: 'start' })
+        // Use 'get' instead of 'start' for initial load to avoid accidental awarding
+        // and to check if the shop is actually ready to be started.
+        const res = await axios.post('/api/kdr/shop', { kdrId: String(id), action: 'get' })
         if (!mounted) return
-        console.log('[SHOP DEBUG] Start response:', res.data);
+        console.log('[SHOP DEBUG] Get response:', res.data);
         if (res.data?.player) {
           setPlayer(res.data.player)
           setPlayerFetched(true)
-          if (res.data.player.shopState?.stage) setAutoStarted(true)
+          
+          const s = res.data.player.shopState
+          // If stage is 'START', we show the start button.
+          // If stage is 'DONE', we show the done screen.
+          // Otherwise, we auto-start the UI logic (LOOT, SKILL, etc)
+          if (s?.stage && s.stage !== 'START') {
+            setAutoStarted(true)
+          } else {
+            setAutoStarted(false)
+          }
         }
       } catch (err: any) {
-        console.error('[SHOP DEBUG] Start failed:', err?.response?.data || err.message);
+        console.error('[SHOP DEBUG] Init failed:', err?.response?.data || err.message);
         // Fallback for 403 (Shop already completed)
         if (err?.response?.status === 403 && err.response.data?.player) {
           setPlayer(err.response.data.player)
