@@ -48,6 +48,9 @@ model User {
   titleId        String?
   backgroundId   String?
   profileIconId  String?
+  duelistPoints  Int                     @default(0)
+  cardEffectId   String?
+  iconEffectId   String?
   accounts       Account[]
   decks          Deck[]
   createdKdrs    KDR[]                   @relation("KdrCreator")
@@ -57,10 +60,24 @@ model User {
   tournaments    TournamentParticipant[]
   background     Item?                   @relation("UserBackground", fields: [backgroundId], references: [id])
   border         Item?                   @relation("UserBorder", fields: [borderId], references: [id])
+  cardEffect     Item?                   @relation("UserCardEffect", fields: [cardEffectId], references: [id])
   favoriteCard   Card?                   @relation("UserFavoriteCard", fields: [favoriteCardId], references: [id])
   frame          Item?                   @relation("UserFrame", fields: [frameId], references: [id])
+  iconEffect     Item?                   @relation("UserIconEffect", fields: [iconEffectId], references: [id])
   profileIcon    Item?                   @relation("UserProfileIcon", fields: [profileIconId], references: [id])
   title          Item?                   @relation("UserTitle", fields: [titleId], references: [id])
+  ownedCosmetics UserItem[]
+}
+
+model UserItem {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
 }
 
 model VerificationToken {
@@ -158,6 +175,7 @@ model Skill {
   modifications SkillCardModification[]
   decks         Deck[]                  @relation("DeckSkills")
   providesCards Card[]                  @relation("SkillProvidesCards")
+  statRequirements Json?                 @default("[]")
 }
 
 model SkillCardModification {
@@ -330,40 +348,49 @@ model FormatClass {
 }
 
 model Item {
-  id               String   @id @default(cuid())
+  id               String     @id @default(cuid())
   type             ItemType
-  externalId       String?  @unique
+  externalId       String?    @unique
   name             String
   description      String?
   metadata         Json?
-  isSellable       Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isSellable       Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
   cardId           String?
   formatId         String?
   rarity           String?
   skillId          String?
   imageUrl         String?
   price            Int?
-  usersBackground  User[]   @relation("UserBackground")
-  usersBorder      User[]   @relation("UserBorder")
-  usersFrame       User[]   @relation("UserFrame")
-  usersProfileIcon User[]   @relation("UserProfileIcon")
-  usersTitle       User[]   @relation("UserTitle")
+  usersBackground  User[]     @relation("UserBackground")
+  usersBorder      User[]     @relation("UserBorder")
+  usersCardEffect  User[]     @relation("UserCardEffect")
+  usersFrame       User[]     @relation("UserFrame")
+  usersIconEffect  User[]     @relation("UserIconEffect")
+  usersProfileIcon User[]     @relation("UserProfileIcon")
+  usersTitle       User[]     @relation("UserTitle")
+  userItemOwners   UserItem[]
 }
 
 model PlayerItem {
-  id        String   @id @default(cuid())
-  userId    String
-  itemId    String?
-  qty       Int      @default(1)
-  cardId    String?
-  createdAt DateTime @default(now())
-  kdrId     String?
-  purchased Boolean  @default(false)
-  seen      Boolean  @default(false)
-  skillId   String?
+  id         String   @id @default(cuid())
+  userId     String
+  itemId     String?
+  qty        Int      @default(1)
+  cardId     String?
+  createdAt  DateTime @default(now())
+  kdrId      String?
+  kdr        KDR?     @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  // New: link to the per-KDR player record (KDRPlayer.id). Nullable initially for migration safety.
+  kdrPlayerId String?
+  kdrPlayer   KDRPlayer? @relation(fields: [kdrPlayerId], references: [id], onDelete: Cascade)
+  purchased  Boolean  @default(false)
+  seen       Boolean  @default(false)
+  skillId    String?
   lootPoolId String?
+
+  @@index([kdrPlayerId])
 }
 
 model PlayerStats {
@@ -408,32 +435,34 @@ model KDR {
 }
 
 model KDRPlayer {
-  id             String            @id @default(cuid())
-  kdrId          String
-  userId         String
-  classId        String?
-  deckId         String?
-  bye            Boolean           @default(false)
+  id                  String            @id @default(cuid())
+  kdrId               String
+  userId              String?
+  classId             String?
+  deckId              String?
+  bye                 Boolean           @default(false)
   shopComplete        Boolean           @default(false)
-  startingLootClaimed Boolean           @default(false)
   shopState           Json?
+  gold                Int               @default(0)
+  xp                  Int               @default(0)
+  status              String            @default("ACTIVE")
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  tippedAmount        Int               @default(0)
+  offeredClasses      String[]          @default([])
+  lastShopRound       Int?              @default(0)
   stats               Json?
-  gold           Int               @default(0)
-  xp             Int               @default(0)
-  status         String            @default("ACTIVE")
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  tippedAmount   Int               @default(0)
-  offeredClasses String[]          @default([])
-  lastShopRound  Int?              @default(0)
-  matchesA       KDRMatch[]        @relation("MatchesA")
-  matchesB       KDRMatch[]        @relation("MatchesB")
-  matchesWon     KDRMatch[]        @relation("MatchesWon")
-  playerClass    Class?            @relation(fields: [classId], references: [id])
-  playerDeck     Deck?             @relation(fields: [deckId], references: [id])
-  kdr            KDR               @relation(fields: [kdrId], references: [id], onDelete: Cascade)
-  user           User              @relation(fields: [userId], references: [id])
-  shopInstances  KDRShopInstance[]
+  startingLootClaimed Boolean           @default(false)
+  name                String?
+  matchesA            KDRMatch[]        @relation("MatchesA")
+  matchesB            KDRMatch[]        @relation("MatchesB")
+  matchesWon          KDRMatch[]        @relation("MatchesWon")
+  playerClass         Class?            @relation(fields: [classId], references: [id])
+  playerDeck          Deck?             @relation(fields: [deckId], references: [id])
+  kdr                 KDR               @relation(fields: [kdrId], references: [id], onDelete: Cascade)
+  user                User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopInstances       KDRShopInstance[]
+  playerItems         PlayerItem[]
 }
 
 model KDRShopInstance {
@@ -475,8 +504,8 @@ model KDRMatch {
   reportedAt   DateTime?
   reportedById String?
   kdr          KDR        @relation(fields: [kdrId], references: [id], onDelete: Cascade)
-  playerA      KDRPlayer  @relation("MatchesA", fields: [playerAId], references: [id])
-  playerB      KDRPlayer? @relation("MatchesB", fields: [playerBId], references: [id])
+  playerA      KDRPlayer  @relation("MatchesA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerB      KDRPlayer? @relation("MatchesB", fields: [playerBId], references: [id], onDelete: Cascade)
   round        KDRRound?  @relation(fields: [roundId], references: [id])
   winner       KDRPlayer? @relation("MatchesWon", fields: [winnerId], references: [id])
 }
@@ -547,4 +576,6 @@ enum ItemType {
   TITLE
   BACKGROUND
   PROFILE_ICON
+  CARD_EFFECT
+  ICON_EFFECT
 }

@@ -131,3 +131,31 @@ button:focus {
 .treasure-img { display: block; position: relative; z-index: 30; }
 .rarity-shimmer { position: absolute; top: 0; left: 0; width: 70%; height: 100%; pointer-events: none; transform: translateX(-160%) skewX(-18deg); background: linear-gradient(90deg, rgba(0,120,255,0) 0%, rgba(160,210,255,0.95) 50%, rgba(0,120,255,0) 100%); filter: blur(9px) saturate(1.15); mix-blend-mode: screen; opacity: 0; animation-name: rarityShimmer; animation-timing-function: cubic-bezier(.2,.9,.2,1); animation-fill-mode: forwards; z-index: 42; }
 @keyframes rarityShimmer { 0% { transform: translateX(-160%) skewX(-18deg); opacity: 0 } 20% { opacity: 0.95 } 80% { opacity: 0.95 } 100% { transform: translateX(160%) skewX(-18deg); opacity: 0 } }
+
+/* Shop Loot Pool Animations */
+@keyframes shopFlyUp {
+  0% { transform: translateY(30px) scale(0.95); opacity: 0; filter: blur(4px); }
+  100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes shopSlideInRight {
+  0% { transform: translateX(40px); opacity: 0; filter: blur(4px); }
+  100% { transform: translateX(0); opacity: 1; filter: blur(0); }
+}
+
+@keyframes shopFadeOut {
+  0% { transform: scale(1); opacity: 1; filter: blur(0); }
+  100% { transform: scale(0.9); opacity: 0; filter: blur(8px); }
+}
+
+.animate-shop-fly-up {
+  animation: shopFlyUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-shop-slide-in-right {
+  animation: shopSlideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-shop-fade-out {
+  animation: shopFadeOut 0.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+}

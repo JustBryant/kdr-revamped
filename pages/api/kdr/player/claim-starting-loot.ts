@@ -36,6 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         userId: user.id,
         kdrId: kdr.id,
+        kdrPlayerId: player.id,
         skillId: skill.id,
         itemId: itemId || null,
         qty: 1
@@ -51,11 +52,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Award all items in the pack
     for (const item of pack.items) {
-      if (item.cardId) {
+        if (item.cardId) {
         await (prisma.playerItem as any).create({
           data: {
             userId: user.id,
             kdrId: kdr.id,
+            kdrPlayerId: player.id,
             cardId: item.cardId,
             lootPoolId: pack.id,
             qty: 1
@@ -66,6 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: {
             userId: user.id,
             kdrId: kdr.id,
+            kdrPlayerId: player.id,
             skillId: item.skillId,
             lootPoolId: pack.id,
             qty: 1
@@ -74,20 +77,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // 3. Mark Choice as Complete
+    // 3. Mark Choice as Complete and record the picked pack as purchased + seen
+    const prevState = (player.shopState as any) || {}
+    const prevPurchases = Array.isArray(prevState.purchases) ? [...prevState.purchases] : []
+    const prevSeen = Array.isArray(prevState.seen) ? [...prevState.seen] : []
+
+    const newPurchaseEntry = { lootPoolId: pack.id, qty: 1, cost: 0, source: 'STARTER' }
+    const mergedPurchases = [...prevPurchases, newPurchaseEntry]
+
+    const mergedSeen = Array.from(new Set([...prevSeen.map((s: any) => String(s)), String(pack.id)]))
+
     await prisma.kDRPlayer.update({
       where: { id: player.id },
       data: {
         startingLootClaimed: true,
         shopState: {
-          ...(player.shopState as any || {}),
+          ...(prevState || {}),
           startingLoot: {
             skillId: skill.id,
             skillName: skill.name,
             packId: pack.id,
             packName: pack.name,
             claimedAt: new Date().toISOString()
-          }
+          },
+          purchases: mergedPurchases,
+          seen: mergedSeen
         }
       } as any
     })

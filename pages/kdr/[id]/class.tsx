@@ -4,8 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import ClassImage from '../../../components/common/ClassImage'
 import CardImage from '../../../components/common/CardImage'
-import CardDescription from '../../../components/class-editor/shared/CardDescription'
-import HoverTooltip from '../../../components/shop/HoverTooltip'
+import HoverTooltip from '../../../components/shop-v2/components/HoverTooltip'
 import DeckBuilderOverlay from '../../../components/DeckBuilderOverlay'
 import { ShatterfoilOverlay } from '../../../components/ShatterfoilOverlay'
 import { UltraRareGlow } from '../../../components/UltraRareGlow'
@@ -73,7 +72,7 @@ const CardPreview: React.FC<{ item: any; isHovered?: boolean }> = ({ item, isHov
         )}
       </div>
       <div style={{ marginTop: nameMarginTop, width: '100%', boxSizing: 'border-box' }}>
-        <div className="font-medium" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: `${nameFontSize}px`, color: '#fff', textAlign: 'center' }}>{name}</div>
+        <div className="font-medium" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: `${nameFontSize}px`, color: '#fff', textAlign: 'center', paddingLeft: '6px', paddingRight: '6px' }}>{name}</div>
       </div>
     </div>
   )
@@ -160,7 +159,7 @@ const ScrollGrid: React.FC<{
   )
 
   const centered = (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
       <div style={{ width: `${gridWidth}px`, ...(layoutDebug ? { outline: '1px dashed rgba(255,128,0,0.6)' } : {}) }}>{grid}</div>
     </div>
   )
@@ -561,6 +560,47 @@ export default function KdrClassPage() {
     return Array.from(map.values())
   }, [player?.skills, sanitizedInventory, cls?.skills])
 
+  // Loot skills: skills explicitly earned from loot pools or present in inventory
+  const lootSkills = React.useMemo(() => {
+    // Collect candidate skills from player rows and inventory, but only
+    // include those that are defined in the class's loot skill list.
+    const byPlayer = (player?.skills || []).filter((s: any) => {
+      if (!s) return false
+      const src = (s._source || s.source || '').toString().toUpperCase()
+      return src === 'LOOT_POOL' || src === 'INVENTORY'
+    }).map((s: any) => (typeof s === 'string' ? { name: s } : s))
+
+    const fromInv = (sanitizedInventory || []).flatMap((it: any) => {
+      if (!it) return []
+      if ((it.type || '').toString().toLowerCase() === 'skill') {
+        if (it.skill) return [{ id: it.skill.id, name: it.skill.name, description: it.skill.description || it.skill.desc || '', _source: 'INVENTORY' }]
+        return [{ id: `loot-${it.id}`, name: (it.lootName || it.skillName || 'Purchased Skill'), description: '', _source: 'INVENTORY' }]
+      }
+      return []
+    })
+
+    // Build a set of class loot skill identifiers (id or name) — exclude MAIN/INNATE/STARTING
+    const classLootSet = new Set<string>()
+    ;(cls?.skills || []).forEach((cs: any) => {
+      if (!cs) return
+      const t = (cs.type || '').toString().toUpperCase()
+      if (t === 'MAIN' || t === 'INNATE' || t === 'STARTING') return
+      if (cs.id) classLootSet.add(String(cs.id))
+      if (cs.name) classLootSet.add(String(cs.name))
+    })
+
+    const map = new Map<string, any>()
+    ;[...byPlayer, ...fromInv].forEach((s: any) => {
+      const key = s.id ? String(s.id) : (s.name || '').toString()
+      if (!key) return
+      // Only include if this skill exists in the class's loot set
+      const inClassLoot = classLootSet.has(key) || classLootSet.has(s.name)
+      if (!inClassLoot) return
+      if (!map.has(key)) map.set(key, s)
+    })
+    return Array.from(map.values())
+  }, [player?.skills, sanitizedInventory, cls?.skills])
+
   // Normalize starting cards from the class payload into a flat card array
   const getCardCategory = (type: string | undefined): 'Monster' | 'Spell' | 'Trap' | 'Extra' => {
     if (!type) return 'Monster'
@@ -708,7 +748,7 @@ export default function KdrClassPage() {
         .scrollable:hover::-webkit-scrollbar { width: 8px; }
         .scrollable::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
       `}</style>
-      <div className="w-full" ref={fullChildRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: scale < 1 ? `${currentDesignWidth}px` : '100%', display: 'block', margin: '0 auto' }}>
+      <div className="w-full" ref={fullChildRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '100%', maxWidth: scale < 1 ? `${currentDesignWidth}px` : undefined, display: 'block', margin: '0 auto' }}>
         <div className="px-6 lg:px-12 pt-4">
           {!isEmbedded && (
             <div className="mb-2 flex items-center justify-between">
@@ -899,7 +939,6 @@ export default function KdrClassPage() {
                     onClick={() => setDeckBuilderOpen(true)} 
                     className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors shadow-lg font-bold"
                   >
-                    <Icon name="Plus" className="w-5 h-5 hidden" />
                     Modify Deck
                   </button>
 
@@ -1049,14 +1088,18 @@ export default function KdrClassPage() {
                                       </div>
                                     </div>
                                     <div className="mt-2 w-full flex items-center justify-center" style={{ minHeight: '32px' }}>
-                                      {it.rarity && (
-                                        <img
-                                          src={`/images/rarity/${String(it.rarity || '').toUpperCase()}.png`}
-                                          alt={String(it.rarity || '')}
-                                          className="w-10 h-10 object-contain"
-                                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                                        />
-                                      )}
+                                      {it.rarity && (() => {
+                                        const r = String(it.rarity || '').toUpperCase();
+                                        const mapped = r === 'C' || r === 'COMMON' ? 'N' : r;
+                                        return (
+                                          <img
+                                            src={`/images/rarity/${mapped}.png`}
+                                            alt={String(it.rarity || '')}
+                                            className="w-10 h-10 object-contain"
+                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                                          />
+                                        )
+                                      })()}
                                     </div>
                                     {Number(it.qty || 1) > 1 && (
                                       <div className="absolute right-1 bottom-1 text-xs bg-white/90 text-gray-900 px-1 rounded">x{it.qty}</div>
@@ -1104,6 +1147,42 @@ export default function KdrClassPage() {
                           <div className="text-sm text-gray-600">No skills yet.</div>
                         )}
                       </div>
+                      </div>
+                      {/* Loot Skills: skills earned from loot pools or added to inventory */}
+                      <div className="mt-8">
+                        <div className="p-2 bg-gray-50 dark:bg-slate-50/5 rounded border border-gray-100 dark:border-transparent w-full" style={{ position: 'relative' }}>
+                          <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translate(-50%,-100%)', zIndex: 20 }} className="text-center w-full">
+                            <h3 className="font-semibold text-2xl whitespace-nowrap" style={{ color: '#8B5CF6' }}>
+                              Loot Skills <span className="text-sm opacity-80">({lootSkills?.length || 0})</span>
+                            </h3>
+                          </div>
+                          <div className="mt-2">
+                            {(!lootSkills || lootSkills.length === 0) ? (
+                              <div className="text-sm text-gray-600">No loot-derived skills yet.</div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2 w-full">
+                                {lootSkills.map((s: any, i: number) => {
+                                  const isHover = hoverSkill === s
+                                  return (
+                                    <div
+                                      key={i}
+                                      onMouseEnter={(e) => { setHoverSkill(s); setHoverSkillPos({ x: (e as any).clientX, y: (e as any).clientY }) }}
+                                      onMouseMove={(e) => setHoverSkillPos({ x: (e as any).clientX, y: (e as any).clientY })}
+                                      onMouseLeave={() => setHoverSkill(null)}
+                                      className={`flex flex-col items-center gap-1 cursor-default text-gray-200`}
+                                      style={{ width: '72px' }}
+                                    >
+                                      <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center transition-all ${isHover ? 'ring-2 ring-emerald-400 ring-offset-0' : ''}`}>
+                                        <img src="/icons/skill_icon.png" alt="skill" className="w-full h-full object-cover rounded-full" />
+                                      </div>
+                                      <div className={`text-xs font-semibold text-center truncate ${isHover ? 'text-white' : ''}`} style={{ maxWidth: '64px' }}>{s.name || s}</div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

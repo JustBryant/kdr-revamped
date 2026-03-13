@@ -361,11 +361,8 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
 
       {/* Pool List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pools.filter(p => p.tier === activeTier).map(pool => (
-          <div key={pool.id} className="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-500 transition-colors bg-white dark:bg-gray-800"
-            onMouseEnter={() => send && send({ section: 'presence', data: { section: 'lootPools', field: 'pool', poolId: pool.id, user: me }, ts: Date.now() })}
-            onMouseLeave={() => send && send({ section: 'presence', data: { section: 'lootPools', field: 'pool', poolId: undefined, user: me }, ts: Date.now() })}
-          >
+          {pools.filter(p => p.tier === activeTier).map(pool => (
+          <div key={pool.id} className="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-500 transition-colors bg-white dark:bg-gray-800">
             <div className="flex">
                 <div className="flex-1 min-h-[56px]">
                 <div className="flex justify-between items-start mb-2">
@@ -409,8 +406,6 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                         <div
                           key={item.id}
                           className="relative"
-                          onMouseEnter={() => send && send({ section: 'presence', data: { section: 'lootPools', field: 'poolItem', poolId: pool.id, itemId: item.id, user: me }, ts: Date.now() })}
-                          onMouseLeave={() => send && send({ section: 'presence', data: { section: 'lootPools', field: 'poolItem', poolId: pool.id, itemId: undefined, user: me }, ts: Date.now() })}
                         >
                           <div
                             onMouseEnter={async (e) => {

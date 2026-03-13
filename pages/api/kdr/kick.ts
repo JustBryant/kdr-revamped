@@ -54,6 +54,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Mark player as kicked. Do not hard-delete to preserve history.
     await prisma.kDRPlayer.update({ where: { id: targetPlayerId }, data: { status: 'KICKED' } })
 
+    // Trigger Pusher updates
+    try {
+      const { triggerPusher } = await import('../../../lib/pusher')
+      await triggerPusher('kdr-lobby', 'update', { type: 'update', action: 'kick' })
+      if (kdr.id) {
+        await triggerPusher(`kdr-${kdr.id}`, 'update', { type: 'update', action: 'kick' })
+      }
+    } catch (e) {
+      console.error('Failed to trigger Pusher for kick:', e)
+    }
+
     // Log the kick
     appendAudit({
       adminEmail: userEmail || 'unknown',

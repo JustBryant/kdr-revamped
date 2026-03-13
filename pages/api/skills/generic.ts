@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ message: 'Internal server error' });
     }
   } else if (req.method === 'POST') {
-    const { name, description, isSellable, modifications, providesCards } = req.body;
+    const { name, description, isSellable, modifications, providesCards, statRequirements } = req.body;
 
     try {
       const skill = await prisma.skill.create({
@@ -44,6 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           description,
           type: 'GENERIC',
           isSellable,
+          statRequirements: statRequirements || [],
           providesCards: {
             connect: providesCards?.map((card: any) => ({ id: card.id })) || []
           },
@@ -72,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ message: 'Internal server error' });
     }
   } else if (req.method === 'PUT') {
-    const { id, name, description, isSellable, modifications, providesCards } = req.body;
+    const { id, name, description, isSellable, modifications, providesCards, statRequirements } = req.body;
 
     try {
       // First delete existing modifications to replace them
@@ -86,6 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name,
           description,
           isSellable,
+          statRequirements: statRequirements || [],
           providesCards: {
             set: [], // Clear existing connections
             connect: providesCards?.map((card: any) => ({ id: card.id })) || []

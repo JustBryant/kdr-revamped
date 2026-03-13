@@ -30,7 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Notify players: create Notification rows and send emails
     const activePlayers = (kdr.players || []).filter((p: any) => p.status === 'ACTIVE')
 
-    const notifications = activePlayers.map((p: any) => ({ userId: p.user.id, title: `KDR started: ${kdr.name}`, body: `KDR ${kdr.name} has started. Click to view.` }))
+    const notifications = activePlayers
+      .filter((p: any) => p.user?.id)
+      .map((p: any) => ({ userId: p.user.id, title: `KDR started: ${kdr.name}`, body: `KDR ${kdr.name} has started. Click to view.` }))
     // bulk create notifications (if Notification model exists in DB)
     if (notifications.length > 0) {
       try {

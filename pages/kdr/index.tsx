@@ -5,6 +5,7 @@ import type { Tournament } from '@prisma/client'
 import React, { useEffect, useState } from 'react'
 import CreateKdrModal from '../../components/kdr/CreateKdrModal'
 import MyKdrsModal from '../../components/kdr/MyKdrsModal'
+import useCollaborative from '../../components/collab/useCollaborative'
 
 type Props = {
   openTournaments: any[]
@@ -25,44 +26,71 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
   const [openTournaments, setOpenTournaments] = useState(initialOpen)
   const [ongoingTournaments, setOngoingTournaments] = useState(initialOngoing)
 
-  useEffect(() => {
-    let mounted = true
-    async function fetchKdrs() {
-      try {
-        const r = await fetch('/api/kdr')
-        const all = await r.json()
-        if (mounted && Array.isArray(all)) {
-          setOpenTournaments(all.filter((t: any) => t.status === 'OPEN'))
-          setOngoingTournaments(all.filter((t: any) => t.status === 'STARTED'))
-        }
-      } catch (e) {
-        // ignore
+  const fetchKdrs = async () => {
+    try {
+      const r = await fetch('/api/kdr')
+      const all = await r.json()
+      if (Array.isArray(all)) {
+        setOpenTournaments(all.filter((t: any) => t.status === 'OPEN'))
+        setOngoingTournaments(all.filter((t: any) => t.status === 'STARTED'))
       }
+    } catch (e) {
+      // ignore
     }
+  }
 
-    const iv = setInterval(fetchKdrs, 5000)
-    return () => { mounted = false; clearInterval(iv) }
+  const { send: sendUpdate, setUserId } = useCollaborative('kdr-lobby', (msg: any) => {
+    if (msg.type === 'update') {
+      console.log('[collab] Lobby update received, refreshing...')
+      fetchKdrs()
+    }
+    if (msg.type === 'match-update') {
+      console.log('[collab] New match report detected')
+      // Trigger recent matches refresh (handled inside child component via custom event or similar)
+      const event = new CustomEvent('kdr:recent-matches-refresh')
+      window.dispatchEvent(event)
+    }
+  })
+
+  useEffect(() => {
+    // If we have a session, we want to set the userId for presence
+    const userEmail = (window as any).nextAuthSession?.user?.email;
+    if (userEmail) {
+      setUserId(userEmail);
+    }
+  }, [setUserId])
+
+  const triggerLobbyRefresh = () => {
+    sendUpdate({ type: 'update', action: 'refresh' })
+  }
+
+  useEffect(() => {
+    // Rely solely on WebSocket for updates
+    // fetchKdrs() is called via useCollaborative when an 'update' message is received
   }, [])
   
   // RecentMatches component (client-side live-updating)
   function RecentMatches() {
     const [matches, setMatches] = useState<any[]>([])
 
-    useEffect(() => {
-      let mounted = true
-      async function fetchRecent() {
-        try {
-          const r = await fetch('/api/kdr/matches/recent')
-          const j = await r.json()
-          if (mounted && j?.matches) setMatches(j.matches)
-        } catch (e) {
-          // ignore
-        }
+    const fetchRecent = async () => {
+      try {
+        const r = await fetch('/api/kdr/matches/recent')
+        const j = await r.json()
+        setMatches(j.matches || [])
+      } catch (e) {
+        // ignore
       }
+    }
 
+    useEffect(() => {
       fetchRecent()
-      const iv = setInterval(fetchRecent, 3000)
-      return () => { mounted = false; clearInterval(iv) }
+      const handler = () => {
+        console.log('[collab] Refreshing matches via WebSocket event');
+        fetchRecent();
+      }
+      window.addEventListener('kdr:recent-matches-refresh', handler)
+      return () => window.removeEventListener('kdr:recent-matches-refresh', handler)
     }, [])
 
     return (
@@ -80,7 +108,16 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
               </li>
             )}
             {matches.map(m => (
-              <li key={m.id} className="group/item bg-black/[0.02] dark:bg-white/5 hover:bg-black/[0.05] dark:hover:bg-white/10 border border-black/5 dark:border-white/5 rounded-xl p-4 transition-all duration-300">
+              <li key={m.id} className="relative group/item bg-black/[0.02] dark:bg-white/5 hover:bg-black/[0.05] dark:hover:bg-white/10 border border-black/5 dark:border-white/5 rounded-xl p-4 transition-all duration-300">
+                {m.replayUrl && (
+                  <a 
+                    href={m.replayUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="absolute inset-0 z-[20] cursor-pointer"
+                    title="Watch Replay"
+                  />
+                )}
                 <div className="flex items-center justify-between">
                   <div className="truncate">
                     <div className="font-black text-gray-800 dark:text-gray-100 truncate text-sm uppercase tracking-tight group-hover/item:text-blue-500 dark:group-hover/item:text-blue-400 transition-colors">
@@ -93,6 +130,11 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
                       <span className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest">
                         {m.status}
                       </span>
+                      {m.replayUrl && (
+                        <span className="text-[10px] font-black uppercase bg-red-500/10 text-red-500 px-2 py-0.5 rounded tracking-widest leading-none border border-red-500/20">
+                          REPLAY
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-tighter ml-4 whitespace-nowrap">
@@ -156,7 +198,11 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
           </div>
         </div>
 
-        <CreateKdrModal open={modalOpen} onClose={() => setModalOpen(false)} />
+        <CreateKdrModal open={modalOpen} onClose={() => {
+          setModalOpen(false)
+          triggerLobbyRefresh() // Trigger reload for everyone when someone creates a room
+          fetchKdrs() // Refresh locally too
+        }} />
         <MyKdrsModal open={myKdrsOpen} onClose={() => setMyKdrsOpen(false)} />
       </main>
 
@@ -196,7 +242,7 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
                         <div className="text-2xl font-black text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white leading-none">
                           {t._count?.players ?? 0}<span className="text-gray-400 dark:text-gray-600">/{t.playerCount || '∞'}</span>
                         </div>
-                        <div className="text-[10px] uppercase text-gray-400 dark:text-gray-500 font-black tracking-widest mt-1">Summoned</div>
+                        <div className="text-[10px] uppercase text-gray-400 dark:text-gray-500 font-black tracking-widest mt-1">Players</div>
                       </div>
                     </div>
                   </Link>
@@ -237,7 +283,7 @@ export default function Lobby({ openTournaments: initialOpen, ongoingTournaments
                         <div className="text-2xl font-black text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white leading-none">
                           {t._count?.players ?? 0}<span className="text-gray-400 dark:text-gray-600">/{t.playerCount || '∞'}</span>
                         </div>
-                        <div className="text-[10px] uppercase text-gray-400 dark:text-gray-500 font-black tracking-widest mt-1">Soul-Count</div>
+                        <div className="text-[10px] uppercase text-gray-400 dark:text-gray-500 font-black tracking-widest mt-1">Players</div>
                       </div>
                     </div>
                   </Link>

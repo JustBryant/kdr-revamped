@@ -22,10 +22,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isHost = (kdr.createdBy && userEmail && kdr.createdBy.email === userEmail) || (kdr.createdById && userId && kdr.createdById === userId)
     if (!isHost) return res.status(403).json({ error: 'Forbidden' })
 
-    // Soft-delete: mark KDR as DELETED (preserve history in place)
-    await prisma.kDR.update({ where: { id: kdr.id }, data: { status: 'DELETED' } })
+    // Hard-delete: remove the KDR row so DB-level ON DELETE CASCADE
+    // will remove related rows (PlayerItem, KDRPlayer, rounds, etc.).
+    await prisma.kDR.delete({ where: { id: kdr.id } })
 
-    return res.status(200).json({ success: true })
+    return res.status(200).json({ success: true, deleted: true })
   } catch (error) {
     console.error('Failed to delete KDR', error)
     return res.status(500).json({ error: 'Failed to delete KDR' })

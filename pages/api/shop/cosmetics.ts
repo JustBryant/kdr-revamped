@@ -21,8 +21,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const skip = (pageNum - 1) * limitNum
 
       const where: any = {
-        type: type as any,
         isSellable: true
+      }
+
+      console.log('[DEBUG] Fetching cosmetics with type:', type);
+
+      if (type === 'ALL') {
+        where.type = { in: ['CARD_EFFECT', 'ICON_EFFECT'] }
+      } else {
+        where.type = type as any
       }
 
       if (search) {
@@ -31,6 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           mode: 'insensitive'
         }
       }
+
+      console.log('[DEBUG] Prisma Query Where:', JSON.stringify(where));
 
       const [cosmetics, total] = await Promise.all([
         prisma.item.findMany({
@@ -42,22 +51,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.item.count({ where })
       ])
       
+      console.log(`[DEBUG] Found ${cosmetics.length} items out of ${total} total.`);
+      
       let ownedIds: string[] = []
-      if ((session?.user as any)?.id) {
-        const userId = (session!.user as any).id
-        const ownedItems = await prisma.playerItem.findMany({
-          where: {
-            userId,
-            itemId: { in: cosmetics.map(c => c.id) }
-          },
-          select: { itemId: true }
+      let userPoints = 0
+
+      if (session?.user) {
+        const userEmail = session.user.email
+        const user = await prisma.user.findUnique({ 
+          where: { email: userEmail as string },
+          select: { id: true, duelistPoints: true }
         })
-        ownedIds = ownedItems.map(oi => oi.itemId as string)
+        if (user) {
+          userPoints = user.duelistPoints
+          const ownedItems = await (prisma as any).userItem.findMany({
+            where: {
+              userId: user.id,
+              itemId: { in: (cosmetics as any).map((c: any) => c.id) }
+            },
+            select: { itemId: true }
+          })
+          ownedIds = ownedItems.map((oi: any) => oi.itemId as string)
+        }
       }
 
       return res.status(200).json({ 
         cosmetics, 
         ownedIds,
+        userPoints,
         pagination: {
           total,
           page: pageNum,
@@ -65,44 +86,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           totalPages: Math.ceil(total / limitNum)
         }
       })
-    } catch (error) {
-      console.error(error)
-      return res.status(500).json({ message: "Internal Server Error" })
+    } catch (error: any) {
+      console.error('[API ERROR] /api/shop/cosmetics:', error.message)
+      console.error(error.stack)
+      return res.status(500).json({ message: "Internal Server Error", error: error.message })
     }
   }
 
   if (req.method === 'POST') {
-    if (!(session?.user as any)?.id) return res.status(401).json({ message: "Unauthorized" })
+    if (!session?.user?.email) return res.status(401).json({ message: "Unauthorized" })
 
     const { itemId } = req.body
     if (!itemId) return res.status(400).json({ message: "Item ID required" })
 
     try {
-      const item = await prisma.item.findUnique({ where: { id: itemId } })
+      const user = await prisma.user.findUnique({ 
+        where: { email: session.user.email },
+        select: { id: true, duelistPoints: true } as any
+      }) as any
+      if (!user) return res.status(404).json({ message: "User not found" })
+
+      const item = await prisma.item.findUnique({ where: { id: itemId } }) as any
       if (!item) return res.status(404).json({ message: "Item not found" })
 
       // Check if already owned
-      const userId = (session!.user as any).id
-      const existing = await prisma.playerItem.findFirst({
+      const userId = user.id
+      const existing = await (prisma as any).userItem.findFirst({
         where: { userId, itemId }
       })
       if (existing) return res.status(400).json({ message: "Already owned" })
 
-      // For now, we'll just "purchase" it for free or check stats if you have a currency system.
-      // Since I don't see a "Gold" field on User yet, I'll assume free for now or add a placeholder check.
-      
-      await prisma.playerItem.create({
-        data: {
-          userId,
-          itemId: itemId,
-          purchased: true
-        }
-      })
+      // Check Price (using item.price as DP cost)
+      const price = item.price || 0
+      if ((user.duelistPoints || 0) < price) {
+        return res.status(400).json({ message: `Insufficient DP (Cost: ${price}, You have: ${user.duelistPoints || 0})` })
+      }
 
-      return res.status(200).json({ message: "Purchase successful" })
-    } catch (error) {
-      console.error(error)
-      return res.status(500).json({ message: "Internal Server Error" })
+      // Deduct DP and add item in a transaction
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: userId },
+          data: { duelistPoints: { decrement: price } } as any
+        }),
+        (prisma as any).userItem.create({
+          data: {
+            userId,
+            itemId: itemId
+          }
+        })
+      ])
+
+      return res.status(200).json({ success: true, message: "Purchase successful" })
+    } catch (error: any) {
+      console.error('Purchase error:', error)
+      return res.status(500).json({ message: error.message || "Internal Server Error" })
     }
   }
 

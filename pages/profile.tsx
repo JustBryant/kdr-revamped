@@ -3,7 +3,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import axios from 'axios';
-import CardImage from '../components/common/CardImage';
+import CardImage, { selectArtworkUrl } from '../components/common/CardImage';
+import ShatterfoilOverlay from '../components/ShatterfoilOverlay';
+import { UltraRareGlow } from '../components/UltraRareGlow';
 import Layout from '../components/Layout';
 import { getClassImageUrl } from '../lib/constants';
 
@@ -33,6 +35,11 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    window.addEventListener('user:stats-refresh', fetchUserData);
+    return () => window.removeEventListener('user:stats-refresh', fetchUserData);
+  }, []);
 
   if (loading || !session) {
     return (
@@ -66,18 +73,27 @@ export default function ProfilePage() {
           
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8 pb-8 border-b border-gray-100 dark:border-white/5">
             <div className="relative group">
-              {/* Profile Frame Overlay */}
-              {detailedUser?.frame?.imageUrl && (
-                <div className="absolute inset-[-12px] z-20 pointer-events-none">
-                  <img src={detailedUser.frame.imageUrl} className="w-full h-full object-contain" alt="Frame" />
-                </div>
-              )}
-              <div className={`w-32 h-32 rounded-3xl overflow-hidden border-2 border-white dark:border-white/10 shadow-2xl transition-transform group-hover:scale-105 duration-500 ${detailedUser?.border?.imageUrl ? 'p-1 bg-gradient-to-br from-blue-400 to-purple-500' : ''}`}>
+              <div className={`w-32 h-32 rounded-3xl overflow-hidden border-2 border-white dark:border-white/10 shadow-2xl transition-transform group-hover:scale-105 duration-500 relative z-10 ${detailedUser?.border?.imageUrl ? 'p-1 bg-gradient-to-br from-blue-400 to-purple-500' : ''}`}>
                 <img 
-                  src={session.user?.image || '/images/default-avatar.png'} 
+                  src={detailedUser?.profileIcon?.imageUrl || session.user?.image || '/images/default-avatar.png'} 
                   alt={session.user?.name || 'User'} 
-                  className="w-full h-full object-cover rounded-[1.4rem]"
+                  className="w-full h-full object-cover rounded-[1.2rem]"
                 />
+
+                {/* Icon Effect Layer */}
+                {detailedUser?.iconEffect?.metadata && (
+                  <div className="absolute inset-0 pointer-events-none rounded-3xl overflow-hidden z-30">
+                    {/* Render specific component based on metadata */}
+                    {(detailedUser.iconEffect.metadata as any).variant === 'SHATTERFOIL' && (
+                        <div className="absolute inset-0 z-50">
+                            <ShatterfoilOverlay />
+                        </div>
+                    )}
+                    {(detailedUser.iconEffect.metadata as any).variant === 'UR_GLOW' && (
+                        <UltraRareGlow />
+                    )}
+                  </div>
+                )}
               </div>
               <Link 
                 href="/user/settings" 
@@ -176,18 +192,48 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 hover:border-purple-500/30 transition-all group">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-purple-600">Signature Card</div>
-                        <div className="p-2 rounded-lg bg-purple-600/10 text-purple-600">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.628.288a2 2 0 01-1.18.08l-3.085-.617a2 2 0 01-1.247-1.303l-.469-1.88a2 2 0 01-1.247-1.303l-.469-1.88a2 2 0 00-1.508-1.508l-1.88-.469a2 2 0 01-1.303-1.247l-.617-3.085a2 2 0 01.08-1.18l.288-.628a6 6 0 00.517-3.86l-.477-2.387a2 2 0 00-.547-1.022L1.428 1.428" />
-                          </svg>
+                    <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 hover:border-purple-500/30 transition-all group relative min-h-[160px] flex items-center">
+                      <div className="flex-1 relative z-10">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-purple-600">Signature Card</div>
+                          <div className="p-1.5 rounded-lg bg-purple-600/10 text-purple-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.628.288a2 2 0 01-1.18.08l-3.085-.617a2 2 0 01-1.247-1.303l-.469-1.88a2 2 0 01-1.247-1.303l-.469-1.88a2 2 0 00-1.508-1.508l-1.88-.469a2 2 0 01-1.303-1.247l-.617-3.085a2 2 0 01.08-1.18l.288-.628a6 6 0 00.517-3.86l-.477-2.387a2 2 0 00-.547-1.022L1.428 1.428" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="text-3xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform">
+                          {signatureCard?.name || 'None'}
                         </div>
                       </div>
-                      <div className="text-2xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform">
-                        {signatureCard || 'None'}
-                      </div>
+
+                      {signatureCard && (
+                        <div className="relative w-32 h-44 z-20 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-[0_20px_20px_rgba(0,0,0,0.3)]">
+                           <CardImage 
+                              card={signatureCard} 
+                              useLootArt={true}
+                              className="w-full h-full object-contain rounded-sm"
+                           />
+                           
+                           {/* Card Cosmetic Effects */}
+                           {detailedUser?.cardEffect?.metadata && (
+                              <div className="absolute inset-x-0 bottom-0 pointer-events-none rounded-sm overflow-hidden z-30 h-full">
+                                {/* Render specific component based on metadata */}
+                                {(detailedUser.cardEffect.metadata as any).variant === 'SHATTERFOIL' && (
+                                    <div className="absolute inset-0 z-50">
+                                        <ShatterfoilOverlay />
+                                    </div>
+                                )}
+                                {(detailedUser.cardEffect.metadata as any).variant === 'UR_GLOW' && (
+                                    <UltraRareGlow />
+                                )}
+                              </div>
+                           )}
+
+                           {/* Base for future cosmetic effects */}
+                           <div className="absolute inset-0 pointer-events-none rounded-sm border border-white/10 group-hover:border-purple-500/50 transition-colors"></div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -293,7 +339,7 @@ export default function ProfilePage() {
                       <Link href="/kdr" className="text-[10px] font-black uppercase tracking-widest text-amber-600 hover:underline cursor-pointer">View Tournaments</Link>
                   </div>
                   <div>
-                      <div className="text-4xl font-black italic tracking-tighter text-gray-900 dark:text-white">{(stats?.gold || 0) + (stats?.stats?.gold || 0)} DP</div>
+                      <div className="text-4xl font-black italic tracking-tighter text-gray-900 dark:text-white">{(detailedUser?.duelistPoints || 0).toLocaleString()} DP</div>
                       <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">Available Duelist Points</div>
                   </div>
               </div>

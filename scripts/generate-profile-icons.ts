@@ -1,7 +1,14 @@
 
 import { ItemType } from '@prisma/client';
-import { prisma } from '../lib/prisma';
-import 'dotenv/config';
+import "dotenv/config";
+import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const connectionString = (process.env.DATABASE_URL || '').replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
     console.log('Starting Profile Icon generation...');
@@ -34,44 +41,49 @@ async function main() {
     for (let i = 0; i < validCards.length; i += batchSize) {
         const batch = validCards.slice(i, i + batchSize);
         
-        await Promise.all(batch.map(async (card) => {
-            const externalId = `icon_${card.konamiId}`;
-            
+        for (const card of batch) {
             // STRICTLY use the artworks array from the DB as the source of truth
             const artworks = card.artworks as any[] | null;
-            const index = card.primaryArtworkIndex ?? 0;
-            let imageUrl = null;
             
             if (artworks && Array.isArray(artworks)) {
-                const selectedArt = artworks[index] || artworks[0];
-                if (selectedArt) {
-                    // USER REQUIREMENT: STRICTLY use image_url_cropped from the object. Skip if missing.
-                    imageUrl = selectedArt.image_url_cropped || selectedArt.imageUrlCropped;
-                }
-            }
+                // Expansion: Create a unique icon per artwork
+                for (let artworkIndex = 0; artworkIndex < artworks.length; artworkIndex++) {
+                    const selectedArt = artworks[artworkIndex];
+                    if (!selectedArt) continue;
+                    
+                    const imageUrl = selectedArt.image_url_cropped || selectedArt.imageUrlCropped;
+                    if (!imageUrl) continue;
 
-            // CRITICAL: Skip any card that does not have a valid cropped image in its artworks field
-            if (!imageUrl) {
-                return;
-            }
-            
-            await prisma.item.upsert({
-                where: { externalId },
-                update: {
-                    name: `${card.name} Icon`,
-                    imageUrl: imageUrl,
-                },
-                create: {
-                    externalId,
-                    name: `${card.name} Icon`,
-                    description: `A profile icon featuring ${card.name}.`,
-                    price: 100,
-                    type: profileIconType,
-                    imageUrl: imageUrl,
-                    isSellable: true,
+                    // UNIQUE EXTERNAL ID LOGIC:
+                    // Primary artwork (Index 0) uses the original ID to avoid duplication
+                    // Alternative artworks use the suffix ID
+                    const externalId = artworkIndex === 0 
+                        ? `icon_${card.konamiId}`
+                        : `icon_${card.konamiId}_art_${artworkIndex}`;
+                    
+                    // Name formatting: "Name Icon" for first, "Name Icon #2" for others
+                    const suffix = artworkIndex === 0 ? "" : ` #${artworkIndex + 1}`;
+                    const iconName = `${card.name} Icon${suffix}`;
+
+                    await prisma.item.upsert({
+                        where: { externalId },
+                        update: {
+                            name: iconName,
+                            imageUrl: imageUrl,
+                        },
+                        create: {
+                            externalId,
+                            name: iconName,
+                            description: `A profile icon featuring ${card.name}${artworkIndex > 0 ? ` (Artwork ${artworkIndex + 1})` : ''}.`,
+                            price: 100,
+                            type: profileIconType,
+                            imageUrl: imageUrl,
+                            isSellable: true,
+                        }
+                    });
                 }
-            });
-        }));
+            }
+        }
         
         console.log(`Processed ${Math.min(i + batchSize, validCards.length)} / ${validCards.length}`);
     }

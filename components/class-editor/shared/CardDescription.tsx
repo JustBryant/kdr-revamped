@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card, SkillModification, Skill } from '../../../types/class-editor'
+import { RichTextRenderer, PlayerStats } from '../../RichText'
 
 interface CardDescriptionProps {
   card: Card
@@ -7,9 +8,10 @@ interface CardDescriptionProps {
   modifications?: SkillModification[] // Direct list of modifications (optional override)
   showOnlyNote?: boolean // when true, render only the condition note (no description)
   suppressNote?: boolean // when true, do not render the condition note
+  stats?: PlayerStats
 }
 
-export default function CardDescription({ card, skills, modifications, showOnlyNote, suppressNote }: CardDescriptionProps) {
+export default function CardDescription({ card, skills, modifications, showOnlyNote, suppressNote, stats }: CardDescriptionProps) {
   // Calculate effective modifications
   const effectiveModifications = React.useMemo(() => {
     if (modifications) return modifications.filter(m => m.card.id === card.id)
@@ -24,27 +26,31 @@ export default function CardDescription({ card, skills, modifications, showOnlyN
   const conditionMod = effectiveModifications.find(m => m.type === 'CONDITION')
   const textMod = effectiveModifications.find(m => m.type !== 'CONDITION')
   
-  const descriptionContent = (() => {
-    if (textMod && textMod.highlightedText && textMod.highlightedText.trim().length > 0) {
-      return card.desc.split(textMod.highlightedText).map((part, i, arr) => (
-        <React.Fragment key={i}>
-          {part}
-          {i < arr.length - 1 && (
-            <span className={`px-1 rounded border font-medium ${
-              textMod.type === 'NEGATE' ? 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200 border-red-200 dark:border-red-800 line-through decoration-red-500' :
-              textMod.type === 'ALTER' ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-200 border-green-200 dark:border-green-800' :
-              'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-200 border-green-200 dark:border-green-800'
-            }`}>
-              {textMod.type === 'ALTER' && textMod.alteredText 
-                ? textMod.alteredText 
-                : textMod.highlightedText}
-            </span>
-          )}
-        </React.Fragment>
-      ))
-    }
-    return card.desc
-  })()
+    const descriptionRender = (() => {
+      // If we have stats OR stat requirements in the card, use RichTextRenderer
+      const hasStatReqs = (card as any).statRequirements && (card as any).statRequirements.length > 0;
+      
+      if (textMod && textMod.highlightedText && textMod.highlightedText.trim().length > 0) {
+        return card.desc.split(textMod.highlightedText).map((part, i, arr) => (
+          <React.Fragment key={i}>
+            <RichTextRenderer content={part} stats={stats} requirements={(card as any).statRequirements} inline />
+            {i < arr.length - 1 && (
+              <span className={`px-1 rounded border font-medium ${
+                textMod.type === 'NEGATE' ? 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200 border-red-200 dark:border-red-800 line-through decoration-red-500' :
+                textMod.type === 'ALTER' ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-200 border-green-200 dark:border-green-800' :
+                'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-200 border-green-200 dark:border-green-800'
+              }`}>
+                {textMod.type === 'ALTER' && textMod.alteredText 
+                  ? textMod.alteredText 
+                  : textMod.highlightedText}
+              </span>
+            )}
+          </React.Fragment>
+        ))
+      }
+      
+      return <RichTextRenderer content={card.desc} stats={stats} requirements={(card as any).statRequirements} />;
+    })()
 
   if (showOnlyNote) {
     return (
@@ -80,7 +86,7 @@ export default function CardDescription({ card, skills, modifications, showOnlyN
         </div>
       )}
       <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-        {descriptionContent}
+        {descriptionRender}
       </div>
     </>
   )

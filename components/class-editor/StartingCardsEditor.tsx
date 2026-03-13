@@ -5,6 +5,7 @@ import CardPreview from './shared/CardPreview'
 import SkillForm from './shared/SkillForm'
 import CardGallery from './CardGallery'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
+import HoverTooltip from '../shop-v2/components/HoverTooltip'
 import { RichTextRenderer } from '../RichText'
 import DeckFiltersPanel from '../DeckFiltersPanel'
 import { CardFiltersState, matchCard } from './shared/CardFilters'
@@ -43,6 +44,8 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
   const [isSearching, setIsSearching] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null)
   const cardCache = React.useRef<Record<string, any>>({})
+  const tooltipScrollRef = React.useRef<HTMLDivElement | null>(null)
+  const [hoverTooltip, setHoverTooltip] = useState<any>({ visible: false })
   const [filters, setFilters] = useState<CardFilterState>({ category: 'Any' })
   const [filteredSearchResults, setFilteredSearchResults] = useState<Card[]>([])
   const [isEnrichingResults, setIsEnrichingResults] = useState(false)
@@ -404,10 +407,17 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
   }
 
   const handleSaveSkill = (skill: Skill) => {
+    console.log('[StartingCardsEditor] Received skill for save:', skill)
     if (editingSkill) {
-      setSkills(prev => prev.map(s => s.id === editingSkill.id ? skill : s))
+      setSkills(prev => {
+        const updated = prev.map(s => s.id === editingSkill.id ? skill : s)
+        console.log('[StartingCardsEditor] Updating existing skill. New array:', updated)
+        return updated
+      })
     } else {
-      setSkills(prev => [...prev, { ...skill, id: Date.now().toString() }])
+      const newSkill = { ...skill, id: Date.now().toString() }
+      console.log('[StartingCardsEditor] Adding new skill:', newSkill)
+      setSkills(prev => [...prev, newSkill])
     }
     setIsSkillFormOpen(false)
   }
@@ -600,12 +610,13 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
           )}
         </div>
         <div className="grid grid-cols-1 gap-2">
-          {filtered.map(card => (
+            {filtered.map(card => (
             <div 
               key={card.id} 
               className="group relative flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-md hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
-                onMouseEnter={async () => { setHoveredCard(await enrichCard(card)); if (send) send({ section: 'startingCards', data: { section: 'card', itemId: card.id, ts: Date.now(), user: me } }) }}
-                onMouseLeave={() => { setHoveredCard(null); if (send) send({ section: 'startingCards', data: { section: 'card', itemId: undefined, ts: Date.now(), user: me } }) }}
+                onMouseEnter={async (e) => { const enriched = await enrichCard(card); setHoveredCard(enriched); const key = String(card.id || card.konamiId || ''); setHoverTooltip({ visible: true, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY, idKey: key, cardLike: enriched, skills: [] }); }}
+                onMouseMove={(e) => { if (hoverTooltip?.visible) setHoverTooltip((h: any)=> ({ ...h, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })); }}
+                onMouseLeave={() => { setHoveredCard(null); setHoverTooltip({ visible: false }); }}
             >
               <div className="flex items-center space-x-3 overflow-hidden">
                     <div style={{ width: 40, flexShrink: 0 }}>
@@ -841,7 +852,9 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                           <button
                             key={card.id}
                             onClick={() => addCard(card)}
-                            onMouseEnter={async () => { setHoveredCard(await enrichCard(card)) }}
+                            onMouseEnter={async (e) => { const enriched = await enrichCard(card); setHoveredCard(enriched); const key = String(card.id || card.konamiId || ''); setHoverTooltip({ visible: true, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY, idKey: key, cardLike: enriched, skills: [] }) }}
+                            onMouseMove={(e) => { if (hoverTooltip?.visible) setHoverTooltip((h: any)=> ({ ...h, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })); }}
+                            onMouseLeave={() => { setHoveredCard(null); setHoverTooltip({ visible: false }); }}
                             className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors"
                           >
                             <div style={{ width: 40, flexShrink: 0 }}>
@@ -955,6 +968,7 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
         initialSkill={editingSkill}
         formatVariant={formatVariant}
       />
+      <HoverTooltip hoverTooltip={hoverTooltip} cardDetailsCacheRef={cardCache} tooltipScrollRef={tooltipScrollRef} onTooltipEnter={() => {}} onTooltipLeave={() => {}} />
     </div>
   )
 }

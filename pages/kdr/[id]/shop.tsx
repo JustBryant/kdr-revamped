@@ -33,6 +33,7 @@ import useTyping from '../../../components/shop/useTyping'
 import UserPanel from '../../../components/shop/UserPanel'
 import useSkillChoices from '../../../components/shop/useSkillChoices'
 import useShopOrchestration from '../../../components/shop/useShopOrchestration'
+import LootPoolInstance from '../../../components/shop/sections/LootPoolInstance'
 import Icon from '../../../components/Icon'
 import { R_SHIMMER_START_RATIO, R_SHIMMER_SPEED_RATIO, SR_LIGHT_START_RATIO, SR_LIGHT_COUNT, SR_LIGHT_SPACING_MS } from '../../../components/shop/constants'
 
@@ -41,6 +42,16 @@ export default function KdrShopPage() {
   const router = useRouter()
   const { id } = router.query
   const { data: session } = useSession()
+  // Feature-flaged redirect: when `NEXT_PUBLIC_SHOP_V2=1` redirect users to the v2 preview
+  const useShopV2 = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SHOP_V2 === '1')
+  React.useEffect(() => {
+    try {
+      if (!useShopV2) return
+      if (!id) return
+      if (typeof id === 'string') router.replace(`/kdr/${id}/shop-v2`)
+    } catch (e) {}
+  }, [useShopV2, id, router])
+  if (useShopV2) return null
   const [kdr, setKdr] = useState<any>(null)
   
   // Responsive scaler: scale the full page content to fit smaller windows while preserving layout.
@@ -257,6 +268,9 @@ export default function KdrShopPage() {
   // This ensures they show up in history/modals without requiring an animation or a click.
   React.useEffect(() => {
     const offers = player?.shopState?.lootOffers
+    try {
+      console.log('[SHOP DEBUG] shop.tsx lootOffers changed:', (offers || []).map((o: any) => ({ id: o.id, name: o.name, tier: o.tier, isGeneric: !!o.isGeneric })))
+    } catch (e) {}
     if (!Array.isArray(offers) || offers.length === 0) return
 
     const seenArr = Array.isArray(player?.shopState?.seen) ? player!.shopState.seen : []
@@ -1706,6 +1720,7 @@ export default function KdrShopPage() {
                   animateSkills={animateSkills}
                   skillButtonsExit={skillButtonsExit}
                   skillCardFromY={skillCardFromY}
+                  playerStats={player}
                   setCardRef={(id: string, el: HTMLDivElement | null) => { try { setSkillCardRef(id, el) } catch (e) {} }}
                   onCardClick={async (c: any, idx: number) => {
                     if (loading || skillButtonsExit) return
@@ -1903,10 +1918,14 @@ export default function KdrShopPage() {
                     try {
                       // Trigger exit animation immediately
                       setTrainingButtonsExit(true)
-                      // After the CSS exit duration, hide the choices and clear the exit flag
+                      // After the CSS exit duration, hide the choices.
+                      // IMPORTANT: do NOT clear `trainingButtonsExit` here — keep the
+                      // exit flag set until the server updates the authoritative stage.
+                      // Clearing it prematurely causes the buttons to re-appear while
+                      // treasures are rendering, which breaks positions.
                       window.setTimeout(() => {
                         try { setShowTrainingChoices(false) } catch (e) {}
-                        try { setTrainingButtonsExit(false) } catch (e) {}
+                        // Intentionally do NOT call setTrainingButtonsExit(false) here.
                       }, 700)
 
                       // Fire the skipTraining RPC without awaiting it so next UI animations
@@ -2021,254 +2040,22 @@ export default function KdrShopPage() {
               )}
 
               {/* Loot offers (purchasable pools) */}
-              {(player?.shopState?.stage === 'LOOT' || (player?.shopState?.stage === 'DONE' && lootExitPhase)) && player?.shopState?.lootOffers && player.shopState.lootOffers.length > 0 && (() => {
-                console.log('=== RENDERING LOOT POOLS ===', player.shopState.lootOffers.length, 'pools')
-                
-                const getTierLabel = (tier: string, isGeneric: boolean) => {
-                  if (isGeneric) {
-                    const genericLabels: Record<string, string> = {
-                      'STARTER': 'Staples',
-                      'MID': 'Removal/Disruption',
-                      'HIGH': 'Engine'
-                    }
-                    return genericLabels[tier] || tier
-                  } else {
-                    const classLabels: Record<string, string> = {
-                      'STARTER': 'Starter Packs',
-                      'MID': 'Mid Quality',
-                      'HIGH': 'High Quality'
-                    }
-                    return classLabels[tier] || tier
-                  }
-                }
-                
-              // Group pools by tier AND type (generic vs class)
-              const groupKeyFunc = (pool: any) => `${pool.tier}_${pool.isGeneric ? 'generic' : 'class'}`
-              const groups: Record<string, any[]> = {}
-              const displayedGroups: Record<string, any[]> = {}
-              
-              // We want to calculate the total stock for each category
-              const categoryStock: Record<string, number> = {}
-
-              player.shopState.lootOffers.forEach((pool: any) => {
-                const key = groupKeyFunc(pool)
-                if (!groups[key]) {
-                  groups[key] = []
-                  categoryStock[key] = 0
-                }
-                groups[key].push(pool)
-                
-                // If this specific pool ID hasn't been bought, it counts as stock
-                const hasBeenBought = (player?.shopState?.purchases || []).some((p: any) => String(p.lootPoolId) === String(pool.id))
-                if (!hasBeenBought) {
-                  categoryStock[key]++
-                }
-              })
-
-              const sortedKeys = Object.keys(groups).sort((a, b) => {
-                const tierOrderMap: Record<string, number> = { 'STARTER': 0, 'MID': 1, 'HIGH': 2 }
-                const [tierA, typeA] = a.split('_')
-                const [tierB, typeB] = b.split('_')
-                if (typeA !== typeB) return typeA === 'class' ? -1 : 1
-                return (tierOrderMap[tierA] ?? 99) - (tierOrderMap[tierB] ?? 99)
-              })
-
-              sortedKeys.forEach(key => {
-                displayedGroups[key] = animatingOutGroups.has(key) ? (frozenPools[key] || groups[key]) : groups[key]
-              })
-              
-              const tierOrderMap: Record<string, number> = { 'STARTER': 0, 'MID': 1, 'HIGH': 2 }
-              
-              return (
-                <div className="mb-4 space-y-6 relative" key={player.shopState?.lootOffers?.[0]?.id ?? 'loot-container'}>
-                  <div className="transition-opacity duration-300">
-                  {sortedKeys.map((key) => {
-                    const [tier, type] = key.split('_')
-                    const poolsInGroup = displayedGroups[key]
-                    const isGeneric = type === 'generic'
-                    const tierLabel = getTierLabel(tier, isGeneric)
-                    
-                    const purchases = player?.shopState?.purchases || []
-                    
-                    // A tier should only be hidden if EVERYTHING in it is purchased
-                    // and there are NO available pools in the lootOffers for this group.
-                    // Actually, if it's in lootOffers, it's either available or purchased.
-                    // If we have 0 stock, we hide it.
-                    const remainingStock = categoryStock[key] || 0
-                    if (remainingStock === 0 && !animatingOutGroups.has(key)) return null;
-                    
-                    const isRefilled = poolsInGroup.some(p => !p.__seen && !purchases.some((pur: any) => String(pur.lootPoolId) === String(p.id)));
-                    const animationName = animatingOutGroups.has(key) ? 'fadeOut' : (isRefilled ? 'slideInFromRight' : 'flyUp');
-
-                    return (
-                        <div key={key} className="mb-14" style={{ 
-                          animation: `${animationName} 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards`, 
-                          animationDelay: animatingOutGroups.has(key) ? '0s' : `${(tierOrderMap[tier] ?? 0) * 0.1}s`, 
-                          opacity: 0,
-                          pointerEvents: animatingOutGroups.has(key) ? 'none' : 'auto'
-                        }}>
-                          <div className={`flex items-center justify-between mb-4 border-b-2 ${
-                            tier === 'STARTER' ? 'border-blue-500/30' :
-                            tier === 'MID' ? 'border-purple-500/30' :
-                            'border-amber-500/30'
-                          } pb-2`}>
-                             <h3 className={`text-2xl font-black ${
-                               tier === 'STARTER' ? 'text-blue-400' :
-                               tier === 'MID' ? 'text-purple-400' :
-                               'text-amber-400'
-                             } tracking-tight uppercase`}>
-                               {tierLabel}
-                             </h3>
-
-                            {/* Group Buy Button */}
-                            {(() => {
-                              const qualityCost = poolsInGroup[0]?.cost || 0
-                              
-                              return (
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation()
-                                    if (loading || lootExitPhase) return
-                                    
-                                    setLoading(true)
-                                      try {
-                                        suppressStageEffectRef.current = true
-                                        // Call handles the 'tier' logic to buy the whole quality
-                                        const res = await call('purchaseLootPool', { tier, isGeneric })
-                                        
-                                        if (res && res.error) {
-                                          alert(`Purchase failed: ${res.error}`)
-                                        } else if (res && res.player) {
-                                          // START PURCHASE ANIMATION
-                                          // 1. FREEZE the current pools in place so they don't vanish when state updates
-                                          setFrozenPools(prev => ({ ...prev, [key]: poolsInGroup }));
-                                          setAnimatingOutGroups(prev => new Set(prev).add(key));
-
-                                          // 2. Trigger the visual exit on the frozen elements
-                                          const groupEl = groupNodeRefs.current[key];
-                                          if (groupEl) {
-                                            groupEl.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 1, 1)';
-                                            groupEl.style.transform = 'translateX(-120vw)';
-                                            groupEl.style.opacity = '0';
-                                            groupEl.style.filter = 'blur(10px) grayscale(1)';
-                                          }
-
-                                          // 3. Wait for the exit animation to finish before swapping to new pools
-                                          setTimeout(() => {
-                                            // Update the player state (this brings in the new pools from server)
-                                            setPlayer(res.player);
-                                            pendingPlayerUpdateRef.current = null;
-
-                                            // Unfreeze and cleanup
-                                            setAnimatingOutGroups(prev => {
-                                              const next = new Set(prev);
-                                              next.delete(key);
-                                              return next;
-                                            });
-                                            setFrozenPools(prev => {
-                                              const next = { ...prev };
-                                              delete next[key];
-                                              return next;
-                                            });
-
-                                            // Reset container for the new "Fly Up" entrance
-                                            if (groupEl) {
-                                              groupEl.style.transition = '';
-                                              groupEl.style.transform = '';
-                                              groupEl.style.opacity = '';
-                                              groupEl.style.filter = '';
-                                            }
-                                          }, 600);
-                                        }
-                                      } finally {
-                                        setLoading(false)
-                                        suppressStageEffectRef.current = false
-                                      }
-                                  }}
-                                  disabled={loading || player.gold < qualityCost}
-                                  className={`group relative flex items-center justify-center bg-neutral-900 border-2 ${
-                                    tier === 'STARTER' ? 'border-blue-500/40 hover:border-blue-400 shadow-blue-500/10' :
-                                    tier === 'MID' ? 'border-purple-500/40 hover:border-purple-400 shadow-purple-500/10' :
-                                    tier === 'STAPLES' ? 'border-blue-500/40 hover:border-blue-400 shadow-blue-500/10' :
-                                    tier === 'REMOVAL' ? 'border-purple-500/40 hover:border-purple-400 shadow-purple-500/10' :
-                                    'border-amber-500/40 hover:border-amber-400 shadow-amber-500/10'
-                                  } px-8 py-2 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl`}
-                                >
-                                  <div className="flex flex-col items-center">
-                                    <span className={`text-[10px] ${
-                                      tier === 'STARTER' ? 'text-blue-400' :
-                                      tier === 'MID' ? 'text-purple-400' :
-                                      tier === 'STAPLES' ? 'text-blue-400' :
-                                      tier === 'REMOVAL' ? 'text-purple-400' :
-                                      'text-amber-400'
-                                    } font-black uppercase tracking-widest leading-none mb-1`}>
-                                      Purchase {tierLabel}
-                                    </span>
-                                    <span className="text-xl font-black text-white leading-none whitespace-nowrap">{qualityCost}G</span>
-                                  </div>
-                                </button>
-                              )
-                            })()}
-                          </div>
-                        <div ref={(el) => { try { groupNodeRefs.current[key] = el } catch (e) {} }} className="relative">
-                           {/* Exit Layer: Slides away current pools */}
-                           {lootExitPhase && (
-                              <div className="flex flex-wrap gap-4 absolute inset-0 z-10 transition-all duration-700 ease-in" style={{ transform: 'translateX(-120vw)', opacity: 0 }}>
-                                {poolsInGroup.map((pool: any) => (
-                                  <div key={`exit-${pool.id}`} className="opacity-60 grayscale scale-95">
-                                    <LootPoolTile 
-                                      pool={pool} 
-                                      onSelect={() => {}}
-                                      isPurchased={true}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                           )}
-
-                           {/* Entrance Layer: Tiles layout */}
-                           <div className={`flex flex-wrap gap-4 transition-opacity duration-300 ${lootExitPhase ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                              {(animatingOutGroups.has(key) ? (frozenPools[key] || []) : poolsInGroup).map((pool: any) => {
-                                const isPurchased = (player?.shopState?.purchases || []).some((p: any) => String(p.lootPoolId) === String(pool.id))
-                                
-                                return (
-                                  <LootPoolTile
-                                    key={pool.id}
-                                    pool={pool}
-                                    isPurchased={isPurchased || animatingOutGroups.has(key)}
-                                    loading={loading}
-                                    onSelect={() => openPoolViewer(pool)}
-                                  />
-                                )
-                              })}
-                           </div>
-                        </div>
-                        
-                        {/* Summary of what they got if they already bought it */}
-                        {false && (
-                          <div className="mt-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center gap-4">
-                            <span className="font-bold flex items-center gap-1">
-                              <Icon name="check-circle-2" /> Tier Contents Acquired
-                            </span>
-                            <div className="h-4 w-px bg-emerald-500/20" />
-                            <span className="flex items-center gap-1 opacity-80">
-                              {poolsInGroup.reduce((acc, p) => acc + (p.cards?.length || 0), 0)} Cards
-                            </span>
-                            <span className="flex items-center gap-1 opacity-80">
-                              {poolsInGroup.reduce((acc, p) => acc + (p.items?.filter((i:any) => i.type === 'Skill').length || 0), 0)} Skills
-                            </span>
-                            <span className="flex items-center gap-1 opacity-80 font-bold">
-                              {poolsInGroup.reduce((acc, p) => acc + (p.items?.reduce((a:number, i:any) => a + (i.type === 'Gold' ? (i.amount || 0) : 0), 0) || 0), 0)}G Total
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                  </div>
-                </div>
-                )
-              })()}
+              {(player?.shopState?.stage === 'LOOT' || (player?.shopState?.stage === 'DONE' && lootExitPhase)) && (
+                <LootPoolInstance
+                  player={player}
+                  animatingOutGroups={animatingOutGroups}
+                  frozenPools={frozenPools}
+                  groupNodeRefs={groupNodeRefs}
+                  loading={loading}
+                  lootExitPhase={lootExitPhase}
+                  call={call}
+                  setPlayer={setPlayer}
+                  openPoolViewer={openPoolViewer}
+                  setFrozenPools={setFrozenPools}
+                  setAnimatingOutGroups={setAnimatingOutGroups}
+                  suppressStageEffectRef={suppressStageEffectRef}
+                />
+              )}
 
                 <div className="flex-1">
               </div>

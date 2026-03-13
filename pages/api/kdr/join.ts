@@ -60,6 +60,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const created = await prisma.kDRPlayer.create({ data: { kdrId: kdr.id, userId: user.id, deckId: deckId || undefined, classId: chosenClassId || undefined } })
 
+    // Trigger Pusher updates
+    try {
+      const { triggerPusher } = await import('../../../lib/pusher')
+      await triggerPusher('kdr-lobby', 'update', { type: 'update', action: 'join' })
+      if (kdr.id) {
+        await triggerPusher(`kdr-${kdr.id}`, 'update', { type: 'update', action: 'join' })
+      }
+    } catch (e) {
+      console.error('Failed to trigger Pusher for join:', e)
+    }
+
     // Award the per-KDR class pick once when joining, if a class was chosen
     if (chosenClassId) {
       const classStat = await prisma.playerClassStats.findFirst({ where: { userId: user.id, classId: chosenClassId } })
@@ -75,10 +86,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (cls) {
           for (const sc of (cls.startingCards || [])) {
             if (!sc.cardId) continue
-            await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, cardId: sc.cardId, qty: sc.quantity || 1 } })
+            await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, kdrPlayerId: created.id, cardId: sc.cardId, qty: sc.quantity || 1 } })
           }
           for (const s of (cls.skills || [])) {
-            await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, skillId: s.id, qty: 1 } })
+            await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, kdrPlayerId: created.id, skillId: s.id, qty: 1 } })
           }
         }
       } catch (e) {

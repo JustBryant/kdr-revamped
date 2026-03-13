@@ -5,9 +5,11 @@ import { useSession } from 'next-auth/react'
 import { CLASS_IMAGE_BASE_URL, getClassImageUrl } from '../../../lib/constants'
 import { selectArtworkUrl } from '../../../components/common/CardImage'
 import { RichTextRenderer } from '../../../components/RichText'
-
+import useCollaborative from '../../../components/collab/useCollaborative'
 import AnimatedModal from '../../../components/common/AnimatedModal'
 import TournamentSettingsModal from '../../../components/kdr/TournamentSettingsModal'
+import HoverTooltip from '../../../components/shop-v2/components/HoverTooltip'
+import useShopCaches from '../../../components/shop-v2/utils/useShopCaches'
 
 export default function KdrViewPage() {
   const router = useRouter()
@@ -30,6 +32,81 @@ export default function KdrViewPage() {
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
   const [typedPassword, setTypedPassword] = useState('')
   const [matchScores, setMatchScores] = useState<Record<string, { scoreA: number | null; scoreB: number | null }>>({})
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void; players?: any[] } | null>(null)
+
+  const { cardDetailsCacheRef, ensureCardDetails } = useShopCaches()
+  const [hoverTooltip, setHoverTooltip] = useState<any>({ visible: false, x: 0, y: 0, idKey: null, cardLike: null })
+  const tooltipScrollRef = React.useRef<HTMLDivElement | null>(null)
+
+  const fetchKdr = async () => {
+    if (!id) return
+    try {
+      const res = await axios.get(`/api/kdr/${id}`)
+      setKdr(res.data)
+      // If we had an error before, clear it if fetch succeeds
+      setMessage(prev => prev === 'Failed to load KDR' ? null : prev)
+    } catch (e: any) {
+      setMessage(e?.response?.data?.error || 'Failed to load KDR')
+    }
+  }
+
+  const { send: sendUpdate, userIds, setUserId } = useCollaborative(id ? `kdr-${id}` : null, (msg) => {
+    // Both 'refresh' (legacy) and 'update' (standard) should trigger a fetch
+    if (msg.type === 'refresh' || msg.type === 'update') {
+      console.log('[collab] Remote trigger refresh', msg)
+      fetchKdr()
+    }
+  })
+
+  // Hook into lobby too for cross-page refreshes
+  const { send: sendLobbyUpdate, userIds: lobbyUserIds, setUserId: setLobbyUserId } = useCollaborative('kdr-lobby', (msg) => {
+    // Also listen for lobby updates while on the dashboard to keep player counts in sync
+    if (msg.type === 'update') {
+      fetchKdr()
+    }
+  })
+
+  const currentPlayer = (kdr?.players || []).find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
+  const amIJoined = !!currentPlayer
+
+  useEffect(() => {
+    if (currentPlayer?.id) {
+      setUserId(currentPlayer.id)
+      setLobbyUserId(currentPlayer.id)
+    }
+  }, [currentPlayer?.id, setUserId, setLobbyUserId])
+
+  const triggerGlobalRefresh = () => {
+    console.log('[collab] Triggering global refresh broadcast')
+    sendUpdate({ type: 'update', action: 'refresh' })
+    sendLobbyUpdate({ type: 'update', action: 'refresh' })
+  }
+
+  const triggerMatchUpdate = () => {
+    console.log('[collab] Triggering global match-update broadcast')
+    sendLobbyUpdate({ type: 'match-update' })
+  }
+
+  const showHover = React.useCallback((e: any, cardLike?: any, idKey?: any, skills?: any[]) => {
+    try { if (cardLike && ensureCardDetails) { ensureCardDetails(cardLike).catch(() => {}) } } catch (err) {}
+    try { setHoverTooltip({ 
+      visible: true, 
+      x: (e as any)?.clientX || 0, 
+      y: (e as any)?.clientY || 0, 
+      idKey, 
+      cardLike, 
+      skills,
+      stats: {} // No stats in this view
+    }) } catch (err) {}
+  }, [ensureCardDetails])
+
+  const moveHover = React.useCallback((e: any) => {
+    try { setHoverTooltip((prev: any) => ({ ...(prev || {}), x: (e as any)?.clientX || 0, y: (e as any)?.clientY || 0 })) } catch (err) {}
+  }, [])
+
+  const hideHover = React.useCallback(() => {
+    try { setHoverTooltip((prev: any) => ({ ...(prev || {}), visible: false })) } catch (err) {}
+  }, [])
 
   // Responsive scaler: scale the full page content to fit smaller windows while preserving layout.
   const fullParentRef = React.useRef<HTMLDivElement | null>(null)
@@ -86,7 +163,7 @@ export default function KdrViewPage() {
     fetch()
     
     // Set up polling to keep the lobby state fresh without manual refreshes
-    const pollInterval = setInterval(fetch, 5000)
+    const pollInterval = setInterval(fetch, 10000)
     
     return () => { 
       mounted = false 
@@ -153,46 +230,21 @@ export default function KdrViewPage() {
     if (!id) return
     setLoading(true)
 
-    // Optimistically update the UI to show the player has joined
-    // This makes the transition feel instant even if the server is slow
-    const tempUser = { 
-      id: session?.user?.id || 'temp-id', 
-      name: session?.user?.name || 'Joining...', 
-      email: session?.user?.email || '',
-      image: session?.user?.image || null
-    }
-    const tempPlayer = {
-      id: 'temp-player-id',
-      userId: tempUser.id,
-      user: tempUser,
-      status: 'ACTIVE',
-      gold: 0,
-      xp: 0,
-      shopComplete: false,
-      kdrId: id
-    }
-
-    if (kdr) {
-      setKdr({
-        ...kdr,
-        players: [...(kdr.players || []), tempPlayer]
-      })
-    }
-
     try {
       await axios.post('/api/kdr/join', { kdrId: id, password })
-      // Refetch for real data
-      const res = await axios.get(`/api/kdr/${id}`)
-      setKdr(res.data)
+      // Trigger a global refresh which will cause us (and everyone else) to fetch the full KDR object
+      triggerGlobalRefresh()
+      // Also fetch locally immediately just in case
+      await fetchKdr()
+      
       setMessage('Joined KDR')
       setPasswordOpen(false)
       setTypedPassword('')
     } catch (e: any) {
-      // Revert if it failed
-      const refresh = await axios.get(`/api/kdr/${id}`)
-      setKdr(refresh.data)
       setMessage(e?.response?.data?.error || 'Failed to join KDR')
-    } finally { setLoading(false) }
+    } finally { 
+      setLoading(false) 
+    }
   }
 
   const handleJoinClick = () => {
@@ -217,11 +269,10 @@ export default function KdrViewPage() {
     if (!id) return
     setLoading(true)
     try {
-      await axios.post(`/api/kdr/${id}/start`)
-      setMessage('KDR started')
-      // refetch
-      const res = await axios.get(`/api/kdr/${id}`)
+      const res = await axios.post(`/api/kdr/${id}/start`)
       setKdr(res.data)
+      setMessage('KDR started')
+      triggerGlobalRefresh()
     } catch (e: any) {
       setMessage(e?.response?.data?.error || 'Failed to start')
     } finally {
@@ -231,44 +282,54 @@ export default function KdrViewPage() {
 
   const deleteKdr = async () => {
     if (!id) return
-    const ok = confirm('Delete this KDR? This cannot be undone.')
-    if (!ok) return
-    setLoading(true)
-    try {
-      await axios.post('/api/kdr/delete', { kdrId: id })
-      setMessage('KDR deleted')
-      router.push('/kdr')
-    } catch (e: any) {
-      setMessage(e?.response?.data?.error || 'Failed to delete KDR')
-    } finally {
-      setLoading(false)
-    }
+    setConfirmModal({
+      open: true,
+      title: 'TERMINATE KDR',
+      message: 'Are you absolutely sure? This action will permanently dissolve this session. All player data, match history, and records will be lost forever.',
+      onConfirm: async () => {
+        setConfirmModal(null)
+        setLoading(true)
+        try {
+          await axios.post('/api/kdr/delete', { kdrId: id })
+          setMessage('KDR deleted')
+          triggerGlobalRefresh()
+          router.push('/kdr')
+        } catch (e: any) {
+          setMessage(e?.response?.data?.error || 'Failed to delete KDR')
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
   }
 
   const leaveKdr = async () => {
-    if (!id || !confirm('Leave this KDR? You will not be able to rejoin unless the host invite stays open.')) return
-    setLoading(true)
-
-    // Optimistic leave: remove ourselves immediately.
-    if (kdr) {
-      setKdr({
-        ...kdr,
-        players: (kdr.players || []).filter((p: any) => p.user?.id !== session?.user?.id && p.user?.email !== session?.user?.email)
-      })
-    }
-
-    try {
-      await axios.post('/api/kdr/leave', { kdrId: id })
-      setMessage('You have left the KDR')
-      // Refetch confirmed state
-      const res = await axios.get(`/api/kdr/${id}`)
-      setKdr(res.data)
-    } catch (e: any) {
-      // Revert if it failed
-      const refresh = await axios.get(`/api/kdr/${id}`)
-      setKdr(refresh.data)
-      setMessage(e?.response?.data?.error || 'Failed to leave')
-    } finally { setLoading(false) }
+    if (!id) return
+    
+    setConfirmModal({
+      open: true,
+      title: 'Leave KDR',
+      message: 'Are you sure you want to leave?',
+      onConfirm: async () => {
+        setConfirmModal(null)
+        setLoading(true)
+        try {
+          await axios.post('/api/kdr/leave', { kdrId: id })
+          setMessage('You have left the KDR')
+          // Refetch for the one leaving to clear their view
+          const res = await axios.get(`/api/kdr/${id}`)
+          setKdr(res.data)
+          triggerGlobalRefresh()
+        } catch (e: any) {
+          // Revert if it failed
+          const refresh = await axios.get(`/api/kdr/${id}`)
+          setKdr(refresh.data)
+          setMessage(e?.response?.data?.error || 'Failed to leave')
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
   }
 
   const kickPlayer = async (p: any) => {
@@ -276,11 +337,11 @@ export default function KdrViewPage() {
     if (!id || !identifier) return setMessage('Missing player id')
     setLoading(true)
     try {
-      // Send both to be safe
       await axios.post(`/api/kdr/kick`, { kdrId: id, playerKey: p.playerKey, playerId: p.id })
       setMessage(`Kicked ${p.user?.name || 'player'}`)
       const res = await axios.get(`/api/kdr/${id}`)
       setKdr(res.data)
+      triggerGlobalRefresh()
     } catch (e: any) {
       setMessage(e?.response?.data?.error || 'Failed to kick')
     } finally {
@@ -289,8 +350,6 @@ export default function KdrViewPage() {
   }
 
   const visiblePlayers = (kdr?.players || []).filter((p: any) => p?.status === 'ACTIVE')
-  const currentPlayer = kdr?.players?.find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
-  const amIJoined = !!currentPlayer
 
   const hasClaimedStartingLoot = !!(currentPlayer?.startingLootClaimed || (currentPlayer?.shopState as any)?.startingLoot);
 
@@ -361,10 +420,10 @@ export default function KdrViewPage() {
               </button>
               <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />
               {!amIJoined && (kdr?.status === 'OPEN' || (isHost && kdr?.status === 'STARTED')) && (kdr?.playerCount == null || visiblePlayers.length < Number(kdr?.playerCount)) && (
-                <button className={`${btnBase} bg-indigo-600 text-white font-bold px-6 shadow-lg shadow-indigo-600/20`} onClick={handleJoinClick} disabled={loading}>Join Session</button>
+                <button className={`${btnBase} bg-indigo-600 text-white font-bold px-6 shadow-lg shadow-indigo-600/20`} onClick={handleJoinClick} disabled={loading}>Join KDR</button>
               )}
               {amIJoined && (
-                <button className={`${btnBase} bg-red-600/10 text-red-600 border border-red-600/20 text-sm font-bold`} onClick={leaveKdr} disabled={loading}>Leave Session</button>
+                <button className={`${btnBase} bg-red-600/10 text-red-600 border border-red-600/20 text-sm font-bold`} onClick={leaveKdr} disabled={loading}>Leave KDR</button>
               )}
             </div>
           </div>
@@ -422,31 +481,75 @@ export default function KdrViewPage() {
                       }
                       const displayName = p?.user?.name || p?.user?.email || p.displayName || 'Anon Player'
                       const avatarUrl = p?.user?.image || null
-                      const isMe = p.user?.id === session?.user?.id
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => p.playerKey && router.push(`/kdr/${id}/class?playerKey=${p.playerKey}`)}
-                          className={`flex items-center justify-between p-2 rounded-xl transition-all duration-200 cursor-pointer ${isMe ? (isDark ? 'bg-indigo-500/10 border border-indigo-500/30' : 'bg-indigo-50 border border-indigo-200') : (isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50')}`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative shrink-0 w-10 h-10">
-                              {avatarUrl ? (
-                                <img src={avatarUrl} alt={displayName} className="w-full h-full rounded-lg object-cover shadow-sm" />
-                              ) : (
-                                <div className={`w-full h-full rounded-lg flex items-center justify-center text-sm font-black ${isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
-                                  {displayName[0]}
-                                </div>
-                              )}
-                              {isMe && <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#0f1724] rounded-full" />}
+                      const isMe = p.user?.id === session?.user?.id || p.user?.email === session?.user?.email || (currentPlayer && p.id === currentPlayer.id)
+
+                      // Logic for participant background colors based on progress
+                      let statusBg = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'
+                      let statusIcon = null
+                      
+                      const currentRound = (kdr?.rounds || []).filter((r: any) => r.isCurrent)[0] || (kdr?.rounds || []).sort((a: any, b: any) => (b.number || 0) - (a.number || 0))[0]
+                      const hasStarted = kdr?.status === 'STARTED'
+                      const isPreFirstRound = hasStarted && (!kdr?.rounds || kdr.rounds.length === 0)
+                      
+                      if (hasStarted && !isPreFirstRound && currentRound) {
+                        const myMatch = (currentRound.matches || []).find((m: any) => m.playerAId === p.id || m.playerBId === p.id)
+                        const hasReported = myMatch?.status === 'COMPLETED'
+                        const isShopDone = !!p.shopComplete
+                        
+                        if (hasReported && isShopDone) {
+                          statusBg = isDark ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-emerald-50 border border-emerald-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-emerald-500" title="Ready" />
+                        } else if (hasReported) {
+                          statusBg = isDark ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-orange-50 border border-orange-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-orange-500" title="Shop Pending" />
+                        } else {
+                          statusBg = isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-red-500" title="Match & Shop Pending" />
+                        }
+                      } else if (!hasStarted || isPreFirstRound) {
+                        const hasPickedClass = !!p.classId
+                        const hasPickedLoot = !!(p.startingLootClaimed || (p.shopState as any)?.startingLoot)
+
+                        if (hasPickedClass && hasPickedLoot) {
+                          statusBg = isDark ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-emerald-50 border border-emerald-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-emerald-500" title="Ready" />
+                        } else if (hasPickedClass) {
+                          statusBg = isDark ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-orange-50 border border-orange-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-orange-500" title="Loot Pending" />
+                        } else {
+                          statusBg = isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+                          statusIcon = <div className="w-2 h-2 rounded-full bg-red-500" title="Class Pending" />
+                        }
+                      }
+
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => p.playerKey && router.push(`/kdr/${id}/class?playerKey=${p.playerKey}`)}
+                            className={`flex items-center justify-between p-2 rounded-xl transition-all duration-200 cursor-pointer ${isMe && !hasStarted ? (isDark ? 'bg-indigo-500/10 border border-indigo-500/30' : 'bg-indigo-50 border border-indigo-200') : statusBg}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="relative shrink-0 w-10 h-10">
+                                {avatarUrl ? (
+                                  <img src={avatarUrl} alt={displayName} className="w-full h-full rounded-lg object-cover shadow-sm" />
+                                ) : (
+                                  <div className={`w-full h-full rounded-lg flex items-center justify-center text-sm font-black ${isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                                    {displayName[0]}
+                                  </div>
+                                )}
+                                {isMe && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white dark:border-[#0f1724] rounded-full z-20" />}
+                                {!isMe && (userIds.includes(p.id) || lobbyUserIds.includes(p.id) || lobbyUserIds.includes(p.user?.email) || lobbyUserIds.includes(p.user?.id)) && <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0f1724] rounded-full z-20 animate-pulse" title="Online" />}
+                              </div>
+                              <div className="truncate font-bold text-sm tracking-tight flex-1">{displayName}</div>
                             </div>
-                            <div className="truncate font-bold text-sm tracking-tight">{displayName}</div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                             {statusIcon}
+                             {isHost && !isMe && (
+                               <button onClick={(e) => { e.stopPropagation(); kickPlayer(p); }} className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                               </button>
+                             )}
                           </div>
-                          {isHost && !isMe && (
-                            <button onClick={(e) => { e.stopPropagation(); kickPlayer(p); }} className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          )}
                         </div>
                       )
                     })}
@@ -469,12 +572,40 @@ export default function KdrViewPage() {
                           className={`${btnBase} ${loading || roundOngoing ? 'bg-gray-400 cursor-not-allowed opacity-50' : 'bg-emerald-600'} text-white font-black text-sm uppercase py-3`}
                           onClick={async () => {
                             if (!id || loading || roundOngoing) return
+
+                            // Safety check: verify all players have finished shop
+                            const pendingShop = visiblePlayers.filter((p: any) => !p.shopComplete)
+                            if (pendingShop.length > 0) {
+                              const isRoundZero = (kdr?.rounds?.length || 0) === 0;
+                              setConfirmModal({
+                                open: true,
+                                title: isRoundZero ? 'Players Still Picking Class' : 'Players Still Shopping',
+                                message: isRoundZero 
+                                  ? `The following participants have not yet picked their class. This will force them to start with a random class.`
+                                  : `The following participants have not finished shopping. This will end their shopping phase immediately.`,
+                                players: pendingShop,
+                                onConfirm: async () => {
+                                  setConfirmModal(null)
+                                  setLoading(true)
+                                  try {
+                                    const res = await axios.post(`/api/kdr/generate`, { kdrId: id })
+                                    setKdr(res.data)
+                                    setMessage('Round generated')
+                                    triggerGlobalRefresh()
+                                  } catch (e: any) {
+                                    setMessage(e?.response?.data?.error || 'Failed to generate round')
+                                  } finally { setLoading(false) }
+                                }
+                              })
+                              return
+                            }
+
                             setLoading(true)
                             try {
-                              await axios.post('/api/kdr/generate', { kdrId: id })
-                              const res = await axios.get(`/api/kdr/${id}`)
+                              const res = await axios.post(`/api/kdr/generate`, { kdrId: id })
                               setKdr(res.data)
                               setMessage('Round generated')
+                              triggerGlobalRefresh()
                             } catch (e: any) {
                               setMessage(e?.response?.data?.error || 'Failed to generate round')
                             } finally { setLoading(false) }
@@ -492,6 +623,7 @@ export default function KdrViewPage() {
                             await axios.post('/api/kdr/fill-dummy', { kdrId: id })
                             const res = await axios.get(`/api/kdr/${id}`)
                             setKdr(res.data)
+                            triggerGlobalRefresh()
                             setMessage('Success: Dummy slots filled.')
                           } catch (e: any) { setMessage(e?.response?.data?.error || 'Failed to fill dummy') }
                           finally { setLoading(false) }
@@ -516,7 +648,7 @@ export default function KdrViewPage() {
                         <div className={`p-6 rounded-[14px] flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-[#080c14]' : 'bg-white'}`}>
                           <div>
                             <div className="text-orange-500 text-2xl font-black uppercase tracking-widest mb-1 italic">Required Action</div>
-                            <div className="text-sm opacity-50 font-bold uppercase tracking-widest">You have not yet claimed your identity.</div>
+                            <div className="text-sm opacity-50 font-bold uppercase tracking-widest">You have not yet claimed your Class.</div>
                           </div>
                           <button className="px-8 py-3 bg-white dark:bg-white/5 text-orange-500 dark:text-orange-400 border-2 border-orange-500 rounded-xl font-black italic shadow-xl shadow-orange-500/20 active:scale-95 transition-all text-lg" onClick={() => setPickOpen(true)}>PICK CLASS</button>
                         </div>
@@ -624,7 +756,7 @@ export default function KdrViewPage() {
                                         )}
                                         {isWinnerA && <div className="absolute -top-4 -right-4 text-3xl drop-shadow-2xl animate-bounce-slow">👑</div>}
                                       </div>
-                                      <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerA ? 'text-yellow-500' : 'opacity-60 group-hover/pa:opacity-100 transition-opacity'}`}>{pA?.user?.name || 'Player A'}</div>
+<div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerA ? 'text-yellow-500' : 'opacity-60 group-hover/pa:opacity-100 transition-opacity'}`}>{pA?.name || pA?.user?.name || 'Player A'}</div>
                                     </div>
 
                                     <div className="flex flex-col items-center justify-center flex-1 py-4">
@@ -658,7 +790,7 @@ export default function KdrViewPage() {
                                           </div>
                                         )}
                                       </div>
-                                      <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerB ? 'text-yellow-500' : 'opacity-60 group-hover/pb:opacity-100 transition-opacity'}`}>{pB?.user?.name || (pB ? 'Player B' : 'OPEN SLOT')}</div>
+                                      <div className={`text-xs font-black truncate w-full uppercase tracking-widest ${isWinnerB ? 'text-yellow-500' : 'opacity-60 group-hover/pb:opacity-100 transition-opacity'}`}>{pB?.name || pB?.user?.name || (pB ? 'Player B' : 'OPEN SLOT')}</div>
                                     </div>
                                   </div>
 
@@ -668,8 +800,9 @@ export default function KdrViewPage() {
                                       setLoading(true)
                                       try {
                                         await axios.post('/api/kdr/match/reopen', { matchId: m.id })
-                                        const refreshRes = await axios.get(`/api/kdr/${id}`)
-                                        setKdr(refreshRes.data)
+                                        const res = await axios.get(`/api/kdr/${id}`)
+                                        setKdr(res.data)
+                                        triggerGlobalRefresh()
                                         setMessage('Match Reopened')
                                       } catch (err: any) { setMessage('Failed') }
                                       finally { setLoading(false) }
@@ -793,6 +926,7 @@ export default function KdrViewPage() {
                           const pickRes = await axios.post('/api/kdr/player/pick-class', { kdrId: id, newClassId: c.id })
                           const res = await axios.get(`/api/kdr/${id}`)
                           setKdr(res.data)
+                          triggerGlobalRefresh()
                           setMessage(`Class selected! Now choose your Starting Loot.`)
                           setPickOpen(false)
                           
@@ -910,16 +1044,24 @@ export default function KdrViewPage() {
                       </div>
                       <div className="flex flex-wrap gap-3">
                         {p.items?.map((item: any, idx: number) => {
-                          const art = (item.card || item.skill) ? selectArtworkUrl(item.card || item.skill, null, { useLootArt: true }) : null
+                          const card = item.card || item.skill
+                          const art = card ? selectArtworkUrl(card, null, { useLootArt: true }) : null
+                          if (!art) return null
                           return (
-                            <div key={idx} className="relative group/item">
-                              {art ? (
-                                <img src={art} alt="" className="w-12 h-16 object-cover rounded shadow-lg border border-white/10 group-hover/item:scale-150 group-hover/item:z-20 transition-transform duration-300 cursor-zoom-in" />
-                              ) : (
-                                <div className="w-12 h-16 bg-white/5 rounded flex items-center justify-center text-[8px] font-black uppercase text-center p-1 border border-white/5">
-                                  {item.card?.name || item.skill?.name || item.type}
-                                </div>
-                              )}
+                            <div 
+                              key={idx} 
+                              className="relative group/item inline-flex flex-col items-center"
+                              onMouseEnter={(e) => showHover(e, card)}
+                              onMouseMove={moveHover}
+                              onMouseLeave={hideHover}
+                            >
+                              <div className="relative h-24 w-auto group-hover/item:scale-105 transition-transform duration-300">
+                                <img 
+                                  src={art} 
+                                  alt="" 
+                                  className="h-full w-auto block rounded shadow-lg border border-white/10 group-hover/item:border-emerald-500/50 group-hover/item:ring-2 group-hover/item:ring-emerald-500/40" 
+                                />
+                              </div>
                             </div>
                           )
                         })}
@@ -944,6 +1086,14 @@ export default function KdrViewPage() {
                       packId: selectedPackId
                     })
                     setLootOpen(false)
+                    // Refresh KDR/player state so updated shopState (purchases/seen) is available client-side
+                    try {
+                      const res = await axios.get(`/api/kdr/${id}`)
+                      setKdr(res.data)
+                      triggerGlobalRefresh()
+                    } catch (err) {
+                      // ignore - we'll still redirect
+                    }
                     // Redirect after claim
                     const pk = kdr?.currentPlayer?.playerKey || ''
                     router.push(`/kdr/${id}/class` + (pk ? `?playerKey=${pk}` : ''))
@@ -956,6 +1106,7 @@ export default function KdrViewPage() {
               </button>
             </div>
           </div>
+          <HoverTooltip hoverTooltip={hoverTooltip} cardDetailsCacheRef={cardDetailsCacheRef} tooltipScrollRef={tooltipScrollRef} />
         </div>
       )}
 
@@ -986,10 +1137,16 @@ export default function KdrViewPage() {
               <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreA > selectedMatchForReport.scoreB ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
-                    <img src={selectedMatchForReport.pA?.user?.image || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                    {selectedMatchForReport.pA?.user?.image ? (
+                      <img src={selectedMatchForReport.pA.user.image} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center text-xl font-black uppercase text-gray-500">
+                        {selectedMatchForReport.pA?.user?.name?.[0] || 'A'}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pA?.user?.name || 'Player 1'}</h3>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pA?.name || selectedMatchForReport.pA?.user?.name || 'Player 1'}</h3>
                     <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pA?.playerClass?.name || 'Class Pending'}</p>
                   </div>
                 </div>
@@ -1013,10 +1170,16 @@ export default function KdrViewPage() {
               <div className={`p-8 rounded-3xl border-2 transition-all duration-500 ${selectedMatchForReport.scoreB > selectedMatchForReport.scoreA ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 bg-white/5'}`}>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
-                    <img src={selectedMatchForReport.pB?.user?.image || '/images/default_avatar.png'} alt="" className="w-full h-full object-cover" />
+                    {selectedMatchForReport.pB?.user?.image ? (
+                      <img src={selectedMatchForReport.pB.user.image} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center text-xl font-black uppercase text-gray-500">
+                        {selectedMatchForReport.pB?.user?.name?.[0] || 'B'}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pB?.user?.name || 'Player 2'}</h3>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white truncate">{selectedMatchForReport.pB?.name || selectedMatchForReport.pB?.user?.name || 'Player 2'}</h3>
                     <p className="text-xs font-bold uppercase tracking-widest text-white/40">{selectedMatchForReport.pB?.playerClass?.name || 'Class Pending'}</p>
                   </div>
                 </div>
@@ -1039,7 +1202,7 @@ export default function KdrViewPage() {
 
             <div className="space-y-8">
               <div className="relative group">
-                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-3 ml-2">DuelingBook Replay URL (Optional)</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-3 ml-2">DuelingBook Replay URL</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-indigo-500 transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
@@ -1065,16 +1228,24 @@ export default function KdrViewPage() {
                 <button
                   disabled={loading}
                   onClick={async () => {
+                    const replayUrl = selectedMatchForReport.replayUrl || ''
+                    if (!replayUrl.startsWith('https://www.duelingbook.com/replay?id=')) {
+                      alert('Please enter a valid DuelingBook replay link starting with https://www.duelingbook.com/replay?id=')
+                      return
+                    }
+
                     setLoading(true);
                     try {
-                      await axios.post('/api/kdr/match/report', {
+                      const res = await axios.post('/api/kdr/match/report', {
                         matchId: selectedMatchForReport.id,
                         scoreA: selectedMatchForReport.scoreA,
                         scoreB: selectedMatchForReport.scoreB,
                         replayUrl: selectedMatchForReport.replayUrl
                       });
+                      setKdr(res.data);
                       setReportOpen(false);
-                      router.reload();
+                      triggerGlobalRefresh();
+                      triggerMatchUpdate();
                     } catch (e: any) {
                       alert(e?.response?.data?.error || 'Failed to report score');
                     } finally {
@@ -1086,6 +1257,57 @@ export default function KdrViewPage() {
                   {loading ? 'Transmitting Data...' : 'Submit Final Report'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[200] p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setConfirmModal(null)} />
+          <div className={`relative z-10 w-full max-w-lg rounded-[2.5rem] p-10 border border-white/20 ${isDark ? 'bg-[#0a0f1a] shadow-[0_0_100px_rgba(239,68,68,0.2)]' : 'bg-white shadow-2xl'}`}>
+            <div className="w-20 h-20 rounded-3xl bg-red-500/10 border-2 border-red-500/20 flex items-center justify-center mb-8 mx-auto">
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white mb-2 text-center">{confirmModal.title}</h2>
+            <p className="text-sm opacity-50 font-medium leading-relaxed text-center mb-8">{confirmModal.message}</p>
+            
+            {confirmModal.players && confirmModal.players.length > 0 && (
+              <div className="space-y-2 mb-10 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {confirmModal.players.map((p: any) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                      {p.user?.image ? (
+                        <img src={p.user.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gray-800 flex items-center justify-center text-xs font-black uppercase text-gray-500">
+                          {p.user?.name?.[0] || 'P'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-black uppercase italic tracking-tighter truncate">{p.name || p.user?.name || 'Unknown'}</div>
+                      <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest">{p.playerClass?.name || 'Inventory Pending'}</div>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button 
+                className="flex-1 py-4 rounded-xl font-black uppercase italic tracking-widest text-white/40 bg-white/5 hover:bg-white/10 transition-all border border-white/5" 
+                onClick={() => setConfirmModal(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className={`flex-1 py-4 rounded-xl font-black uppercase italic tracking-widest text-white transition-all shadow-xl ${confirmModal.players ? 'bg-red-600 hover:bg-red-500 shadow-red-600/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'}`} 
+                onClick={confirmModal.onConfirm}
+              >
+                PROCEED
+              </button>
             </div>
           </div>
         </div>

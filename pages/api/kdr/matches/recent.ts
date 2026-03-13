@@ -19,10 +19,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Enrich with player user names
     const enriched = await Promise.all(matches.map(async (m) => {
-      const playerA = m.playerAId ? await prisma.kDRPlayer.findUnique({ where: { id: m.playerAId }, select: { userId: true } }) : null
-      const playerB = m.playerBId ? await prisma.kDRPlayer.findUnique({ where: { id: m.playerBId }, select: { userId: true } }) : null
-      const userA = playerA ? await prisma.user.findUnique({ where: { id: playerA.userId }, select: { id: true, name: true, email: true } }) : null
-      const userB = playerB ? await prisma.user.findUnique({ where: { id: playerB.userId }, select: { id: true, name: true, email: true } }) : null
+      const playerA = (m.playerAId && typeof m.playerAId === 'string') ? await prisma.kDRPlayer.findUnique({ where: { id: m.playerAId }, select: { userId: true } }) : null
+      const playerB = (m.playerBId && typeof m.playerBId === 'string') ? await prisma.kDRPlayer.findUnique({ where: { id: m.playerBId }, select: { userId: true } }) : null
+      
+      const userA = (playerA?.userId && typeof playerA.userId === 'string') ? await prisma.user.findUnique({ where: { id: playerA.userId }, select: { id: true, name: true, email: true } }) : null
+      const userB = (playerB?.userId && typeof playerB.userId === 'string') ? await prisma.user.findUnique({ where: { id: playerB.userId }, select: { id: true, name: true, email: true } }) : null
 
       return {
         id: m.id,
@@ -37,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         status: m.status,
         reportedAt: m.reportedAt,
         updatedAt: m.updatedAt,
+        replayUrl: m.replayUrl,
       }
     }))
 

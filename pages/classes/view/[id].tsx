@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import ClassImage from '../../../components/common/ClassImage'
 import CardImage from '../../../components/common/CardImage'
-import HoverTooltip from '../../../components/shop/HoverTooltip'
+import HoverTooltip from '../../../components/shop-v2/components/HoverTooltip'
 
 const getCardKey = (it: any) => it?.id || it?.konamiId || (it?.name || it?.title || '').toString()
 

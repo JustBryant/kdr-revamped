@@ -56,7 +56,7 @@ export default function TipSkillsEditor({ skills, onChange, send, me, peers, for
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {skills.map(skill => (
-            <div key={skill.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group relative bg-white dark:bg-gray-800" onMouseEnter={()=> send && send({ section: 'tipSkills', data: { section: 'skill', skillId: skill.id }, ts: Date.now(), user: me })} onMouseLeave={()=> send && send({ section: 'tipSkills', data: { section: 'skill', skillId: undefined }, ts: Date.now(), user: me })}>
+            <div key={skill.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group relative bg-white dark:bg-gray-800">
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                 <button 
                   onClick={() => handleEdit(skill)}

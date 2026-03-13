@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
+import { persistStateForPlayer } from '../../../../lib/shop-v2/state'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -94,83 +95,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }
 
-      return res.status(200).json({ message: 'Report recorded and finalized', match: updated })
-    }
-
-    // If there is an existing provisional report, compare values
-    // If they match, finalize; if they differ, mark disputed.
-    if (match.status === 'REPORTED') {
-      // If second reporter provides a differing replay URL, flag dispute
-      const existingReplay = match.replayUrl
-      if (match.scoreA === scoreA && match.scoreB === scoreB) {
-        // Require the replay URL to match the originally submitted one for auto-finalize
-        if (existingReplay && existingReplay !== replayUrl) {
-          const disputed = await prisma.kDRMatch.update({ where: { id: matchId }, data: { status: 'DISPUTED' } })
-          return res.status(200).json({ message: 'Replay mismatch — match flagged as DISPUTED', match: disputed })
+      // Trigger Pusher updates
+      try {
+        const { triggerPusher } = await import('../../../../lib/pusher')
+        await triggerPusher('kdr-lobby', 'match-update', { type: 'match-update', matchId })
+        if (match.kdrId) {
+          await triggerPusher(`kdr-${match.kdrId}`, 'update', { type: 'update', action: 'match-reported' })
         }
-
-        let winnerId: string | null = null
-        if (scoreA > scoreB) winnerId = match.playerAId
-        else if (scoreB > scoreA && match.playerBId) winnerId = match.playerBId
-        
-        const finalized = await prisma.kDRMatch.update({ where: { id: matchId }, data: { status: 'COMPLETED', winnerId } })
-
-        // Update Stats on Finalization
-        if (winnerId) {
-          const loserId = winnerId === match.playerAId ? match.playerBId : match.playerAId
-          const winPlayer = await prisma.kDRPlayer.findUnique({ where: { id: winnerId }, select: { userId: true, classId: true } })
-          const losePlayer = loserId ? await prisma.kDRPlayer.findUnique({ where: { id: loserId }, select: { userId: true, classId: true } }) : null
-
-          // Winner Stats
-          if (winPlayer?.userId) {
-            const ps = await prisma.playerStats.findFirst({ where: { userId: winPlayer.userId } })
-            if (ps) {
-              const s = (ps.stats as any) || {}
-              await prisma.playerStats.update({
-                where: { id: ps.id },
-                data: { stats: { ...s, wins: (s.wins || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
-              })
-            }
-            if (winPlayer.classId) {
-              const cs = await prisma.playerClassStats.findFirst({ where: { userId: winPlayer.userId, classId: winPlayer.classId } })
-              if (cs) {
-                const s = (cs.stats as any) || {}
-                await prisma.playerClassStats.update({
-                  where: { id: cs.id },
-                  data: { stats: { ...s, wins: (s.wins || 0) + 1 } }
-                })
-              }
-            }
-          }
-
-          // Loser Stats
-          if (losePlayer?.userId) {
-            const ps = await prisma.playerStats.findFirst({ where: { userId: losePlayer.userId } })
-            if (ps) {
-              const s = (ps.stats as any) || {}
-              await prisma.playerStats.update({
-                where: { id: ps.id },
-                data: { stats: { ...s, losses: (s.losses || 0) + 1, gamesPlayed: (s.gamesPlayed || 0) + 1 } }
-              })
-            }
-            if (losePlayer.classId) {
-              const cs = await prisma.playerClassStats.findFirst({ where: { userId: losePlayer.userId, classId: losePlayer.classId } })
-              if (cs) {
-                const s = (cs.stats as any) || {}
-                await prisma.playerClassStats.update({
-                  where: { id: cs.id },
-                  data: { stats: { ...s, losses: (s.losses || 0) + 1 } }
-                })
-              }
-            }
-          }
-        }
-
-        return res.status(200).json({ message: 'Match result confirmed and finalized', match: finalized })
+      } catch (e) {
+        console.error('Failed to trigger Pusher for match report:', e)
       }
 
-      const disputed = await prisma.kDRMatch.update({ where: { id: matchId }, data: { status: 'DISPUTED' } })
-      return res.status(200).json({ message: 'Discrepancy detected — match flagged as DISPUTED', match: disputed })
+      // Ensure both players get a fresh per-round shop instance for the current round.
+      try {
+        if (match.kdrId) {
+          const latestRound = await prisma.kDRRound.findFirst({ where: { kdrId: match.kdrId }, orderBy: { number: 'desc' }, select: { number: true } })
+          const currentRoundNumber = Number(latestRound?.number || 0)
+
+          const playerIds = [match.playerAId, match.playerBId].filter(Boolean) as string[]
+          for (const pid of playerIds) {
+            try {
+              const p = await prisma.kDRPlayer.findUnique({ where: { id: pid }, select: { shopState: true, stats: true } })
+              const resetState = {
+                chosenSkills: [],
+                purchases: [],
+                tipAmount: 0,
+                lootOffers: [],
+                pendingSkillChoices: [],
+                statPoints: (p?.shopState as any)?.statPoints || 0,
+                history: [],
+                stage: 'START',
+                stats: (p?.stats as any) || {},
+                shopAwarded: false
+              }
+              await persistStateForPlayer({ playerId: pid, roundNumber: currentRoundNumber, partial: resetState, playerShopState: p?.shopState })
+            } catch (e) {
+              console.error(`[SHOP:ERROR] Failed to prepare shop instance for player ${pid}:`, e)
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to ensure per-round shop instances after match report:', e)
+      }
+
+      return res.status(200).json({ message: 'Match result confirmed and finalized' })
     }
 
     return res.status(400).json({ error: 'Unable to process report' })

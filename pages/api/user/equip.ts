@@ -10,41 +10,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     if (!session?.user?.id) return res.status(401).json({ message: "Unauthorized" })
     const { itemId, cosmeticType } = req.body
-    if (!['BORDER', 'FRAME', 'TITLE', 'NONE'].includes(cosmeticType)) {
+    if (!['BORDER', 'FRAME', 'TITLE', 'BACKGROUND', 'PROFILE_ICON', 'CARD_EFFECT', 'ICON_EFFECT', 'NONE'].includes(cosmeticType)) {
         return res.status(400).json({ message: "Invalid cosmetic type" })
     }
 
     try {
-      // Check ownership first
-      if (itemId) {
-         const owned = await prisma.playerItem.findFirst({
+      // Check ownership (Ignore checks for un-equipping)
+      if (itemId && itemId !== 'NONE') {
+         // Use UserItem since that's what the Item model uses for owners in schema.prisma
+         const owned = await prisma.userItem.findFirst({
             where: { userId: session.user.id, itemId }
          })
-         if (!owned) return res.status(403).json({ message: "You don't own this item" })
+         
+         // fallback to playerItem if that's where they are stored
+         if (!owned) {
+            const ownedAlt = await prisma.playerItem.findFirst({
+                where: { userId: session.user.id, itemId }
+            })
+            if (!ownedAlt) return res.status(403).json({ message: "You don't own this item" })
+         }
       }
 
       const updateData: any = {}
-      if (cosmeticType === 'BORDER') updateData.borderId = itemId
-      if (cosmeticType === 'FRAME') updateData.frameId = itemId
-      if (cosmeticType === 'TITLE') updateData.titleId = itemId
-      
-      // Handle un-equipping
-      if (cosmeticType === 'NONE') {
-         // require specific field
-         const field = req.body.field // 'border', 'frame', 'title'
-         if (field === 'border') updateData.borderId = null
-         if (field === 'frame') updateData.frameId = null
-         if (field === 'title') updateData.titleId = null
-      }
+      const itemValue = itemId === 'NONE' ? null : itemId
 
-      await prisma.user.update({
+      if (cosmeticType === 'BORDER') updateData.borderId = itemValue
+      if (cosmeticType === 'FRAME') updateData.frameId = itemValue
+      if (cosmeticType === 'TITLE') updateData.titleId = itemValue
+      if (cosmeticType === 'BACKGROUND') updateData.backgroundId = itemValue
+      if (cosmeticType === 'PROFILE_ICON') updateData.profileIconId = itemValue
+      if (cosmeticType === 'CARD_EFFECT') updateData.cardEffectId = itemValue
+      if (cosmeticType === 'ICON_EFFECT') updateData.iconEffectId = itemValue
+      
+      const updatedUser = await prisma.user.update({
         where: { id: session.user.id },
         data: updateData
       })
 
-      return res.status(200).json({ message: "Updated session cosmetic preference" })
+      console.log(`[EQUIP SUCCESS] User ${session.user.id} updateData:`, updateData);
+      
+      return res.status(200).json({ message: "Updated session cosmetic preference", user: updatedUser })
     } catch (error) {
-       console.error(error)
+       console.error("[EQUIP ERROR]:", error)
        return res.status(500).json({ message: "Internal Server Error" })
     }
   }

@@ -107,15 +107,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Clean up relations to rebuild
         await tx.classCard.deleteMany({ where: { classId } })
         
-        // Delete loot pool items first, then pools (but NOT the skills they reference)
+        // Find existing pools for ShopItem cleanup
         const existingPools = await tx.lootPool.findMany({ 
           where: { classId },
           select: { id: true }
         })
-        for (const pool of existingPools) {
-          await tx.lootPoolItem.deleteMany({ where: { lootPoolId: pool.id } })
+        const poolIds = existingPools.map(p => p.id)
+        
+        if (poolIds.length > 0) {
+          // Find all individual items in these pools
+          // Note: In this schema, it seems we don't have a ShopItem table referencing LootPoolItem directly.
+          // We'll proceed with standard cleanup.
+
+          // Now safely delete items and pools
+          await tx.lootPoolItem.deleteMany({
+            where: { lootPoolId: { in: poolIds } }
+          })
+          await tx.lootPool.deleteMany({
+            where: { classId }
+          })
         }
-        await tx.lootPool.deleteMany({ where: { classId } })
         
         // Find all skill IDs belonging to this class that we are about to delete
         const skillsToDelete = await tx.skill.findMany({
@@ -133,6 +144,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             where: { skillId: { in: skillIds } }
           })
           
+          // Clean up LootItem references (This was missing and likely causing the 500)
+          await tx.lootItem.deleteMany({
+            where: { skillId: { in: skillIds } }
+          })
+
           // Clear many-to-many relations for SkillProvidesCards and DeckSkills
           // Prisma doesn't support deleteMany on implicit join tables directly in create/update nested syntax effectively for IDs,
           // so we update the skills to disconnect them before deleting.
@@ -194,6 +210,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'MAIN',
             classId,
             isSellable: mainSkill.isSellable ?? true,
+            statRequirements: mainSkill.statRequirements || [],
             providesCards: {
               connect: (mainSkill.providesCards || []).filter((c:any) => c && c.id).map((c:any) => ({ id: c.id }))
             }
@@ -234,6 +251,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'GENERIC',
             classId,
             isSellable: relicSkill.isSellable ?? false,
+            statRequirements: relicSkill.statRequirements || [],
             providesCards: {
               connect: (relicSkill.providesCards || []).filter((c:any) => c && c.id).map((c:any) => ({ id: c.id }))
             }
@@ -264,6 +282,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             type: 'UNIQUE',
             classId,
             uniqueRound: s.uniqueRound ?? null,
+            statRequirements: s.statRequirements || [],
           }))
         })
       }
@@ -278,6 +297,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               type: 'STARTING',
               classId,
               isSellable: s.isSellable ?? true,
+              statRequirements: s.statRequirements || [],
               providesCards: {
                 connect: s.providesCards?.map((c: any) => ({ id: c.id })) || []
               },
@@ -363,8 +383,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         name: item.skill.name,
                         description: item.skill.description,
                         isSellable: item.skill.isSellable ?? true,
+                        statRequirements: item.skill.statRequirements || [],
                       }
                     })
+
+                    // Clear old modifications for update
+                    await tx.skillCardModification.deleteMany({
+                      where: { skillId: skillId as string }
+                    })
+
+                    // Create new modifications
+                    if (item.skill.modifications && item.skill.modifications.length > 0) {
+                      const createdUpdatedMods = await tx.skillCardModification.createMany({
+                        data: item.skill.modifications.map((mod: any) => ({
+                          skillId: skillId,
+                          cardId: mod.card.id,
+                          type: mod.type,
+                          highlightedText: mod.highlightedText || '',
+                          alteredText: mod.alteredText || '',
+                          note: mod.note || ''
+                        }))
+                      })
+                      console.log('[DEBUG] Recreated modifications for existing skill', skillId, createdUpdatedMods.count)
+                    }
                   } else {
                     // Skill was deleted, create a new one
                     const createdSkill = await tx.skill.create({
@@ -372,58 +413,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         name: item.skill.name,
                         description: item.skill.description,
                         isSellable: item.skill.isSellable ?? true,
-                        type: 'LOOT_POOL',
-                        classId: classId,
+                        statRequirements: item.skill.statRequirements || []
                       }
                     })
                     skillId = createdSkill.id
-                  }
-                  
-                  // Delete old modifications
-                  await tx.skillCardModification.deleteMany({
-                    where: { skillId: skillId as string }
-                  })
-                  
-                  // Create new modifications
-                  if (item.skill.modifications && item.skill.modifications.length > 0) {
-                      const createdUpdatedMods = await tx.skillCardModification.createMany({
-                        data: item.skill.modifications.map((mod: any) => ({
-                          skillId: skillId,
-                          cardId: mod.card.id,
-                          type: mod.type,
-                          highlightedText: mod.highlightedText,
-                          alteredText: mod.alteredText,
-                          note: mod.note
-                        }))
-                      })
-                      console.log('[DEBUG] Recreated modifications for existing skill', skillId, createdUpdatedMods.count)
-                  }
-                } else {
-                  // New skill - create it
-                  const createdSkill = await tx.skill.create({
-                    data: {
-                      name: item.skill.name,
-                      description: item.skill.description,
-                      isSellable: item.skill.isSellable ?? true,
-                      type: 'LOOT_POOL',
-                      classId: classId,
-                    }
-                  })
-                  skillId = createdSkill.id
-                  
-                  // Create modifications for the skill
-                  if (item.skill.modifications && item.skill.modifications.length > 0) {
+
+                    // Create skill modifications
+                    if (item.skill.modifications && item.skill.modifications.length > 0) {
                       const createdPoolSkillMods = await tx.skillCardModification.createMany({
                         data: item.skill.modifications.map((mod: any) => ({
                           skillId: createdSkill.id,
                           cardId: mod.card.id,
                           type: mod.type,
-                          highlightedText: mod.highlightedText,
-                          alteredText: mod.alteredText,
-                          note: mod.note
+                          highlightedText: mod.highlightedText || '',
+                          alteredText: mod.alteredText || '',
+                          note: mod.note || ''
                         }))
                       })
                       console.log('[DEBUG] Created loot-pool skill modifications for new skill', createdSkill.id, createdPoolSkillMods.count)
+                    }
+                  }
+                } else {
+                  // New skill (temp_ id) - create it
+                  const createdSkill = await tx.skill.create({
+                    data: {
+                      name: item.skill.name,
+                      description: item.skill.description,
+                      isSellable: item.skill.isSellable ?? true,
+                      statRequirements: item.skill.statRequirements || []
+                    }
+                  })
+                  skillId = createdSkill.id
+
+                  if (item.skill.modifications && item.skill.modifications.length > 0) {
+                    const createdPoolSkillMods = await tx.skillCardModification.createMany({
+                      data: item.skill.modifications.map((mod: any) => ({
+                        skillId: createdSkill.id,
+                        cardId: mod.card.id,
+                        type: mod.type,
+                        highlightedText: mod.highlightedText || '',
+                        alteredText: mod.alteredText || '',
+                        note: mod.note || ''
+                      }))
+                    })
+                    console.log('[DEBUG] Created loot-pool skill modifications for new skill', createdSkill.id, createdPoolSkillMods.count)
                   }
                 }
               }
@@ -469,7 +502,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json(result)
   } catch (error: any) {
-    console.error('Error saving class:', error)
-    res.status(500).json({ message: error.message || 'Internal server error' })
+    console.error('CRITICAL ERROR saving class:', error)
+    if (error.code) console.error('Prisma Error Code:', error.code)
+    if (error.meta) console.error('Prisma Error Meta:', JSON.stringify(error.meta))
+    res.status(500).json({ message: error.message || 'Internal server error', code: error.code })
   }
 }

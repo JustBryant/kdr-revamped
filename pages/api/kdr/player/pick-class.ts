@@ -77,6 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             data: { 
               userId: user.id, 
               kdrId: kdr.id, 
+              kdrPlayerId: player.id,
               cardId: sc.cardId, 
               qty: sc.quantity || 1 
             } 
@@ -91,6 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 data: { 
                   userId: user.id, 
                   kdrId: kdr.id, 
+                  kdrPlayerId: player.id,
                   skillId: s.id, 
                   qty: 1 
                 } 

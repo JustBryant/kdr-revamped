@@ -90,6 +90,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const created = await prisma.kDR.create({ data: createData })
 
+    // Trigger Pusher updates
+    try {
+      const { triggerPusher } = await import('../../../lib/pusher')
+      await triggerPusher('kdr-lobby', 'update', { type: 'update', action: 'create' })
+    } catch (e) {
+      console.error('Failed to trigger Pusher for create:', e)
+    }
+
     return res.status(201).json(created)
   } catch (error: any) {
     console.error('Error creating KDR:', error, '\nstack:', (error && (error as any).stack) || '')

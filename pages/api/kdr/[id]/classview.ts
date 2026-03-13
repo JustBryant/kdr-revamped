@@ -53,8 +53,13 @@ const { id, playerKey } = req.query
         if (kdr.status === 'DELETED') return res.status(404).json({ error: 'KDR not found' })
 
         // Append stable playerKey for each player. Inventory and skills are derived from `PlayerItem` rows.
-        const userIds = (kdr.players || []).map((p: any) => p.user?.id || p.userId).filter(Boolean)
-        const playerItems = userIds.length ? await prisma.playerItem.findMany({ where: { userId: { in: userIds }, kdrId: kdr.id } }) : []
+                const userIds = (kdr.players || []).map((p: any) => p.user?.id || p.userId).filter(Boolean)
+                const kdrPlayerIds = (kdr.players || []).map((p: any) => p.id).filter(Boolean)
+                // Prefer items explicitly tied to the KDR player via `kdrPlayerId`, but
+                // fall back to legacy (userId + kdrId) for rows not yet backfilled.
+                const playerItems = (kdrPlayerIds.length || userIds.length)
+                    ? await prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: { in: kdrPlayerIds } }, { AND: [ { userId: { in: userIds } }, { kdrId: kdr.id } ] } ] } as any) })
+                    : []
         const playerItemsByUser: Record<string, any[]> = {}
         playerItems.forEach((it: any) => {
             const uid = it.userId
@@ -70,7 +75,10 @@ const { id, playerKey } = req.query
         const cardById: Record<string, any> = {}
         const skillById: Record<string, any> = {}
         for (const c of cards) cardById[c.id] = c
-        for (const s of skills) skillById[s.id] = s
+        for (const s of skills) skillById[s.id] = {
+            ...s,
+            statRequirements: s.statRequirements ? (typeof s.statRequirements === 'string' ? JSON.parse(s.statRequirements) : s.statRequirements) : []
+        }
 
         // Preload referenced Item / LootItem rows so we can identify TREASURE Item types
         // PlayerItem rows reference `itemId`.
@@ -117,12 +125,28 @@ const { id, playerKey } = req.query
             // chosen SHOP skills
             chosenSkillIds.forEach((sid: string) => {
                 const row = skillById[sid]
-                if (row) skillsMap[sid] = { id: row.id, name: row.name, description: row.description || '', _source: 'SHOP' }
+                if (row) {
+                    skillsMap[sid] = { 
+                        id: row.id, 
+                        name: row.name, 
+                        description: row.description || '', 
+                        statRequirements: row.statRequirements,
+                        _source: 'SHOP' 
+                    }
+                }
             })
             // inventory-derived skills
             invSkillIds.forEach((sid: string) => {
                 const row = skillById[sid]
-                if (row) skillsMap[sid] = { id: row.id, name: row.name, description: row.description || '', _source: 'INVENTORY' }
+                if (row) {
+                    skillsMap[sid] = { 
+                        id: row.id, 
+                        name: row.name, 
+                        description: row.description || '', 
+                        statRequirements: row.statRequirements,
+                        _source: 'INVENTORY' 
+                    }
+                }
             })
             // LOOT_POOL approximated from playerItems created during KDR
             const kdrStart = kdr.createdAt ? new Date(kdr.createdAt).getTime() : 0;
@@ -133,7 +157,15 @@ const { id, playerKey } = req.query
                     const sid = it.skillId
                     if (!skillsMap[sid]) {
                         const srow = skillById[sid]
-                        if (srow) skillsMap[sid] = { id: srow.id, name: srow.name, description: srow.description || '', _source: 'LOOT_POOL' }
+                        if (srow) {
+                            skillsMap[sid] = { 
+                                id: srow.id, 
+                                name: srow.name, 
+                                description: srow.description || '', 
+                                statRequirements: srow.statRequirements,
+                                _source: 'LOOT_POOL' 
+                            }
+                        }
                     }
                 }
             })

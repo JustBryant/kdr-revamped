@@ -17,11 +17,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const id = await resolveKdrId(kdrId)
     if (!id) return res.status(404).json({ error: 'KDR not found' })
 
-    const player = await prisma.kDRPlayer.findFirst({ where: { kdrId: id, userId: session.user.id, status: 'ACTIVE' } })
+    const player = await prisma.kDRPlayer.findFirst({
+      where: {
+        kdrId: id,
+        user: {
+          OR: [
+            { id: session.user.id },
+            { email: session.user.email }
+          ]
+        },
+        status: 'ACTIVE'
+      }
+    })
+    
     if (!player) return res.status(404).json({ error: 'You are not an active participant in this KDR' })
 
     // Change status to LEFT.
     await prisma.kDRPlayer.update({ where: { id: player.id }, data: { status: 'LEFT' } })
+
+    // Trigger Pusher updates
+    try {
+      const { triggerPusher } = await import('../../../lib/pusher')
+      await triggerPusher('kdr-lobby', 'update', { type: 'update', action: 'leave' })
+      if (id) {
+        await triggerPusher(`kdr-${id}`, 'update', { type: 'update', action: 'leave' })
+      }
+    } catch (e) {
+      console.error('Failed to trigger Pusher for leave:', e)
+    }
 
     return res.status(200).json({ message: 'You have left the KDR' })
   } catch (error: any) {

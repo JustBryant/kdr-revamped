@@ -1,8 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from 'next/router'
 import ThemeToggle from './ThemeToggle'
 import Link from 'next/link'
+import useCollaborative from './collab/useCollaborative'
+import axios from 'axios'
+import ShatterfoilOverlay from './ShatterfoilOverlay'
+import UltraRareGlow from './UltraRareGlow'
 
 type Props = {
   children: React.ReactNode
@@ -10,9 +14,43 @@ type Props = {
 
 export default function Layout({ children }: Props) {
   const { data: session } = useSession()
+  const [detailedUser, setDetailedUser] = useState<any>(null)
   const router = useRouter()
   const isEmbedded = Boolean((router.query as any)?.embed)
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false)
+
+  // Global presence: join the lobby room from every page on the site
+  const { setUserId } = useCollaborative('kdr-lobby', () => {
+    // We don't need to do anything on update here, just being in the room
+    // is enough to announce presence to everyone else.
+  })
+
+  // Fetch detailed user data for global cosmetics (e.g. Nav Icon)
+  const fetchDetailedUser = async () => {
+    if (session?.user) {
+      axios.get('/api/user/me').then(res => {
+        setDetailedUser(res.data.user || res.data)
+      }).catch(err => console.error("Error fetching detailed user for nav:", err))
+    }
+  }
+
+  useEffect(() => {
+    fetchDetailedUser()
+  }, [session, router.asPath]) // Refresh on session change or navigation
+
+  // Listen for global refresh events (e.g. after equipping in shop)
+  useEffect(() => {
+    window.addEventListener('user:stats-refresh', fetchDetailedUser)
+    return () => window.removeEventListener('user:stats-refresh', fetchDetailedUser)
+  }, [session])
+
+  useEffect(() => {
+    // If we have a session, we want to set the userId for presence
+    // We use the email or ID to identify the user globally
+    if (session?.user?.email || (session?.user as any)?.id) {
+       setUserId(session.user.email || (session.user as any).id)
+    }
+  }, [session, setUserId])
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-[#0b0f19] text-gray-900 dark:text-gray-100 transition-colors duration-200">
@@ -80,18 +118,32 @@ export default function Layout({ children }: Props) {
                 </div>
               )}
 
-              <Link href="/profile" className="block h-9 w-9 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all">
-                {session.user?.image ? (
+              <Link href="/profile" className="block h-10 w-10 relative group">
+                {/* Navigation Profile Icon - Single Layer Replacement */}
+                <div className={`h-full w-full rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all relative z-10 ${detailedUser?.border?.imageUrl ? 'p-0.5 bg-gradient-to-br from-blue-400 to-purple-500' : ''}`}>
                   <img 
-                    src={session.user.image} 
-                    alt={session.user.name || "Profile"} 
-                    className="h-full w-full object-cover"
+                    src={detailedUser?.profileIcon?.imageUrl || session.user?.image || '/images/default-avatar.png'} 
+                    alt={session.user?.name || "Profile"} 
+                    className="h-full w-full object-cover relative z-10"
                   />
-                ) : (
-                  <div className="h-full w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                </div>
+
+                {/* Frame Overlay in Nav */}
+                {detailedUser?.frame?.imageUrl && (
+                   <img src={detailedUser.frame.imageUrl} className="absolute inset-[-4px] w-[calc(100%+8px)] h-[calc(100%+8px)] object-contain z-20 pointer-events-none" alt="" />
+                )}
+
+                {/* Icon Effect Layer in Nav */}
+                {detailedUser?.iconEffect?.metadata && (
+                  <div className="absolute inset-0 pointer-events-none rounded-full overflow-hidden z-30">
+                    {(detailedUser.iconEffect.metadata as any).variant === 'SHATTERFOIL' && (
+                        <div className="absolute inset-0 z-50">
+                            <ShatterfoilOverlay />
+                        </div>
+                    )}
+                    {(detailedUser.iconEffect.metadata as any).variant === 'UR_GLOW' && (
+                        <UltraRareGlow />
+                    )}
                   </div>
                 )}
               </Link>

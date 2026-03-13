@@ -108,12 +108,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Attach a stable playerKey for each player (frontend should prefer this)
-      const playersWithKey = (kdr.players || []).map((p: any) => ({
+      const playersWithKey = (kdr.players || []).filter((p: any) => p.status === 'ACTIVE').map((p: any) => ({
         ...p,
         playerKey: (p.user?.id && kdr?.id) ? generatePlayerKey(p.user.id, kdr.id) : null
       }))
 
-      const currentWithKey = currentPlayer ? { ...currentPlayer, playerKey: (currentPlayer.user?.id && kdr?.id) ? generatePlayerKey(currentPlayer.user.id, kdr.id) : null } : null
+      const currentWithKey = currentPlayer && currentPlayer.status === 'ACTIVE' ? { ...currentPlayer, playerKey: (currentPlayer.user?.id && kdr?.id) ? generatePlayerKey(currentPlayer.user.id, kdr.id) : null } : null
 
       // Omit raw password from response, instead provide a boolean flag
       const { password: _, ...passlessKdr } = kdr

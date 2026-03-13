@@ -502,8 +502,7 @@ export default function ClassEditor() {
           {/* Left Column: Main Content */}
           <div className="col-span-12 lg:col-span-9 space-y-8">
             {/* 1. Class Details */}
-              <div onMouseEnter={() => collabRoom && send && send({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-                style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='classDetails')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='classDetails')||{}).color}` : undefined, outlineOffset: '-4px' }}>
+              <div style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='classDetails')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='classDetails')||{}).color}` : undefined, outlineOffset: '-4px' }}>
               <CollaborativeClassDetails
                 details={classDetails}
                 onChange={setClassDetails}
@@ -516,8 +515,7 @@ export default function ClassEditor() {
             </div>
 
             {/* 2. Starting Cards */}
-              <div onMouseEnter={() => collabRoom && send && send({ section: 'presence', data: { section: 'startingCards', user: me }, ts: Date.now() })}
-                style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='startingCards')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='startingCards')||{}).color}` : undefined, outlineOffset: '-4px' }}>
+              <div style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='startingCards')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='startingCards')||{}).color}` : undefined, outlineOffset: '-4px' }}>
               <StartingCardsEditor 
                 deck={deck}
                 onChange={setDeck}
@@ -532,8 +530,7 @@ export default function ClassEditor() {
             </div>
 
             {/* 3. Loot Pools */}
-              <div onMouseEnter={() => collabRoom && send && send({ section: 'presence', data: { section: 'lootPools', user: me }, ts: Date.now() })}
-                style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='lootPools')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='lootPools')||{}).color}` : undefined, outlineOffset: '-4px' }}>
+              <div style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='lootPools')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='lootPools')||{}).color}` : undefined, outlineOffset: '-4px' }}>
               <LootPoolEditor 
                 pools={lootPools}
                 onChange={setLootPools}
@@ -545,8 +542,7 @@ export default function ClassEditor() {
             </div>
 
             {/* 4. Tip Skills */}
-              <div onMouseEnter={() => collabRoom && send && send({ section: 'presence', data: { section: 'tipSkills', user: me }, ts: Date.now() })}
-                style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='tipSkills')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='tipSkills')||{}).color}` : undefined, outlineOffset: '-4px' }}>
+              <div style={{ outline: (Object.values(peers || {}).find((p:any)=>p.section==='tipSkills')||{}).color ? `3px solid ${(Object.values(peers || {}).find((p:any)=>p.section==='tipSkills')||{}).color}` : undefined, outlineOffset: '-4px' }}>
               <TipSkillsEditor 
                 skills={tipSkills}
                 onChange={setTipSkills}

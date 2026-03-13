@@ -150,13 +150,10 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
                 ))}
               </div>
             </div>
-            <input
+              <input
               type="text"
               value={editValues.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              onFocus={(e) => sendPresenceForElement('name', e.currentTarget)}
-              onBlur={(e) => collabSend && collabSend({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-              onSelect={(e) => sendPresenceForElement('name', e.currentTarget)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
               placeholder="e.g. Pyromancer"
               autoFocus
@@ -212,13 +209,10 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
                 </div>
               </div>
               <div className="relative">
-              <input
+                <input
                 type="text"
                 value={editValues.skillName}
                 onChange={(e) => handleChange('skillName', e.target.value)}
-                onFocus={(e) => sendPresenceForElement('skillName', e.currentTarget)}
-                onBlur={() => collabSend && collabSend({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-                onSelect={(e) => sendPresenceForElement('skillName', e.currentTarget)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g. Fireball"
                 autoFocus
@@ -244,9 +238,6 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
               <textarea
                 value={editValues.skillDescription}
                 onChange={(e) => handleChange('skillDescription', e.target.value)}
-                onFocus={(e) => sendPresenceForElement('skillDescription', e.currentTarget)}
-                onBlur={() => collabSend && collabSend({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-                onSelect={(e) => sendPresenceForElement('skillDescription', e.currentTarget)}
                 rows={5}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe what the skill does..."
@@ -284,9 +275,6 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
             <textarea
               value={editValues.questDescription}
               onChange={(e) => handleChange('questDescription', e.target.value)}
-              onFocus={(e) => sendPresenceForElement('questDescription', e.currentTarget)}
-              onBlur={() => collabSend && collabSend({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-              onSelect={(e) => sendPresenceForElement('questDescription', e.currentTarget)}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               placeholder="Describe the quest requirements and reward..."
@@ -316,9 +304,6 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
             <textarea
               value={editValues.relicDescription}
               onChange={(e) => handleChange('relicDescription', e.target.value)}
-              onFocus={(e) => sendPresenceForElement('relicDescription', e.currentTarget)}
-              onBlur={() => collabSend && collabSend({ section: 'presence', data: { section: 'classDetails', user: me }, ts: Date.now() })}
-              onSelect={(e) => sendPresenceForElement('relicDescription', e.currentTarget)}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               placeholder="Describe the relic's effects..."

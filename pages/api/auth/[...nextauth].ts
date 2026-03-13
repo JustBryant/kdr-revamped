@@ -160,6 +160,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "discord") {
+        const discordProfile = profile as any;
+        // Prefer global_name (Display Name) over username (Handle)
+        const displayName = discordProfile.global_name || discordProfile.username || user.name;
+
         // Find user by email or neonId
         const email = user.email
         if (!email) return false
@@ -168,12 +172,12 @@ export const authOptions: NextAuthOptions = {
         await prisma.user.upsert({
           where: { email },
           update: {
-            name: user.name,
+            name: displayName,
             // SECURITY: Never overwrite local image with Discord image
           },
           create: {
             email,
-            name: user.name,
+            name: displayName,
             image: "https://raw.githubusercontent.com/JustBryant/KDR-Revamped-Images/main/cropped_tcg/89631139.jpg", 
             emailVerified: new Date(),
           },

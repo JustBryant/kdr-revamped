@@ -8,6 +8,8 @@ export interface StatRequirement {
   stat: 'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'
   value: number
   affectedTextSnippet?: string
+  template?: string
+  divisor?: number
 }
 
 export function parseMarkdown(text: string) {
@@ -69,15 +71,17 @@ export interface PlayerStats {
   [key: string]: number | undefined
 }
 
-export function RichTextRenderer({ content, stats, requirements }: { content: string; stats?: PlayerStats; requirements?: StatRequirement[] }) {
+export function RichTextRenderer({ content, stats, requirements, inline = false }: { content: string; stats?: PlayerStats; requirements?: StatRequirement[]; inline?: boolean }) {
   // 1. Handle Conditional Blocks: [if DEX>=4]This text appears if DEX is at least 4[/if]
   // Pattern: [if STAT OP VAL]content[/if]
   const processConditions = (text: string) => {
-    let processedText = text;
+    // 1. First, let the standard markdown handle things
+    let processedText = parseMarkdown(text);
 
+    // 2. Handle Conditional Blocks: [if DEX>=4]This text appears if DEX is at least 4[/if]
+    // Note: We need to handle BOTH escaped and unescaped tags since parseMarkdown was called
     if (!stats) {
       processedText = processedText.replace(/\[if [\s\S]*?\]([\s\S]*?)\[\/if\]/g, (match, inner) => {
-        // If no stats provided (e.g. in editor preview), show as "inactive" or dimmed
         return `<span class="opacity-40 italic border-l-2 border-white/10 pl-2 block my-1">${inner}</span>`
       })
     } else {
@@ -119,6 +123,24 @@ export function RichTextRenderer({ content, stats, requirements }: { content: st
       })
     }
 
+    // 3. Handle Scaling Requirements: {n} substitution
+    if (requirements && requirements.length > 0) {
+      requirements.forEach(req => {
+        if (req.template && req.template.includes('{n}')) {
+          const playerVal = stats ? (stats[req.stat as keyof PlayerStats] || 0) : 0
+          const divisor = req.divisor || 1
+          const nValue = Math.floor(playerVal / divisor)
+          
+          // Use green/emerald for scaling
+          const nStyled = `<span class="text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">${nValue}</span>`
+          const scalingText = req.template.replace('{n}', nStyled)
+          
+          // Append as a dedicated UI block
+          processedText += `<div class="mt-2 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded text-xs text-emerald-100/90 italic animate-in fade-in slide-in-from-bottom-1 duration-700">${scalingText}</div>`
+        }
+      })
+    }
+
     return processedText
   }
 
@@ -129,8 +151,10 @@ export function RichTextRenderer({ content, stats, requirements }: { content: st
   
   const parts = processedContent.split(/(\{class:.*?\}|\{card:.*?\})/g)
 
+  const Component = inline ? 'span' : 'div'
+
   return (
-    <div className="rich-text-content leading-relaxed">
+    <Component className={`rich-text-content leading-relaxed ${inline ? 'inline' : ''}`}>
       {parts.map((part, i) => {
         if (part.startsWith('{class:')) {
           const className = part.replace('{class:', '').replace('}', '')
@@ -147,9 +171,9 @@ export function RichTextRenderer({ content, stats, requirements }: { content: st
           )
         }
 
-        return <span key={i} dangerouslySetInnerHTML={{ __html: parseMarkdown(part) }} />
+        return <span key={i} dangerouslySetInnerHTML={{ __html: part }} />
       })}
-    </div>
+    </Component>
   )
 }
 

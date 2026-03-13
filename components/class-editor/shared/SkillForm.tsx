@@ -53,11 +53,12 @@ export default function SkillForm({
   useEffect(() => {
     if (isOpen) {
       setSkillForm({
-        name: '',
-        description: '',
-        isSellable: true,
-        modifications: [],
-        providesCards: [],
+        name: initialSkill?.name || '',
+        description: initialSkill?.description || '',
+        isSellable: initialSkill?.isSellable ?? true,
+        modifications: initialSkill?.modifications || [],
+        providesCards: initialSkill?.providesCards || [],
+        statRequirements: initialSkill?.statRequirements || [],
         ...initialSkill
       })
     }
@@ -101,7 +102,24 @@ export default function SkillForm({
 
   const handleSave = () => {
     if (!skillForm.name) return
-    onSave(skillForm as Skill)
+    
+    console.log('[SkillForm] Saving skill. Current state:', skillForm)
+    
+    // Ensure we send the full skill form including statRequirements
+    const finalSkill: Skill = {
+      id: skillForm.id || '',
+      name: skillForm.name || '',
+      description: skillForm.description || '',
+      isSellable: skillForm.isSellable ?? true,
+      modifications: skillForm.modifications || [],
+      providesCards: skillForm.providesCards || [],
+      type: skillForm.type || 'MAIN',
+      uniqueRound: skillForm.uniqueRound,
+      statRequirements: skillForm.statRequirements || []
+    }
+    
+    console.log('[SkillForm] Final object sent to onSave:', finalSkill)
+    onSave(finalSkill)
   }
 
   if (!isOpen) return null
@@ -140,11 +158,11 @@ export default function SkillForm({
               </p>
             </div>
 
-            {/* Options */}
-            <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white">Options</h4>
-              
-              {/* Sellable Toggle */}
+              {/* Options */}
+              <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Options</h4>
+                
+                {/* Sellable Toggle */}
               <button
                 onClick={() => setSkillForm(prev => ({ ...prev, isSellable: !prev.isSellable }))}
                 className={`w-full flex items-center justify-between px-4 py-2 rounded-md border transition-colors ${
@@ -301,18 +319,18 @@ export default function SkillForm({
                     type="button"
                     onClick={() => setSkillForm(prev => ({ 
                       ...prev, 
-                      statRequirements: [...(prev.statRequirements || []), { stat: 'STR', value: 1 }] 
+                      statRequirements: [...(prev.statRequirements || []), { stat: 'str', divisor: 4, template: '' }] 
                     }))}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                   >
-                    + Add Requirement
+                    + Add Scaling Effect
                   </button>
                 </div>
                 
                 {skillForm.statRequirements && skillForm.statRequirements.length > 0 ? (
                   <div className="space-y-2">
                     {skillForm.statRequirements.map((req, idx) => (
-                      <div key={idx} className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
                         <select
                           value={req.stat}
                           onChange={e => {
@@ -320,57 +338,44 @@ export default function SkillForm({
                             newReqs[idx] = { ...req, stat: e.target.value as any }
                             setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
                           }}
-                          className="text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
+                          className="text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
                         >
-                          {['STR', 'DEX', 'INT', 'LUK', 'FOR', 'CON'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                          {['str', 'dex', 'con', 'int', 'cha'].map(s => (
+                            <option key={s} value={s}>{s.toUpperCase()}</option>
                           ))}
                         </select>
-                        <input
-                          type="number"
-                          value={req.value}
-                          min={1}
-                          onChange={e => {
-                            const newReqs = [...(skillForm.statRequirements || [])]
-                            newReqs[idx] = { ...req, value: Number(e.target.value) }
-                            setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
-                          }}
-                          className="w-16 text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
-                        />
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+                          <span>per</span>
+                          <input
+                            type="number"
+                            value={req.divisor || 1}
+                            min={1}
+                            onChange={e => {
+                              const newReqs = [...(skillForm.statRequirements || [])]
+                              newReqs[idx] = { ...req, divisor: Number(e.target.value) }
+                              setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                            }}
+                            className="w-10 text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
+                          />
+                        </div>
                         <input
                           type="text"
-                          value={req.affectedTextSnippet || ''}
-                          placeholder="Snippet to lock (optional)..."
+                          value={req.template || ''}
+                          placeholder="Template: Costs {n} less..."
                           onChange={e => {
                             const newReqs = [...(skillForm.statRequirements || [])]
-                            newReqs[idx] = { ...req, affectedTextSnippet: e.target.value }
+                            newReqs[idx] = { ...req, template: e.target.value }
                             setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
                           }}
-                          className="flex-1 text-xs bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-700 rounded px-1 py-1 text-amber-900 dark:text-amber-100"
+                          className="flex-1 text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
                         />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const textarea = document.querySelector('textarea')
-                            if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
-                              const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd)
-                              const newReqs = [...(skillForm.statRequirements || [])]
-                              newReqs[idx] = { ...req, affectedTextSnippet: selectedText }
-                              setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
-                            }
-                          }}
-                          title="Auto-fill with highlighted text"
-                          className="p-1 text-amber-600 hover:text-amber-800"
-                        >
-                          ⚓
-                        </button>
                         <button 
                           type="button"
                           onClick={() => setSkillForm(prev => ({ 
                             ...prev, 
                             statRequirements: prev.statRequirements?.filter((_, i) => i !== idx) 
                           }))}
-                          className="ml-auto text-amber-400 hover:text-red-500"
+                          className="ml-auto text-emerald-400 hover:text-red-500"
                         >
                           ✕
                         </button>

@@ -35,8 +35,10 @@ export interface Skill {
   type: 'MAIN' | 'TIP' | 'GENERIC' | 'UNIQUE' | 'STARTING'
   uniqueRound?: number
   statRequirements?: {
-    stat: 'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'
-    value: number
+    stat: string
+    divisor?: number
+    template?: string
+    value?: number
     affectedTextSnippet?: string
   }[]
 }

@@ -15,11 +15,12 @@ export default function UserSettingsPage() {
   const [name, setName] = useState('');
   const [image, setImage] = useState('');
   const [favoriteCard, setFavoriteCard] = useState<any>(null);
+  const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
   
   // Image Selection State
-  const [availableImages, setAvailableImages] = useState<string[]>([]);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [loadingImages, setLoadingImages] = useState(false);
+  const [ownedIcons, setOwnedIcons] = useState<any[]>([]);
+  const [loadingOwnedIcons, setLoadingOwnedIcons] = useState(false);
+  const [showIconLibrary, setShowIconLibrary] = useState(false);
 
   // Favourite Card Search
   const [cardSearch, setCardSearch] = useState('');
@@ -117,11 +118,14 @@ export default function UserSettingsPage() {
   const fetchProfile = async () => {
     try {
       const res = await axios.get('/api/user/me');
-      const user = res.data.user || res.data; // Fallback if data structure varies
+      const data = res.data;
+      const user = data.user || data;
       if (user) {
         setName(user.name || '');
-        setImage(user.image || '');
+        // Prioritize the equipped profile icon URL over the fallback session image
+        setImage(user.profileIcon?.imageUrl || user.image || '');
         setFavoriteCard(user.favoriteCard);
+        setSelectedIconId(user.profileIconId || null);
       }
       setLoading(false);
     } catch (error) {
@@ -130,29 +134,62 @@ export default function UserSettingsPage() {
     }
   };
 
+  const fetchOwnedIcons = async () => {
+    setLoadingOwnedIcons(true);
+    try {
+      const { data } = await axios.get('/api/user/owned-icons');
+      setOwnedIcons(data.icons || []);
+    } catch (err) {
+      console.error('Failed to fetch owned icons', err);
+    } finally {
+      setLoadingOwnedIcons(false);
+    }
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSecurityMessage({ type: '', text: '' }); // Clear any old messages
+    
+    // Validate name before sending
+    if (!name || name.trim().length < 3) {
+      setSecurityMessage({ type: 'error', text: 'Display name must be at least 3 characters long.' });
+      return;
+    }
+
     try {
-      await axios.put('/api/user/me', {
-        name,
+      const payload = {
+        name: name.trim(),
         image,
-        favoriteCardId: favoriteCard?.id
-      });
+        favoriteCardId: favoriteCard?.id,
+        profileIconId: selectedIconId
+      };
+      
+      console.log('[DEBUG] Sending profile update payload:', payload);
+      
+      const response = await axios.put('/api/user/me', payload);
+      
+      // If the server returned an error without a 400/500 code
+      if (response.data?.success === false) {
+        setSecurityMessage({ type: 'error', text: response.data.message || 'Failed to update profile.' });
+        return;
+      }
       
       // Update the session with new data
       await update({
         ...session,
         user: {
           ...session?.user,
-          name,
-          image
+          name: name.trim(),
+          image: selectedIconId ? image : image || session?.user?.image,
         }
       });
-
-      alert('Profile updated successfully!');
-    } catch (error) {
+      setSecurityMessage({ type: 'success', text: 'Profile updated successfully!' });
+    } catch (error: any) {
       console.error('Failed to update profile', error);
-      alert('Failed to update profile.');
+      
+      // Fallback for real network errors or legacy error codes
+      const serverMessage = error.response?.data?.message || 'Failed to update profile.';
+      setSecurityMessage({ type: 'error', text: serverMessage });
     }
   };
 
@@ -250,6 +287,15 @@ export default function UserSettingsPage() {
 
           {activeTab === 'profile' && (
             <form onSubmit={handleProfileUpdate} className="space-y-12">
+              {securityMessage.text && (
+                <div className={`p-4 rounded-2xl border text-xs font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2 ${
+                  securityMessage.type === 'success' 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
+                }`}>
+                  {securityMessage.text}
+                </div>
+              )}
               <section>
                 <div className="flex items-center gap-4 mb-8">
                   <h2 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400">Account Identity</h2>
@@ -260,7 +306,10 @@ export default function UserSettingsPage() {
                   <div className="relative group">
                     <button
                       type="button"
-                      onClick={() => setShowIconSearch(true)}
+                      onClick={() => {
+                        setShowIconLibrary(true);
+                        if (ownedIcons.length === 0) fetchOwnedIcons();
+                      }}
                       className="relative h-24 w-24 rounded-3xl overflow-hidden border-2 border-white dark:border-white/10 shadow-xl focus:outline-none transition-transform group-hover:scale-105"
                     >
                       {image ? (
@@ -270,88 +319,93 @@ export default function UserSettingsPage() {
                       )}
                       <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                          </svg>
                       </div>
                     </button>
                   </div>
-                  <div className="flex-1 text-center md:text-left space-y-2">
-                    <div className="text-2xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">{session?.user?.name || name || 'Unnamed User'}</div>
-                    {session?.user?.email && (
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{session.user.email}</div>
-                    )}
-                    <div className="pt-2">
-                       <button 
-                        type="button"
-                        onClick={() => setShowIconSearch(true)}
-                        className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-500 transition-colors"
-                       >
-                         Change Avatar
-                       </button>
-                    </div>
-                  </div>
+                  <div className="flex-1 text-center md:text-left space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Display Name</label>
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Your display name"
+                            className="block w-full max-w-xs bg-white dark:bg-zinc-900/50 border border-gray-100 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider focus:border-blue-500/50 focus:outline-none transition-all"
+                          />
+                        </div>
+                        {session?.user?.email && (
+                          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest leading-none">{session.user.email}</div>
+                        )}
+                        <div className="pt-2">
+                           <button 
+                            type="submit"
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95 mr-3"
+                           >
+                             Save Changes
+                           </button>
+                           <button 
+                            type="button"
+                            onClick={() => {
+                              setShowIconLibrary(true);
+                              if (ownedIcons.length === 0) fetchOwnedIcons();
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-400 transition-colors border border-gray-100 dark:border-white/10 px-6 py-3 rounded-xl"
+                           >
+                             Change Avatar
+                           </button>
+                        </div>
+                      </div>
                 </div>
 
-                {showIconSearch && (
+                {showIconLibrary && (
                   <div className="mt-6 bg-white dark:bg-[#0a0a0c] border border-gray-100 dark:border-white/10 p-6 rounded-2xl shadow-2xl">
-                    <div className="flex gap-4 items-center mb-6">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          placeholder="Search card name for icon..."
-                          value={iconSearch}
-                          onChange={(e) => searchCards(e.target.value, 'icon')}
-                          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                        />
-                        {searchingIcons && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Owned Icons</h3>
                       <button 
                         type="button" 
-                        onClick={() => { setShowIconSearch(false); setIconSearch(''); setIconSearchResults([]); }} 
-                        className="px-6 py-4 bg-gray-100 dark:bg-white/5 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"
+                        onClick={() => setShowIconLibrary(false)} 
+                        className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                       >
-                        Cancel
+                        Close
                       </button>
                     </div>
                     
-                    {iconSearchResults.length > 0 && (
+                    {loadingOwnedIcons ? (
+                      <div className="flex items-center justify-center p-12">
+                        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    ) : ownedIcons.length > 0 ? (
                       <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                        {iconSearchResults
-                          .flatMap((card: any) => {
-                            const arts = cardArtworksMap[card.id] || [];
-                            if (arts && arts.length > 0) {
-                              return arts.map((a: any, idx: number) => {
-                                let url = typeof a === 'string' ? a : (a.image_url_cropped || a.image_url_small || a.image_url || null);
-                                if (!url) return null;
-                                return { key: `${card.id}-${idx}`, url, label: card.name };
-                              }).filter(Boolean);
-                            }
-                            return [{ 
-                              key: `card-${card.id}`, 
-                              url: card.imageUrlCropped || `https://images.ygoprodeck.com/images/cards_cropped/${card.konamiId}.jpg`, 
-                              konamiId: card.konamiId, 
-                              label: card.name 
-                            }];
-                          })
-                          .map((opt: any) => (
-                            <Thumbnail
-                              key={opt.key}
-                              src={opt.url}
-                              konamiId={opt.konamiId}
-                              alt={opt.label}
-                              onClick={() => {
-                                setImage(opt.url || (opt.konamiId ? undefined : ''));
-                                setShowIconSearch(false);
-                                setIconSearch('');
-                                setIconSearchResults([]);
-                              }}
-                            />
-                          ))}
+                        {ownedIcons.map((icon) => (
+                          <div 
+                            key={icon.id}
+                            className={`relative group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all ${
+                              selectedIconId === icon.id ? 'border-blue-600 ring-2 ring-blue-600/20' : 'border-transparent'
+                            }`}
+                            onClick={() => {
+                              setSelectedIconId(icon.id);
+                              setImage(icon.imageUrl || '');
+                            }}
+                          >
+                            <img src={icon.imageUrl} alt={icon.name} className="w-full h-full object-cover aspect-square" />
+                            {selectedIconId === icon.id && (
+                              <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
+                                <div className="bg-blue-600 text-white rounded-full p-1 scale-75">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-12 text-center border border-dashed border-gray-100 dark:border-white/10 rounded-2xl">
+                         <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">No icons owned</p>
+                         <p className="text-[10px] text-gray-400 mt-2">Visit the Cosmetic Shop to get some!</p>
                       </div>
                     )}
                   </div>

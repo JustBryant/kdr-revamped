@@ -34,28 +34,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const now = Date.now()
     const creations: any[] = []
     for (let i = 0; i < toCreate; i++) {
-      const suffix = `${now}-${i}`
-      const dummyEmail = `dummy+${kdrId}-${suffix}@example.invalid`
       const dummyName = `Dummy Player ${i + 1}`
-      creations.push({ name: dummyName, email: dummyEmail })
+      creations.push({ name: dummyName })
     }
 
-    // create users and players in a transaction
-    const results = await prisma.$transaction(async (tx) => {
-      const createdUsers: any[] = []
+    // Create players directly without creating users
+    await prisma.$transaction(async (tx) => {
       for (const c of creations) {
-        // create dummy users (schema no longer has isDummy flag)
-        const u = await tx.user.create({ data: { name: c.name, email: c.email } })
-        createdUsers.push(u)
+        await tx.kDRPlayer.create({ 
+          data: { 
+            kdrId: kdr.id, 
+            userId: null, 
+            name: c.name 
+          } 
+        })
       }
-
-      const createdPlayers: any[] = []
-      for (const u of createdUsers) {
-        const p = await tx.kDRPlayer.create({ data: { kdrId: kdr.id, userId: u.id } })
-        createdPlayers.push(p)
-      }
-
-      return { users: createdUsers, players: createdPlayers }
     })
 
     const updated = await findKdr(kdr.id, { include: { players: { include: { user: { select: { id: true, name: true, image: true } } } }, createdBy: { select: { id: true, name: true, email: true } } } })

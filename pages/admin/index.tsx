@@ -48,6 +48,14 @@ export default function AdminIndex() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">KDR Format</h2>
             <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">KDR-specific format settings and treasures.</p>
           </Link>
+
+          <Link
+            href="/admin/cosmetics"
+            className="block p-6 rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Cosmetic Shop</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Manage cosmetic names, prices, and visibility.</p>
+          </Link>
         </div>
       </div>
     </>
