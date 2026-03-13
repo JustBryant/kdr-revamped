@@ -105,6 +105,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ player: attachPlayerKey(player, shopInstance) })
       }
 
+      case 'markSeen': {
+        try {
+          const { poolId } = payload || {}
+          if (!poolId || typeof poolId !== 'string') return res.status(400).json({ error: 'Missing poolId' })
+
+          // Merge into instance/persisted seen arrays via persistStateForPlayer
+          const currentInstState = shopInstance?.shopState || {}
+          const existingSeen = Array.isArray(currentInstState?.seen) ? currentInstState.seen.map((s: any) => String(s)) : Array.isArray(player.shopState?.seen) ? (player.shopState.seen || []).map((s: any) => String(s)) : []
+          const mergedSeen = Array.from(new Set([...(existingSeen || []), String(poolId)]))
+
+          const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { seen: mergedSeen }, playerShopState: currentInstState })
+          return res.status(200).json({ message: 'Marked seen', player: attachPlayerKey(updated) })
+        } catch (e: any) {
+          console.error('Failed to mark seen', e)
+          return res.status(500).json({ error: 'Failed to mark seen' })
+        }
+      }
+
       case 'start': {
         let inst = await prisma.kDRShopInstance.findUnique({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } } })
         if (inst && inst.isComplete) return res.status(403).json({ error: 'SHOP_LOCKED', player: attachPlayerKey(player, inst) })
