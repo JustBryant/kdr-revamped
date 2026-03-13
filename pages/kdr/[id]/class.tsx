@@ -921,7 +921,7 @@ export default function KdrClassPage() {
                       {session?.user?.id === player.user?.id && !player?.shopComplete && hasReportedThisRound && !isEmbedded && (
                         <div className="mt-3">
                           <button
-                            onClick={() => { if (!id) return; router.push(`/kdr/${id}/shop`) }}
+                            onClick={() => { if (!id) return; router.push(`/kdr/${id}/shop-v2`) }}
                             className="px-4 py-2 rounded bg-amber-500 text-white shadow-lg ring-2 ring-amber-300 animate-pulse"
                           >
                             Open Shop

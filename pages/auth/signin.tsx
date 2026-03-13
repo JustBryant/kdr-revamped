@@ -12,18 +12,6 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    const res = await signIn('credentials', {
-      redirect: false,
-      email: identifier,
-      password,
-    })
-
-    if (res?.error) {
-      setError(res.error)
-    } else {
-      router.push('/')
-    }
   }
 
   return (
@@ -37,59 +25,7 @@ export default function SignIn() {
            </div>
         )}
 
-        {error && (
-          <div className="p-3 text-sm text-red-500 bg-red-100/10 border border-red-500 rounded">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="identifier" className="block text-sm font-medium">
-              Email or Username
-            </label>
-            <input
-              type="text"
-              id="identifier"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com or username"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <div className="flex justify-end mt-1">
-              <Link href="/auth/forgot-password" className="text-xs text-blue-400 hover:underline">
-                Forgot Password?
-              </Link>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <div className="relative flex items-center py-5">
-          <div className="flex-grow border-t border-gray-700"></div>
-          <span className="flex-shrink mx-4 text-gray-400 text-xs uppercase">Or</span>
-          <div className="flex-grow border-t border-gray-700"></div>
-        </div>
+        {/* Discord-only sign-in UI */}
 
         <button
           onClick={() => signIn('discord', { callbackUrl: '/' })}
@@ -104,7 +40,7 @@ export default function SignIn() {
         <div className="text-sm text-center">
           Don't have an account?{' '}
           <Link href="/auth/register" className="text-blue-400 hover:underline">
-            Register
+            Register with Discord
           </Link>
         </div>
       </div>

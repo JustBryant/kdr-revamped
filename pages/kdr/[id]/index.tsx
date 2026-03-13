@@ -696,7 +696,7 @@ export default function KdrViewPage() {
                               </div>
                               <button 
                                 className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black italic shadow-xl shadow-indigo-500/20 active:scale-95 transition-all text-lg"
-                                onClick={() => router.push(`/kdr/${id}/shop?playerKey=${currentPlayer?.playerKey}`)}
+                                onClick={() => router.push(`/kdr/${id}/shop-v2?playerKey=${currentPlayer?.playerKey}`)}
                               >
                                 ENTER SHOP
                               </button>

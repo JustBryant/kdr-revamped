@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null as any
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'KDR Revamped <onboarding@resend.dev>'
 
 export async function sendVerificationEmail(email: string, token: string) {
   const verificationLink = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
@@ -15,7 +16,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     }
 
     const data = await resend.emails.send({
-      from: 'KDR Revamped <onboarding@resend.dev>', // Change this to your verified domain in production
+      from: RESEND_FROM, // set via RESEND_FROM_EMAIL and must be verified in Resend
       to: email,
       subject: 'Verify your KDR Revamped Account',
       html: `
@@ -34,8 +35,10 @@ export async function sendVerificationEmail(email: string, token: string) {
     });
 
     return { success: true, data };
-  } catch (error) {
+  } catch (error: any) {
+    // Log full provider response if available for easier debugging (e.g. 403 body)
     console.error('Failed to send email:', error);
+    if (error?.response?.data) console.error('Provider response:', error.response.data);
     // Dev fallback: surface the verification link when email provider fails in dev
     if (process.env.NODE_ENV === 'development') {
       console.warn('Email send failed; returning debug link in development')
@@ -56,7 +59,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     }
 
     const data = await resend.emails.send({
-      from: 'KDR Revamped <onboarding@resend.dev>',
+      from: RESEND_FROM,
       to: email,
       subject: 'Reset your KDR Revamped Password',
       html: `
@@ -75,8 +78,9 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     });
 
     return { success: true, data };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to send email:', error);
+    if (error?.response?.data) console.error('Provider response:', error.response.data);
     if (process.env.NODE_ENV === 'development') {
       console.warn('Email send failed; returning debug link in development')
       return { success: true, data: { debugLink: resetLink }, error }
@@ -89,7 +93,7 @@ export async function sendKdrStartedEmail(email: string, kdr: { id: string, name
   const kdrUrl = `${process.env.NEXTAUTH_URL}/kdr/${kdr.id}`
   try {
     const data = await resend.emails.send({
-      from: 'KDR Revamped <onboarding@resend.dev>',
+      from: RESEND_FROM,
       to: email,
       subject: `KDR started: ${kdr.name}`,
       html: `
@@ -102,8 +106,9 @@ export async function sendKdrStartedEmail(email: string, kdr: { id: string, name
       `,
     })
     return { success: true, data }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to send KDR started email:', error)
+    if (error?.response?.data) console.error('Provider response:', error.response.data)
     return { success: false, error }
   }
 }
