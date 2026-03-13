@@ -111,8 +111,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (!poolId || typeof poolId !== 'string') return res.status(400).json({ error: 'Missing poolId' })
 
           // Merge into instance/persisted seen arrays via persistStateForPlayer
-          const currentInstState = shopInstance?.shopState || {}
-          const existingSeen = Array.isArray(currentInstState?.seen) ? currentInstState.seen.map((s: any) => String(s)) : Array.isArray(player.shopState?.seen) ? (player.shopState.seen || []).map((s: any) => String(s)) : []
+          const currentInstState: any = (shopInstance?.shopState as any) || {}
+          const playerShopStateAny: any = (player.shopState as any) || {}
+          const existingSeen = Array.isArray((currentInstState as any)?.seen)
+            ? (currentInstState as any).seen.map((s: any) => String(s))
+            : Array.isArray(playerShopStateAny?.seen)
+            ? (playerShopStateAny.seen || []).map((s: any) => String(s))
+            : []
           const mergedSeen = Array.from(new Set([...(existingSeen || []), String(poolId)]))
 
           const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { seen: mergedSeen }, playerShopState: currentInstState })
@@ -142,10 +147,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const prevLevel = computeLevel((player.xp || 0), settings.levelXpCurve)
           const newLevel = computeLevel((updatedPlayer.xp || 0), settings.levelXpCurve)
 
-          // pick initial loot offers (simplified sampling)
-          const allPools = await prisma.lootPool.findMany({ include: { items: true } })
+          // pick initial loot offers (provide full pool details so client can render them)
+          const allPools = await prisma.lootPool.findMany({ include: { items: { include: { card: true, skill: true } } } })
           const sampled = allPools.slice(0, Number(settings.genericStarterCount || 0))
-          const initialLootOffers = sampled.map(p => ({ id: p.id, name: p.name }))
+          const initialLootOffers = sampled.map((fullPool: any) => {
+            const poolTierNormalized = (fullPool.tier || 'STARTER').toUpperCase()
+            const poolCards = (fullPool.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, konamiId: i.card.konamiId || null, imageUrlCropped: i.card.imageUrlCropped || null, variant: i.card.variant || 'TCG', artworks: i.card.artworks || null, primaryArtworkIndex: i.card.primaryArtworkIndex || 0 }))
+            const isGeneric = fullPool.isGeneric ?? !fullPool.classId
+            let baseCost = 0
+            if (isGeneric) baseCost = poolTierNormalized === 'STARTER' ? (settings.genericStarterCost || 0) : poolTierNormalized === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)
+            else baseCost = poolTierNormalized === 'STARTER' ? (settings.classStarterCost || 0) : poolTierNormalized === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0)
+            const totalCost = baseCost + (Number(fullPool.tax) || 0)
+            return { id: fullPool.id, name: fullPool.name, tier: poolTierNormalized, isGeneric: isGeneric, tax: Number(fullPool.tax) || 0, cost: totalCost, cards: poolCards, items: (fullPool.items || []).map((i: any) => ({ id: i.id, type: i.type, card: i.card, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) }
+          })
 
           let pendingSkillChoices = undefined
           let nextStage: any = 'STATS'
