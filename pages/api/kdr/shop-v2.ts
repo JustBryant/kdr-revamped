@@ -1,0 +1,1123 @@
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]'
+import { prisma } from '../../../lib/prisma'
+import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
+import { getPlayerShopModifiers, applyShopModifiers } from '../../../lib/shopModifiers'
+import { computeLevel, sampleArray, weightedPickIndex } from '../../../lib/shopHelpers'
+import { persistStateForPlayer, appendHistoryForPlayer } from '../../../lib/shop-v2/state'
+
+// Minimal dedicated shop-v2 handler: implements the core actions used by
+// shop-v2 client (`get`, `start`, `appendHistory`, `train`, `chooseSkill`, `chooseStat`).
+// This avoids build-time importing or relying on the legacy monolith `pages/api/kdr/shop.ts`.
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerSession(req, res, authOptions)
+  if (!session || !session.user?.email) return res.status(401).json({ error: 'Unauthorized' })
+  if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const { kdrId, action, payload } = req.body || {}
+    if (!kdrId || typeof kdrId !== 'string') return res.status(400).json({ error: 'Missing kdrId' })
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const kdr = await findKdr(kdrId)
+    if (!kdr) return res.status(404).json({ error: 'KDR not found' })
+
+    const latestRoundAtStart = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: 'desc' }, select: { id: true, number: true } })
+    const currentRoundNumberAtStart = Number(latestRoundAtStart?.number || 0)
+
+    const player = await prisma.kDRPlayer.findFirst({ where: { kdrId: kdr.id, userId: user.id }, include: { user: true, shopInstances: true } })
+    if (!player) return res.status(404).json({ error: 'Player not found in this KDR' })
+
+    let shopInstance = player.shopInstances?.find((i: any) => i.roundNumber === currentRoundNumberAtStart) || null
+    const shopState: any = player.shopState || {}
+
+    const attachPlayerKey = (p: any, forcedInst?: any) => {
+      if (!p) return p
+      try {
+        const key = (p.userId && kdr?.id) ? generatePlayerKey(p.userId, kdr.id) : null
+        // Prefer an explicitly provided shop instance, else find one in shopInstances for current round
+        const shopInst = forcedInst || p.shopInstances?.find((i: any) => i.roundNumber === currentRoundNumberAtStart)
+        const persistedState = (p.shopState && Object.keys(p.shopState).length > 0) ? p.shopState : null
+
+        // Build a merged, authoritative finalState so clients don't see transient differences
+        const baseState = { stage: 'START', chosenSkills: [], purchases: [], tipAmount: 0, history: [], shopAwarded: false }
+        // Start with instance state if present (represents current round view), otherwise with persisted
+        const instState = shopInst ? (shopInst.shopState || {}) : null
+        const finalState = { ...baseState, ...(instState || {}), ...(persistedState || {}) }
+
+        // Merge purchases and seen arrays (dedupe) from both instance and persisted state
+        const instPurch = Array.isArray(instState?.purchases) ? instState.purchases : []
+        const persistedPurch = Array.isArray(persistedState?.purchases) ? persistedState.purchases : []
+        const combinedPurchMap = new Map<string, any>()
+        ;[...instPurch, ...persistedPurch].forEach((pp: any) => {
+          if (!pp) return
+          const keyId = String(pp.lootPoolId ?? pp.poolId ?? pp.itemId ?? JSON.stringify(pp))
+          if (!combinedPurchMap.has(keyId)) combinedPurchMap.set(keyId, pp)
+        })
+        const mergedPurchases = Array.from(combinedPurchMap.values())
+
+        const instSeen = Array.isArray(instState?.seen) ? instState.seen.map((s: any) => String(s)) : []
+        const persistedSeen = Array.isArray(persistedState?.seen) ? persistedState.seen.map((s: any) => String(s)) : []
+        const mergedSeen = Array.from(new Set([...(instSeen || []), ...(persistedSeen || [])]))
+
+        // Determine completeness and lastRound
+        const finalComplete = !!(shopInst ? shopInst.isComplete : p.shopComplete)
+        const finalRound = shopInst ? shopInst.roundNumber : (p.lastShopRound || currentRoundNumberAtStart)
+
+        try {
+          console.debug('[SHOP:ATTACH] merged purchases', { playerId: p.id, instCount: (instPurch || []).length, persistedCount: (persistedPurch || []).length, mergedCount: mergedPurchases.length })
+        } catch (e) {}
+        return { ...p, playerKey: key, shopState: { ...finalState, purchases: mergedPurchases, seen: mergedSeen }, shopComplete: finalComplete, lastShopRound: finalRound }
+      } catch (e) { return p }
+    }
+
+    // Resolve settings
+    let settings: any = null
+    if (kdr.settingsSnapshot) settings = kdr.settingsSnapshot
+    else if (kdr.formatId) {
+      const fmt = await prisma.format.findUnique({ where: { id: kdr.formatId } })
+      settings = (fmt && (fmt.settings as any)) || null
+    }
+    const defaults = { goldPerRound: 50, xpPerRound: 100, levelXpCurve: [0, 100, 300, 600, 1000], trainingCost: 50, trainingXp: 100, skillSelectionCount: 3 }
+    let baseSettings = { ...defaults, ...(settings || {}) }
+    let modifiers = {}
+    try { modifiers = await getPlayerShopModifiers(player.id) } catch (e) { modifiers = {} }
+    settings = applyShopModifiers(baseSettings, modifiers)
+
+    // helpers
+
+    // helpers moved to lib/shop-v2/state.ts
+    const persistState = persistStateForPlayer;
+    const appendHistoryServer = appendHistoryForPlayer;
+
+    switch (action) {
+      case 'appendHistory': {
+        const entry = payload || {}
+        try { const { updated } = await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry, playerShopState: shopInstance?.shopState || player.shopState }); return res.status(200).json({ message: 'History appended', player: attachPlayerKey(updated) }) } catch (e) { return res.status(500).json({ error: 'Failed to append history' }) }
+      }
+
+      case 'get': {
+        // return current player snapshot for v2
+        return res.status(200).json({ player: attachPlayerKey(player, shopInstance) })
+      }
+
+      case 'start': {
+        let inst = await prisma.kDRShopInstance.findUnique({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } } })
+        if (inst && inst.isComplete) return res.status(403).json({ error: 'SHOP_LOCKED', player: attachPlayerKey(player, inst) })
+        if (!inst || currentRoundNumberAtStart > (Number(player.lastShopRound) || 0)) {
+          const existingPurchases = Array.isArray((player.shopState as any)?.purchases) ? [...(player.shopState as any).purchases] : []
+          const resetState = { chosenSkills: [], purchases: existingPurchases, tipAmount: 0, lootOffers: [], pendingSkillChoices: [], statPoints: (player.shopState as any)?.statPoints || 0, history: [], stage: 'START', stats: (player as any).stats || {}, shopAwarded: false }
+          await prisma.kDRPlayer.update({ where: { id: player.id }, data: { shopComplete: false, shopState: resetState as any, lastShopRound: currentRoundNumberAtStart } })
+          const { updated, shopState: newState } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: resetState, playerShopState: player.shopState })
+          inst = await prisma.kDRShopInstance.findUnique({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } } })
+        }
+
+        const hasAwarded = (inst?.shopState as any)?.shopAwarded || false
+        if (!hasAwarded) {
+          const awardedGold = Number(settings.goldPerRound || 0)
+          const awardedXp = Number(settings.xpPerRound || 0)
+          const updatedPlayer = await prisma.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: awardedGold }, xp: { increment: awardedXp } } })
+          const prevLevel = computeLevel((player.xp || 0), settings.levelXpCurve)
+          const newLevel = computeLevel((updatedPlayer.xp || 0), settings.levelXpCurve)
+
+          // pick initial loot offers (simplified sampling)
+          const allPools = await prisma.lootPool.findMany({ include: { items: true } })
+          const sampled = allPools.slice(0, Number(settings.genericStarterCount || 0))
+          const initialLootOffers = sampled.map(p => ({ id: p.id, name: p.name }))
+
+          let pendingSkillChoices = undefined
+          let nextStage: any = 'STATS'
+          const levelGain = newLevel - prevLevel
+          const existingPoints = ((inst?.shopState as any)?.statPoints || 0) || 0
+          const newPoints = existingPoints + 1 + levelGain
+          if (newLevel > prevLevel) {
+            const ownedSkillIds = await prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { skillId: null } } as any), select: { skillId: true } }).then(list => list.map(li => li.skillId).filter(Boolean) as string[])
+            const availableSkills = await prisma.skill.findMany({ where: { classId: null, type: 'GENERIC', id: { notIn: ownedSkillIds } } })
+            pendingSkillChoices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description || '' }))
+            nextStage = 'SKILL'
+          }
+
+          const mergedSeenStart = Array.from(new Set([...(((inst?.shopState as any)?.seen) || ((player.shopState as any)?.seen) || []), ...((initialLootOffers || []).map((o: any) => String(o.id)))]))
+          const { updated, shopState: newState } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { shopAwarded: true, stage: nextStage, lootOffers: initialLootOffers, statPoints: newPoints, pendingSkillChoices, shopAward: { gold: awardedGold, xp: awardedXp }, seen: mergedSeenStart }, playerShopState: inst?.shopState || player.shopState })
+          try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'award', text: `Player gained ${awardedGold} gold and ${awardedXp} XP this round.`, gold: awardedGold, xp: awardedXp }, playerShopState: inst?.shopState || player.shopState }) } catch (e) {}
+          let levelEntry = undefined
+          if (newLevel > prevLevel) {
+            const lev = { type: 'level', text: `Level ${newLevel + 1} Reached!`, level: newLevel + 1 }
+            try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: lev, playerShopState: inst?.shopState || player.shopState }) } catch (e) {}
+            levelEntry = lev
+          }
+          return res.status(200).json({ message: 'Shop initialized', player: attachPlayerKey(updated), next: nextStage, prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, levelEntry })
+        }
+        return res.status(200).json({ message: 'Shop resumed', player: attachPlayerKey(player, inst), next: (inst?.shopState as any).stage || 'SKILL' })
+      }
+
+      case 'train': {
+        const cost = settings.trainingCost || 0
+        const xpGain = settings.trainingXp || 0
+        if ((player.gold || 0) < cost) return res.status(400).json({ error: 'Insufficient gold for training' })
+        const updatedPlayer = await prisma.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: cost }, xp: { increment: xpGain } } })
+        const prevLevel = computeLevel((player.xp || 0), settings.levelXpCurve)
+        const newLevel = computeLevel((updatedPlayer.xp || 0), settings.levelXpCurve)
+        if (newLevel > prevLevel) {
+            const ownedSkillIds = await prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { skillId: null } } as any), select: { skillId: true } }).then(list => list.map(li => li.skillId).filter(Boolean) as string[])
+          const availableSkills = await prisma.skill.findMany({ where: { classId: null, type: 'GENERIC', id: { notIn: ownedSkillIds } } }) as any[]
+          const choices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description || '' }))
+            try { console.debug('[DBG] server.train pendingSkillChoices', { playerId: player.id, choices: choices.map(c => ({ id: c.id, name: c.name, hasDescription: !!c.description })) }) } catch (e) {}
+          const levelGain = newLevel - prevLevel
+          const existingPoints = ((shopInstance?.shopState as any)?.statPoints || 0) || 0
+          const newPoints = existingPoints + levelGain
+          const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'SKILL', pendingSkillChoices: choices, statPoints: newPoints }, playerShopState: shopInstance?.shopState || player.shopState })
+          let levelEntry = undefined
+          try {
+            const lev = { type: 'level', text: `Level ${newLevel + 1} Reached!`, level: newLevel + 1 }
+            try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: lev, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+            levelEntry = lev
+          } catch (e) {}
+          return res.status(200).json({ message: 'Trained and leveled', player: attachPlayerKey(updated), pendingSkillChoices: choices, prevLevel, newLevel, levelEntry })
+        }
+        const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: {}, playerShopState: shopInstance?.shopState || player.shopState })
+        let returnedPlayer: any = updatedPlayer
+        try {
+          const appendRes = await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'train', text: `Player trained and gained ${xpGain} XP`, xp: xpGain, gold: -cost }, playerShopState: shopInstance?.shopState || player.shopState })
+          if (appendRes && appendRes.updated) returnedPlayer = appendRes.updated
+        } catch (e) {}
+        return res.status(200).json({ message: 'Trained', player: attachPlayerKey(returnedPlayer), prevLevel, newLevel })
+      }
+
+      case 'chooseSkill': {
+        const { skillId } = payload || {}
+        if (!skillId || typeof skillId !== 'string') return res.status(400).json({ error: 'Missing skillId' })
+        const skill = await prisma.skill.findUnique({ where: { id: skillId } })
+        if (!skill) return res.status(404).json({ error: 'Skill not found' })
+        const chosen = Array.isArray((shopInstance?.shopState as any)?.chosenSkills) ? [...(shopInstance!.shopState as any).chosenSkills] : []
+        chosen.push(skillId)
+        await prisma.playerItem.create({ data: { userId: user.id, skillId, kdrId: kdr.id, kdrPlayerId: player.id, qty: 1 } })
+        const havePoints = Number((shopInstance?.shopState as any)?.statPoints || 0) > 0
+        const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { chosenSkills: chosen, pendingSkillChoices: undefined, stage: (havePoints ? 'STATS' : 'TRAINING') }, playerShopState: shopInstance?.shopState || player.shopState })
+        try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'skill', text: `Player chose skill: ${skill.name}`, skillId: skill.id, skillName: skill.name }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        return res.status(200).json({ message: 'Skill chosen', player: attachPlayerKey(updated), chosenSkills: chosen })
+      }
+
+      case 'chooseStat': {
+        const { stat } = payload || {}
+        if (!stat || typeof stat !== 'string') return res.status(400).json({ error: 'Missing stat' })
+        const key = (stat || '').toLowerCase()
+        const valid = ['dex', 'con', 'str', 'int', 'cha']
+        if (!valid.includes(key)) return res.status(400).json({ error: 'Invalid stat' })
+        const availablePoints = Number((shopInstance?.shopState as any)?.statPoints || 0)
+        if (availablePoints <= 0) return res.status(400).json({ error: 'No stat points available' })
+        const curStats = (shopInstance?.shopState as any)?.stats || {}
+        const newStats = { ...(curStats || {}), [key]: (Number(curStats?.[key] || 0) + 1) }
+        const remaining = Math.max(0, availablePoints - 1)
+        const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stats: newStats, statPoints: remaining, stage: (remaining > 0 ? ((shopInstance?.shopState as any)?.stage || 'STATS') : 'TRAINING') }, playerShopState: shopInstance?.shopState || player.shopState })
+        await prisma.kDRPlayer.update({ where: { id: player.id }, data: { stats: newStats } as any })
+        try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'stat', text: `Player increased ${key.toUpperCase()} to ${newStats[key]}`, stat: key, value: newStats[key] }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        return res.status(200).json({ message: 'Stat increased', player: attachPlayerKey(updated) })
+      }
+
+      case 'skipTraining':
+      case 'rerollTreasure': {
+        const treasures = await prisma.item.findMany({
+          where: {
+            type: 'TREASURE',
+            formatId: kdr.formatId || undefined
+          }
+        }) as any[]
+
+        const itemCardIds = treasures.map(t => t.cardId).filter(Boolean) as string[]
+        const itemSkillIds = treasures.map(t => t.skillId).filter(Boolean) as string[]
+        const [itemCards, itemSkills] = await Promise.all([
+          itemCardIds.length ? prisma.card.findMany({ where: { id: { in: itemCardIds } } }) : [],
+          itemSkillIds.length ? prisma.skill.findMany({ where: { id: { in: itemSkillIds } } }) : []
+        ])
+        const itemCardMap = Object.fromEntries(itemCards.map(c => [c.id, c]))
+        const itemSkillMap = Object.fromEntries(itemSkills.map(s => [s.id, s]))
+        treasures.forEach(t => { if (t.cardId) t.card = itemCardMap[t.cardId]; if (t.skillId) t.skill = itemSkillMap[t.skillId] })
+
+        const RARITIES = ['C', 'R', 'SR', 'UR']
+        const rarityWeights = Array.isArray(settings.treasureRarityWeights) ? settings.treasureRarityWeights : [70, 20, 8, 2]
+        const normalizeRarity = (value: any) => {
+          const s = String(value || '').trim().toUpperCase()
+          if (!s) return ''
+          if (s === 'C' || s === 'COMMON' || s === 'N' || s === 'NORMAL') return 'C'
+          if (s === 'R' || s === 'RARE') return 'R'
+          if (s === 'SR' || s === 'S' || s === 'SUPER' || s === 'SUPER RARE') return 'SR'
+          if (s === 'UR' || s === 'U' || s === 'ULTRA' || s === 'ULTRA RARE') return 'UR'
+          return s
+        }
+
+        const pickTreasureForRarity = (rarity: string, excludedIds: Set<string> = new Set()) => {
+          const target = normalizeRarity(rarity)
+          const candidates = treasures.filter((t: any) => {
+            const tr = normalizeRarity(t.rarity || t.card?.rarity)
+            return tr === target
+          }).filter((t: any) => !excludedIds.has(String(t.id)))
+          if (candidates.length === 0) {
+            const fallback = treasures.filter((t: any) => !excludedIds.has(String(t.id)))
+            return fallback.length > 0 ? sampleArray(fallback, 1)[0] : null
+          }
+          return sampleArray(candidates, 1)[0]
+        }
+
+        const offers: any[] = []
+        const baseOfferCount = Number((payload && (Number(payload.offerCount) || Number(payload.count))) || settings.treasureOfferCount || 1)
+
+        const rerollsUsed = Number((shopInstance?.shopState as any)?.rerollsUsed || 0)
+        const maxRerolls = Number(settings.rerollsAvailable || 0)
+        const isReroll = action === 'rerollTreasure'
+        if (isReroll) {
+          if (rerollsUsed >= maxRerolls) return res.status(400).json({ error: 'No rerolls remaining' })
+          try { await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'reroll', text: `Player rerolled treasure offers (${rerollsUsed + 1}/${maxRerolls})` }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        }
+
+        const pickedIds = new Set<string>()
+        if (treasures.length > 0) {
+          for (let i = 0; i < baseOfferCount; i++) {
+            const idx = weightedPickIndex(rarityWeights)
+            const rarity = idx >= 0 && idx < RARITIES.length ? RARITIES[idx] : RARITIES[Math.floor(Math.random() * RARITIES.length)]
+            const picked = pickTreasureForRarity(rarity, pickedIds)
+            if (picked) {
+              pickedIds.add(String(picked.id))
+              const offerRarity = normalizeRarity(picked.rarity || picked.card?.rarity)
+              offers.push({
+                id: picked.id,
+                cardId: picked.cardId,
+                skillId: picked.skillId,
+                rarity: offerRarity,
+                name: picked.name,
+                description: picked.description,
+                card: picked.card ? { id: picked.card.id, name: picked.card.name, konamiId: picked.card.konamiId, imageUrlCropped: picked.card.imageUrlCropped, rarity: picked.card.rarity } : null,
+                skill: picked.skill ? { id: picked.skill.id, name: picked.skill.name, description: picked.skill.description } : null
+              })
+            }
+          }
+        }
+
+        if (offers.length === 0) {
+          const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'LOOT', treasureOffers: [] }, playerShopState: shopInstance?.shopState || player.shopState })
+          return res.status(200).json({ message: 'No treasures available, skipping to loot stage', player: attachPlayerKey(updated), skippedToLoot: true })
+        }
+
+        const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'TREASURES', treasureOffers: offers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed }, playerShopState: shopInstance?.shopState || player.shopState })
+        return res.status(200).json({ message: isReroll ? 'Treasure rerolled' : 'Entered treasure stage', player: attachPlayerKey(updated), treasureOffers: offers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, maxRerolls })
+      }
+
+      case 'chooseTreasure': {
+        const { treasureId } = payload || {}
+        if (!treasureId || typeof treasureId !== 'string') return res.status(400).json({ error: 'Missing treasureId' })
+        const treasure = await prisma.item.findUnique({ where: { id: treasureId } }) as any
+        if (!treasure) return res.status(404).json({ error: 'Treasure not found (must be an Item of type TREASURE)' })
+        if (treasure.cardId) treasure.card = await prisma.card.findUnique({ where: { id: treasure.cardId } })
+        if (treasure.skillId) treasure.skill = await prisma.skill.findUnique({ where: { id: treasure.skillId } })
+        const offer = (shopInstance?.shopState as any)?.treasureOffers?.find((t: any) => String(t.id) === String(treasureId))
+        const finalRarity = offer?.rarity || treasure.rarity || treasure.card?.rarity || 'UR'
+        try {
+          const purchases = Array.isArray((shopInstance?.shopState as any)?.purchases) ? [...(shopInstance!.shopState as any).purchases] : []
+          purchases.push({ itemId: treasure.id, name: treasure.name || treasure.card?.name || treasure.skill?.name, type: 'TREASURE', rarity: finalRarity, ts: Date.now() })
+          const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { purchases, stage: 'LOOT', treasureOffers: [] }, playerShopState: shopInstance?.shopState || player.shopState })
+          await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, kdrPlayerId: player.id, itemId: treasure.id, cardId: treasure.cardId || null, skillId: treasure.skillId || null, qty: 1, purchased: true, seen: true } })
+          try { await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'treasure', text: `Player chose treasure: ${treasure.name || treasure.card?.name || treasure.skill?.name}`, itemId: treasure.id, name: treasure.name, rarity: finalRarity }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+          return res.status(200).json({ message: 'Treasure chosen', player: attachPlayerKey(updated), next: 'LOOT' })
+        } catch (e) {
+          console.error('Failed to choose treasure', e)
+          return res.status(500).json({ error: 'Failed to choose treasure' })
+        }
+      }
+
+      case 'lootOffers':
+      case 'rerollLoot': {
+        const isReroll = action === 'rerollLoot' || payload?.action === 'rerollLoot'
+        const rerollsUsed = Number((shopInstance?.shopState as any)?.rerollsUsed || 0)
+        const maxRerolls = Number(settings.rerollsAvailable || 0)
+        if (isReroll && rerollsUsed >= maxRerolls) return res.status(400).json({ error: 'No rerolls remaining' })
+
+        const [allPurchasesForExclusion, inventoryPools] = await Promise.all([
+          prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
+          prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any }) as Promise<any[]>
+        ])
+
+        const purchasedPoolIds = new Set<string>()
+        inventoryPools.forEach(i => { if ((i as any).lootPoolId) purchasedPoolIds.add(String((i as any).lootPoolId)) })
+        allPurchasesForExclusion.forEach(inst => {
+          const state = inst.shopState as any
+          if (state && Array.isArray(state.purchases)) state.purchases.forEach((p: any) => { const poolId = p.lootPoolId || p.poolId; if (poolId) purchasedPoolIds.add(String(poolId)) })
+        })
+
+        const allPoolsRaw = await prisma.lootPool.findMany({ include: { items: { include: { card: true, skill: true } } } }) as any[]
+        const availablePools = allPoolsRaw.filter(p => {
+          if (purchasedPoolIds.has(String(p.id))) return false
+          const hasTreasure = (p.items || []).some((i: any) => {
+            const t = String(i.type || '').toUpperCase()
+            return t === 'TREASURE' || (t === 'CARD' && (String(i.card?.rarity || '').toUpperCase() === 'UR' || String(i.card?.rarity || '').toUpperCase() === 'SR'))
+          })
+          return !hasTreasure
+        })
+
+        const classPools = availablePools.filter((p: any) => p.classId && player.classId && p.classId === player.classId)
+        const genericPools = availablePools.filter((p: any) => !p.classId)
+
+        const currentLevel = computeLevel((player.xp || 0), settings.levelXpCurve) + 1
+        const sampledPools: any[] = []
+        const getPoolsByTier = (pools: any[], tier: string) => pools.filter((p: any) => (p.tier || '').toUpperCase() === tier.toUpperCase())
+        const sampleFromPools = (pools: any[], count: number) => { if (count <= 0) return []; const shuffled = [...pools].sort(() => Math.random() - 0.5); return shuffled.slice(0, count) }
+
+        if (settings.classStarterCount > 0) sampledPools.push(...sampleFromPools(getPoolsByTier(classPools, 'STARTER'), Number(settings.classStarterCount)).map(p => ({ ...p, isGeneric: false })))
+        if (settings.classMidCount > 0 && currentLevel >= (settings.classMidMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(classPools, 'MID'), Number(settings.classMidCount)).map(p => ({ ...p, isGeneric: false })))
+        if (settings.classHighCount > 0 && currentLevel >= (settings.classHighMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(classPools, 'HIGH'), Number(settings.classHighCount)).map(p => ({ ...p, isGeneric: false })))
+        if (settings.genericStarterCount > 0) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'STARTER'), Number(settings.genericStarterCount)).map(p => ({ ...p, isGeneric: true })))
+        if (settings.genericMidCount > 0 && currentLevel >= (settings.genericMidMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'MID'), Number(settings.genericMidCount)).map(p => ({ ...p, isGeneric: true })))
+        if (settings.genericHighCount > 0 && currentLevel >= (settings.genericHighMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'HIGH'), Number(settings.genericHighCount)).map(p => ({ ...p, isGeneric: true })))
+
+        const poolOffers = sampledPools.map((fullPool: any) => {
+          const poolTierNormalized = (fullPool.tier || 'STARTER').toUpperCase()
+          const poolCards = (fullPool.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, konamiId: i.card.konamiId || null, imageUrlCropped: i.card.imageUrlCropped || null, variant: i.card.variant || 'TCG', artworks: i.card.artworks || null, primaryArtworkIndex: i.card.primaryArtworkIndex || 0 }))
+          const isGeneric = fullPool.isGeneric ?? !fullPool.classId
+          let baseCost = 0
+          if (isGeneric) baseCost = poolTierNormalized === 'STARTER' ? (settings.genericStarterCost || 0) : poolTierNormalized === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)
+          else baseCost = poolTierNormalized === 'STARTER' ? (settings.classStarterCost || 0) : poolTierNormalized === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0)
+          const totalCost = baseCost + (Number(fullPool.tax) || 0)
+          return { id: fullPool.id, name: fullPool.name, tier: poolTierNormalized, isGeneric: isGeneric, tax: Number(fullPool.tax) || 0, cost: totalCost, cards: poolCards, items: (fullPool.items || []).map((i: any) => ({ id: i.id, type: i.type, card: i.card, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) }
+        })
+
+        const mergedSeen = Array.from(new Set([...(((shopInstance?.shopState as any)?.seen) || ((player.shopState as any)?.seen) || []), ...((poolOffers || []).map((o: any) => String(o.id)))]))
+        const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { lootOffers: poolOffers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, seen: mergedSeen }, playerShopState: shopInstance?.shopState || player.shopState })
+        try { if (isReroll) await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'reroll', text: `Player rerolled ALL loot offers (${rerollsUsed + 1}/${maxRerolls})` }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        return res.status(200).json({ message: isReroll ? 'Loot rerolled' : 'Loot offers', player: attachPlayerKey(updated), offers: poolOffers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, maxRerolls })
+      }
+
+        case 'purchaseLootPool': {
+          const { lootPoolId: reqLootPoolId, tier: reqTier, isGeneric: reqIsGeneric } = payload || {}
+          // Bulk purchase by tier (tier + generic/class) if `tier` provided
+          if (reqTier) {
+            try {
+              const tierKey = String(reqTier).toUpperCase()
+              const isGenericBool = !!reqIsGeneric
+
+              const isRandomPurchase = !!(payload && (payload.random === true || payload.randomPurchase === true))
+              if (isRandomPurchase) {
+                // Random purchase: buy `desiredCount` pools of this tier (matching generic/class)
+                // Charge only the configured base cost (no tax), and mark purchases/seen.
+                try {
+                  const tierKeyLower = tierKey
+                  const desiredCount = isGenericBool ? (tierKeyLower === 'STARTER' ? (settings.genericStarterCount || 0) : tierKeyLower === 'MID' ? (settings.genericMidCount || 0) : (settings.genericHighCount || 0)) : (tierKeyLower === 'STARTER' ? (settings.classStarterCount || 0) : tierKeyLower === 'MID' ? (settings.classMidCount || 0) : (settings.classHighCount || 0))
+
+                  // Build exclusion set from past purchases & inventory
+                  const [allPurchasesEx, inventoryPoolsEx] = await Promise.all([
+                    prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
+                    prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any }) as Promise<any[]>
+                  ])
+                  const excluded = new Set<string>()
+                  inventoryPoolsEx.forEach(i => { if ((i as any).lootPoolId) excluded.add(String((i as any).lootPoolId)) })
+                  allPurchasesEx.forEach(inst => {
+                    const s = inst.shopState as any
+                    if (s && Array.isArray(s.purchases)) s.purchases.forEach((p: any) => { if (p.lootPoolId) excluded.add(String(p.lootPoolId)) })
+                  })
+
+                  // Candidate pools matching tier + generic/class filter
+                  const classFilter = isGenericBool ? { classId: null } : { classId: player.classId }
+                  const candidates = await prisma.lootPool.findMany({ where: { tier: tierKey, id: { notIn: Array.from(excluded) }, ...classFilter }, include: { items: { include: { card: true, skill: true } } } })
+                  if (!candidates || candidates.length === 0) return res.status(400).json({ error: 'No pools available for random purchase' })
+
+                  const picks = sampleArray(candidates, Math.min(Number(desiredCount || 0), candidates.length))
+
+                  const result = await prisma.$transaction(async (tx) => {
+                    const freshPlayer = await tx.kDRPlayer.findUnique({ where: { id: player.id }, include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } } }) as any
+                    if (!freshPlayer) throw new Error('Player not found')
+
+                    // determine single-base cost for tier (no tax)
+                    let singleBaseCost = 0
+                    if (isGenericBool) {
+                      singleBaseCost = tierKey === 'STARTER' ? (settings.genericStarterCost || 0) : tierKey === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)
+                    } else {
+                      singleBaseCost = tierKey === 'STARTER' ? (settings.classStarterCost || 0) : tierKey === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0)
+                    }
+
+                    const desired = picks.length
+                    const totalBaseCost = Number(singleBaseCost || 0) * desired
+
+                    const playerGoldNow = Number(freshPlayer.gold || 0)
+                    if (playerGoldNow < totalBaseCost) throw new Error(`INSUFFICIENT_GOLD:${playerGoldNow}`)
+
+                    let currentInst = freshPlayer.shopInstances?.[0]
+                    if (!currentInst) {
+                      const basePurchases = Array.isArray((freshPlayer.shopState as any)?.purchases) ? [...(freshPlayer.shopState as any).purchases] : []
+                      const resetState = { chosenSkills: [], purchases: basePurchases, tipAmount: 0, lootOffers: [], pendingSkillChoices: [], statPoints: (freshPlayer.shopState as any)?.statPoints || 0, history: [], stage: 'START', stats: freshPlayer.stats || {}, shopAwarded: false }
+                      currentInst = await tx.kDRShopInstance.create({ data: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: resetState, isComplete: false } })
+                    }
+
+                    const baseShopState = currentInst.shopState || {}
+                    const txPurchases = Array.isArray(baseShopState.purchases) ? [...baseShopState.purchases] : []
+                    const playerItemsToCreate: any[] = []
+                    let totalGoldInc = 0
+
+                    for (const pick of picks) {
+                      for (const item of ((pick as any).items || [])) {
+                        const typ = (item.type || '').toString()
+                        if (typ === 'Card' && item.card?.id) playerItemsToCreate.push({ userId: user.id, kdrId: kdr.id, kdrPlayerId: player.id, itemId: null, cardId: item.card.id, qty: 1, lootPoolId: pick.id })
+                        else if (typ === 'Skill') {
+                          const skillId = item.skillId || item.skill?.id || (item.skillName ? item.id : null)
+                          if (skillId) playerItemsToCreate.push({ userId: user.id, skillId, itemId: null, kdrId: kdr.id, kdrPlayerId: player.id, qty: 1, lootPoolId: pick.id })
+                        } else if (typ === 'Gold' || item.amount) totalGoldInc += Number(item.amount || 0)
+                      }
+                      txPurchases.push({ lootPoolId: pick.id, qty: 1, cost: singleBaseCost, bulk: true })
+                    }
+
+                    const freshPlayerOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
+                    // Remove any picked pools from offers
+                    let updatedOffers = freshPlayerOffers.filter((o: any) => !picks.some((pb: any) => String(pb.id) === String(o.id)))
+
+                    // Refill offers up to desiredCount for the category if needed
+                    let currentCategoryCount = updatedOffers.filter((o: any) => ((o.tier || '').toUpperCase() === tierKey) && (!!o.isGeneric === !!isGenericBool)).length
+                    let need = Math.max(0, Number(desiredCount || 0) - currentCategoryCount)
+                    if (need > 0) {
+                      const refillCandidates = await tx.lootPool.findMany({ where: { id: { notIn: Array.from(excluded) }, tier: tierKey, ...(isGenericBool ? { classId: null } : { classId: player.classId }) }, include: { items: { include: { card: true, skill: true } } } })
+                      if (refillCandidates && refillCandidates.length > 0) {
+                        const picks2 = sampleArray(refillCandidates, Math.min(need, refillCandidates.length))
+                        for (const pick of picks2) {
+                          const isPickGeneric = !pick.classId
+                          const pickBaseCost = isPickGeneric ? (pick.tier === 'STARTER' ? (settings.genericStarterCost || 0) : pick.tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)) : (pick.tier === 'STARTER' ? (settings.classStarterCost || 0) : pick.tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0))
+                          updatedOffers.push({ id: pick.id, name: pick.name, tier: pick.tier, isGeneric: isPickGeneric, tax: pick.tax || 0, cost: Number(pickBaseCost || 0) + Number(pick.tax || 0), cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })), items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) })
+                        }
+                      }
+                    }
+
+                    const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
+
+                    if (playerItemsToCreate.length > 0) await tx.playerItem.createMany({ data: playerItemsToCreate })
+
+                    const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: totalBaseCost - totalGoldInc }, shopState: { ...baseShopState, purchases: txPurchases, lootOffers: updatedOffers, seen: mergedSeenFinal, stage: 'LOOT' }, shopComplete: false, lastShopRound: currentRoundNumberAtStart } })
+
+                    await tx.kDRShopInstance.upsert({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } }, create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: updatedPlayer.shopState, isComplete: false }, update: { shopState: updatedPlayer.shopState, isComplete: false } })
+
+                    return attachPlayerKey(updatedPlayer)
+                  }, { timeout: 10000 })
+
+                  try {
+                    const count = picks.length
+                    const names = picks.map((p: any) => p.name || String(p.id || ''))
+                    const tierLabel = isGenericBool ? (tierKey === 'STARTER' ? 'Staples' : tierKey === 'MID' ? 'Removal/Disruption' : 'Engine') : (tierKey === 'STARTER' ? 'Starter' : tierKey === 'MID' ? 'Mid' : 'High')
+                    const text = `Player has randomly purchased ${count} ${tierLabel} Loot Pool${count === 1 ? '' : 's'} - ${names.map(n => `"${n}"`).join(', ')}`
+                    try { await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'loot_purchase', text, tier: tierKey, isGeneric: isGenericBool, count, poolNames: names, poolIds: picks.map((p: any) => p.id) }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+                  } catch (e) {}
+
+                  // Return purchased pool summaries so client can show a modal
+                  const purchasedPools = (picks || []).map((p: any) => {
+                    const poolCards = (p.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped || null }))
+                    return { id: p.id, name: p.name, tier: p.tier, isGeneric: !!p.classId ? false : true, cards: poolCards }
+                  })
+
+                  return res.status(200).json({ message: 'Random quality purchased', player: result, purchasedPools })
+                } catch (e: any) {
+                  console.error('Random bulk purchase failed', e)
+                  if (e.message?.startsWith('INSUFFICIENT_GOLD')) return res.status(400).json({ error: 'Insufficient funds' })
+                  return res.status(500).json({ error: 'Internal server error' })
+                }
+              }
+
+              // determine base cost
+              let baseCost = 0
+              if (isGenericBool) {
+                baseCost = tierKey === 'STARTER' ? (settings.genericStarterCost || 0) : tierKey === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)
+              } else {
+                baseCost = tierKey === 'STARTER' ? (settings.classStarterCost || 0) : tierKey === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0)
+              }
+
+              const currentState = (shopInstance?.shopState as any) || {}
+              const currentOffers = Array.isArray(currentState.lootOffers) ? currentState.lootOffers : []
+              const poolsToBuy = currentOffers.filter((o: any) => (o.tier || '').toUpperCase() === tierKey && !!o.isGeneric === isGenericBool)
+              if (poolsToBuy.length === 0) return res.status(400).json({ error: 'No pools found for this quality' })
+
+              // prefetch full pool data
+              const fullPoolsData = await prisma.lootPool.findMany({ where: { id: { in: poolsToBuy.map((p: any) => p.id) } }, include: { items: { include: { card: true, skill: true } } } })
+
+              // build exclusion set
+              const updatedOffersBefore = currentOffers.filter((o: any) => !poolsToBuy.some((pb: any) => String(pb.id) === String(o.id)))
+              const purchasedIds = new Set<string>()
+              const purchasedArr = Array.from(purchasedIds)
+              const excluded = new Set<string>()
+              for (const o of updatedOffersBefore) if (o && o.id) excluded.add(String(o.id))
+              for (const pb of (poolsToBuy || [])) if (pb && pb.id) excluded.add(String(pb.id))
+
+              const [allPurchasesEx, inventoryPoolsEx] = await Promise.all([
+                prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
+                prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any })
+              ])
+              inventoryPoolsEx.forEach(i => { if ((i as any).lootPoolId) excluded.add(String((i as any).lootPoolId)) })
+              allPurchasesEx.forEach(inst => {
+                const s = inst.shopState as any
+                if (s && Array.isArray(s.purchases)) s.purchases.forEach((p: any) => { if (p.lootPoolId) excluded.add(String(p.lootPoolId)) })
+              })
+
+              const refillCandidates = await prisma.lootPool.findMany({ where: { id: { notIn: Array.from(excluded) }, tier: tierKey, ...(isGenericBool ? { classId: null } : { classId: (poolsToBuy[0] as any).classId }) }, include: { items: { include: { card: true, skill: true } } } })
+
+              const result = await prisma.$transaction(async (tx) => {
+                const freshPlayer = await tx.kDRPlayer.findUnique({ where: { id: player.id }, include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } } }) as any
+                if (!freshPlayer) throw new Error('Player not found')
+                const playerGoldNow = Number(freshPlayer.gold || 0)
+                if (playerGoldNow < baseCost) throw new Error(`INSUFFICIENT_GOLD:${playerGoldNow}`)
+
+                let currentInst = freshPlayer.shopInstances?.[0]
+                if (!currentInst) {
+                  const basePurchases = Array.isArray((freshPlayer.shopState as any)?.purchases) ? [...(freshPlayer.shopState as any).purchases] : []
+                  const resetState = { chosenSkills: [], purchases: basePurchases, tipAmount: 0, lootOffers: [], pendingSkillChoices: [], statPoints: (freshPlayer.shopState as any)?.statPoints || 0, history: [], stage: 'START', stats: freshPlayer.stats || {}, shopAwarded: false }
+                  currentInst = await tx.kDRShopInstance.create({ data: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: resetState, isComplete: false } })
+                }
+
+                const baseShopState = currentInst.shopState || {}
+                const playerItemsToCreate: any[] = []
+                const txPurchases = Array.isArray(baseShopState.purchases) ? [...baseShopState.purchases] : []
+                let totalGoldInc = 0
+
+                for (const fullPool of fullPoolsData) {
+                  if (txPurchases.some((p: any) => String(p.lootPoolId) === String(fullPool.id))) continue
+                  for (const item of ((fullPool as any).items || [])) {
+                    const typ = (item.type || '').toString()
+                    if (typ === 'Card' && item.card?.id) playerItemsToCreate.push({ userId: user.id, kdrId: kdr.id, kdrPlayerId: player.id, itemId: null, cardId: item.card.id, qty: 1, lootPoolId: fullPool.id })
+                    else if (typ === 'Skill') {
+                      const skillId = item.skillId || item.skill?.id || (item.skillName ? item.id : null)
+                      if (skillId) playerItemsToCreate.push({ userId: user.id, skillId, itemId: null, kdrId: kdr.id, kdrPlayerId: player.id, qty: 1, lootPoolId: fullPool.id })
+                    } else if (typ === 'Gold' || item.amount) totalGoldInc += Number(item.amount || 0)
+                  }
+                  txPurchases.push({ lootPoolId: fullPool.id, qty: 1, cost: 0, bulk: true })
+                }
+
+                const freshPlayerOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
+                let updatedOffers = freshPlayerOffers.filter((o: any) => !poolsToBuy.some((pb: any) => String(pb.id) === String(o.id)))
+
+                const tierKeyLower = (tierKey || 'STARTER').toUpperCase()
+                const desiredCount = isGenericBool ? (tierKeyLower === 'STARTER' ? (settings.genericStarterCount || 0) : tierKeyLower === 'MID' ? (settings.genericMidCount || 0) : (settings.genericHighCount || 0)) : (tierKeyLower === 'STARTER' ? (settings.classStarterCount || 0) : tierKeyLower === 'MID' ? (settings.classMidCount || 0) : (settings.classHighCount || 0))
+                let currentCategoryCount = updatedOffers.filter((o: any) => ((o.tier || '').toUpperCase() === tierKeyLower) && (!!o.isGeneric === !!isGenericBool)).length
+                let need = Math.max(0, Number(desiredCount || 0) - currentCategoryCount)
+
+                if (need > 0 && refillCandidates?.length > 0) {
+                  const picks = sampleArray(refillCandidates, Math.min(need, refillCandidates.length))
+                  for (const pick of picks) {
+                    const isPickGeneric = !pick.classId
+                    const pickBaseCost = isPickGeneric ? (pick.tier === 'STARTER' ? (settings.genericStarterCost || 0) : pick.tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)) : (pick.tier === 'STARTER' ? (settings.classStarterCost || 0) : pick.tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0))
+                    updatedOffers.push({ id: pick.id, name: pick.name, tier: pick.tier, isGeneric: isPickGeneric, tax: pick.tax || 0, cost: Number(pickBaseCost || 0) + Number(pick.tax || 0), cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })), items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) })
+                  }
+                }
+
+                const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
+                const FINAL_STATE = { ...baseShopState, purchases: txPurchases, lootOffers: updatedOffers, seen: mergedSeenFinal }
+                // Ensure we remain in LOOT stage after purchase to keep client UI stable
+                FINAL_STATE.stage = 'LOOT'
+                const isComplete = (FINAL_STATE.stage === 'DONE')
+
+                if (playerItemsToCreate.length > 0) await tx.playerItem.createMany({ data: playerItemsToCreate })
+
+                const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: baseCost - totalGoldInc }, shopState: FINAL_STATE, shopComplete: isComplete, lastShopRound: currentRoundNumberAtStart } })
+
+                await tx.kDRShopInstance.upsert({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } }, create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: FINAL_STATE, isComplete }, update: { shopState: FINAL_STATE, isComplete } })
+
+                return attachPlayerKey(updatedPlayer)
+              }, { timeout: 10000 })
+
+              try {
+                // Append history entry for bulk quality purchase
+                const count = (poolsToBuy || []).length
+                const names = (poolsToBuy || []).map((p: any) => p.name || String(p.id || ''))
+                const getTierLabel = (tier: string, isGen: boolean) => {
+                  const t = (tier || '').toUpperCase()
+                  if (isGen) {
+                    const genericLabels: Record<string, string> = { 'STARTER': 'Staples', 'MID': 'Removal/Disruption', 'HIGH': 'Engine' }
+                    return genericLabels[t] || t
+                  } else {
+                    const classLabels: Record<string, string> = { 'STARTER': 'Starter', 'MID': 'Mid', 'HIGH': 'High' }
+                    return classLabels[t] || t
+                  }
+                }
+                const tierLabel = getTierLabel(tierKey, isGenericBool)
+                const text = `Player has purchased ${count} ${tierLabel} Loot Pool${count === 1 ? '' : 's'} - ${names.map(n => `"${n}"`).join(', ')}`
+                try {
+                  const appendRes = await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'loot_purchase', text, tier: tierKey, isGeneric: isGenericBool, count, poolNames: names, poolIds: poolsToBuy.map((p: any) => p.id) }, playerShopState: shopInstance?.shopState || player.shopState })
+                  if (appendRes && appendRes.updated) return res.status(200).json({ message: 'Quality purchased', player: attachPlayerKey(appendRes.updated) })
+                } catch (e) {}
+              } catch (e) {}
+              return res.status(200).json({ message: 'Quality purchased', player: result })
+            } catch (e: any) {
+              console.error('Bulk purchase failed', e)
+              if (e.message?.startsWith('INSUFFICIENT_GOLD')) return res.status(400).json({ error: 'Insufficient funds' })
+              return res.status(500).json({ error: 'Internal server error' })
+            }
+          }
+
+          // Single pool purchase
+          if (!reqLootPoolId || typeof reqLootPoolId !== 'string') return res.status(400).json({ error: 'Missing lootPoolId' })
+          const pool = await prisma.lootPool.findUnique({ where: { id: reqLootPoolId }, include: { items: { include: { card: true } } } }) as any
+          if (!pool) return res.status(404).json({ error: 'Loot pool not found' })
+
+          const tier = (pool.tier || 'STARTER').toUpperCase()
+          const isGeneric = !pool.classId
+          let baseCost = 0
+          if (isGeneric) baseCost = tier === 'STARTER' ? (settings.genericStarterCost || 0) : tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)
+          else baseCost = tier === 'STARTER' ? (settings.classStarterCost || 0) : tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0)
+          const totalCost = Number(baseCost || 0) + Number(pool.tax || 0)
+
+          const [allPurchasesForExclusion, inventoryPools] = await Promise.all([
+            prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
+            prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any }) as Promise<any[]>
+          ])
+
+          const purchasedPoolIds = new Set<string>()
+          inventoryPools.forEach(i => { if ((i as any).lootPoolId) purchasedPoolIds.add(String((i as any).lootPoolId)) })
+          allPurchasesForExclusion.forEach(inst => { const state = inst.shopState as any; if (state && Array.isArray(state.purchases)) state.purchases.forEach((p: any) => { const poolId = p.lootPoolId || p.poolId; if (poolId) purchasedPoolIds.add(String(poolId)) }) })
+
+          try {
+            const result = await prisma.$transaction(async (tx) => {
+              const freshPlayer = await tx.kDRPlayer.findUnique({ where: { id: player.id } })
+              const playerGoldNow = Number(freshPlayer?.gold || 0)
+              if (playerGoldNow < Number(totalCost || 0)) throw new Error(`INSUFFICIENT_GOLD:${playerGoldNow}`)
+              await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: totalCost } } })
+
+              for (const item of (pool.items || [])) {
+                const typ = (item.type || '').toString()
+                if (typ === 'Card' && item.card && item.card.id) await (tx.playerItem as any).create({ data: { userId: user.id, kdrId: kdr.id, itemId: null, cardId: item.card.id, qty: 1, lootPoolId: pool.id } })
+                else if (typ === 'Skill') {
+                  const skillId = item.skillId || item.skill?.id || null
+                  if (skillId) { try { await (tx.playerItem as any).create({ data: { userId: user.id, skillId, kdrId: kdr.id, qty: 1, lootPoolId: pool.id } }) } catch (e) {} }
+                  else if (item.skillName) await (tx.playerItem as any).create({ data: { userId: user.id, kdrId: kdr.id, itemId: null, qty: 1, lootPoolId: pool.id } })
+                } else if (typ === 'Gold' || item.amount) {
+                  const amt = Number(item.amount || 0)
+                  if (amt > 0) await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: amt } } })
+                } else {
+                  await (tx.playerItem as any).create({ data: { userId: user.id, kdrId: kdr.id, itemId: null, qty: 1, lootPoolId: pool.id } })
+                }
+              }
+
+              const fresh = await tx.kDRPlayer.findUnique({ where: { id: player.id } })
+              const currentState = (fresh?.shopState as any) || {}
+              const purchases = Array.isArray(currentState.purchases) ? [...currentState.purchases] : []
+              purchases.push({ lootPoolId: pool.id, qty: 1, cost: totalCost })
+              const existingOffers = Array.isArray(currentState.lootOffers) ? [...currentState.lootOffers] : []
+              let updatedOffers = existingOffers.filter((o: any) => String(o.id) !== String(pool.id))
+
+              const tierKey2 = (tier || 'STARTER').toUpperCase()
+              const desiredCount2 = isGeneric ? (tierKey2 === 'STARTER' ? (settings.genericStarterCount || 0) : tierKey2 === 'MID' ? (settings.genericMidCount || 0) : (settings.genericHighCount || 0)) : (tierKey2 === 'STARTER' ? (settings.classStarterCount || 0) : tierKey2 === 'MID' ? (settings.classMidCount || 0) : (settings.classHighCount || 0))
+              const currentCategoryCount2 = updatedOffers.filter((o: any) => ((o.tier || '').toUpperCase() === tierKey2) && (!!o.isGeneric === !!isGeneric)).length
+              let need2 = Math.max(0, Number(desiredCount2 || 0) - currentCategoryCount2)
+
+              if (need2 > 0) {
+                const purchasedIdsSet = new Set<string>((purchases || []).map((p: any) => String(p.lootPoolId)))
+                const excluded2 = new Set<string>()
+                for (const id of Array.from(purchasedIdsSet)) excluded2.add(String(id))
+                for (const o of updatedOffers) if (o && o.id) excluded2.add(String(o.id))
+                excluded2.add(String(pool.id))
+
+                const candidates = await tx.lootPool.findMany({ where: { id: { notIn: Array.from(excluded2) }, tier: tierKey2, ...(isGeneric ? { classId: null } : { classId: pool.classId }) }, include: { items: { include: { card: true, skill: true } } } })
+
+                if (candidates && candidates.length > 0) {
+                  const picks = sampleArray(candidates, Math.min(need2, candidates.length))
+                  for (const pick of picks) {
+                    const poolCards = (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, konamiId: i.card.konamiId || null, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks }))
+                    const isPickGeneric = !pick.classId
+                    if (purchasedPoolIds.has(String(pick.id))) continue
+                    const pickBaseCost = isPickGeneric ? (pick.tier === 'STARTER' ? (settings.genericStarterCost || 0) : pick.tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)) : (pick.tier === 'STARTER' ? (settings.classStarterCost || 0) : pick.tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0))
+                    const pickTotalCost = Number(pickBaseCost || 0) + Number(pick.tax || 0)
+                    const mapped = { id: pick.id, name: pick.name, tier: pick.tier, isGeneric: isPickGeneric, tax: pick.tax || 0, cost: pickTotalCost, cards: poolCards, items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) }
+                    updatedOffers.push(mapped)
+                    excluded2.add(String(pick.id))
+                    need2--
+                    if (need2 <= 0) break
+                  }
+                }
+              }
+
+              const mergedSeenAfterPurchase = Array.from(new Set([...(((currentState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
+              const { updated: finalPlayer } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { purchases: [...purchases, { lootPoolId: pool.id, qty: 1, cost: totalCost }], lootOffers: updatedOffers, stage: 'LOOT', seen: mergedSeenAfterPurchase }, playerShopState: currentState })
+
+              return { updatedPlayer: finalPlayer }
+            })
+            try {
+              // Append history entry for single pool purchase
+              const names = [pool.name || String(pool.id || '')]
+              const getTierLabel = (tier: string, isGen: boolean) => {
+                const t = (tier || '').toUpperCase()
+                if (isGen) {
+                  const genericLabels: Record<string, string> = { 'STARTER': 'Staples', 'MID': 'Removal/Disruption', 'HIGH': 'Engine' }
+                  return genericLabels[t] || t
+                } else {
+                  const classLabels: Record<string, string> = { 'STARTER': 'Starter', 'MID': 'Mid', 'HIGH': 'High' }
+                  return classLabels[t] || t
+                }
+              }
+              const tierLabel = getTierLabel(tier, isGeneric)
+              const text = `Player has purchased 1 ${tierLabel} Loot Pool - ${names.map(n => `"${n}"`).join(', ')}`
+              try {
+                const appendRes = await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'loot_purchase', text, tier, isGeneric, count: 1, poolNames: names, poolIds: [pool.id] }, playerShopState: shopInstance?.shopState || player.shopState })
+                if (appendRes && appendRes.updated) return res.status(200).json({ message: 'Pool purchased', player: attachPlayerKey(appendRes.updated) })
+              } catch (e) {}
+            } catch (e) {}
+            return res.status(200).json({ message: 'Pool purchased', player: attachPlayerKey(result.updatedPlayer) })
+          } catch (e: any) {
+            if (e && typeof e.message === 'string' && e.message.startsWith('INSUFFICIENT_GOLD')) {
+              const parts = e.message.split(':')
+              const have = parts[1] ? Number(parts[1]) : null
+              return res.status(400).json({ error: 'Insufficient gold', have, required: totalCost })
+            }
+            console.error('Failed to purchase loot pool', e)
+            return res.status(500).json({ error: 'Failed to purchase loot pool' })
+          }
+        }
+
+        case 'finish': {
+          // Mark the player's shop instance as finished for this round
+          try {
+            const { updated, shopState: finalState } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'DONE' }, playerShopState: shopInstance?.shopState || player.shopState })
+
+            // Ensure the instance is marked complete
+            const updatedInst = await prisma.kDRShopInstance.upsert({
+              where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } },
+              create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: finalState, isComplete: true },
+              update: { shopState: finalState, isComplete: true }
+            })
+
+            const final = await prisma.kDRPlayer.update({
+              where: { id: player.id },
+              data: { shopComplete: true, lastShopRound: currentRoundNumberAtStart, shopState: finalState },
+              include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } }
+            })
+            console.log(`[SHOP:TRACE] finish: Player finished round ${currentRoundNumberAtStart}.`)
+            return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final, updatedInst) })
+          } catch (e: any) {
+            console.error('Failed to finish shop-v2', e)
+            return res.status(500).json({ error: 'Failed to finish' })
+          }
+        }
+
+        case 'getPlayerSkills': {
+        try {
+          // Fetch playerItem rows that represent skills and inventory cards for this user
+          // For inventory, we limit to the current KDR.
+          // Prefer per-KDRPlayer-scoped rows (kdrPlayerId). Fall back to userId+kdrId if migration not yet applied.
+          // Fetch playerItem rows for skills and inventory. Prefer rows explicitly tied
+          // to the KDR player via `kdrPlayerId`, but always include legacy rows
+          // scoped by `userId + kdrId` to handle partially-backfilled data.
+          const playerSkillRows = await prisma.playerItem.findMany({
+            where: ({ OR: [ { kdrPlayerId: player.id }, { AND: [ { userId: user.id }, { kdrId: kdr.id } ] } ], NOT: { skillId: null } } as any)
+          })
+
+          const playerLootRows = await prisma.playerItem.findMany({
+            where: ({ AND: [ { OR: [ { kdrPlayerId: player.id }, { AND: [ { userId: user.id }, { kdrId: kdr.id } ] } ] }, { OR: [{ NOT: { cardId: null } }, { NOT: { itemId: null } }] } ] } as any)
+          })
+
+          const kdrStart = kdr?.createdAt ? new Date(kdr.createdAt).getTime() : 0
+          const shopState: any = player.shopState || {}
+          const chosenSkillIds = Array.isArray(shopState.chosenSkills) ? shopState.chosenSkills : []
+
+          // Load unique skill ids referenced to avoid N+1 queries
+          const allSkillIds = Array.from(new Set([
+            ...chosenSkillIds,
+            ...(playerSkillRows || []).map((r: any) => r.skillId).filter(Boolean),
+            ...(playerLootRows || []).map((r: any) => r.skillId).filter(Boolean)
+          ]))
+          
+          // Identify the player's starting Class Skills to mark them as non-sellable
+          let classSkillIds: string[] = []
+          if (player.classId) {
+            try {
+              const cls = await prisma.class.findUnique({ 
+                where: { id: player.classId }, 
+                include: { skills: { select: { id: true, type: true } } } 
+              })
+              if (cls) {
+                classSkillIds = (cls.skills || [])
+                  .filter((s: any) => s.type === 'MAIN' || s.type === 'INNATE' || s.type === 'STARTING')
+                  .map((s: any) => s.id)
+              }
+            } catch (e) {}
+          }
+
+          const skillRows = allSkillIds.length ? await prisma.skill.findMany({ where: { id: { in: allSkillIds as string[] } } }) : []
+          const skillById: Record<string, any> = {}
+          skillRows.forEach(s => { if (s && s.id) skillById[s.id] = s });
+
+          // Build a deduped skills map from playerItem rows that reference skills
+          // Prefer explicit playerSkillRows (all playerItem rows with skillId),
+          // and include any inventory playerLootRows that reference a skill as fallback.
+          const skillsMap: Record<string, any> = {};
+
+          // Primary source: playerSkillRows (all playerItem rows that have skillId)
+          ;(playerSkillRows || []).forEach((pl: any) => {
+            if (!pl || !pl.skillId) return
+            const sid = pl.skillId
+            const base = skillById[sid] || null
+            const isBaseSellable = base ? (base.isSellable !== false) : true
+            const isCore = classSkillIds && classSkillIds.indexOf(sid) !== -1
+            const isSellable = isBaseSellable && !isCore
+            const playerSkillId = pl.id
+            skillsMap[sid] = { ...(skillsMap[sid] || {}), ...(base || {}), id: base?.id || sid, name: base?.name || pl.skillName || 'Skill', playerSkillId, _source: 'PLAYER_ITEM', isSellable }
+          })
+
+          // Secondary: inventory rows in this KDR that reference skills (playerLootRows)
+          ;(playerLootRows || []).forEach((pl: any) => {
+            if (!pl || !pl.skillId) return
+            const sid = pl.skillId
+            if (skillsMap[sid]) return // already accounted for
+            const base = skillById[sid] || null
+            const isBaseSellable = base ? (base.isSellable !== false) : true
+            const isCore = classSkillIds && classSkillIds.indexOf(sid) !== -1
+            const isSellable = isBaseSellable && !isCore
+            skillsMap[sid] = { ...(skillsMap[sid] || {}), ...(base || {}), id: base?.id || sid, name: base?.name || pl.skillName || 'Skill', playerItemId: pl.id, _source: 'INVENTORY', isSellable }
+          })
+
+          // Build inventory/treasures list for player's playerItem rows
+          const itemIds = Array.from(new Set((playerLootRows || []).map((pl: any) => pl.itemId).filter(Boolean)))
+          const cardIds = Array.from(new Set((playerLootRows || []).map((pl: any) => pl.cardId).filter(Boolean)))
+          const lootItemIds = Array.from(new Set((playerLootRows || []).map((pl: any) => pl.lootItemId).filter(Boolean)))
+
+          const [items, cards, lootItems] = await Promise.all([
+            itemIds.length ? prisma.item.findMany({ where: { id: { in: itemIds } } }) : [],
+            cardIds.length ? prisma.card.findMany({ where: { id: { in: cardIds } } }) : [],
+            lootItemIds.length ? prisma.lootItem.findMany({ where: { id: { in: lootItemIds } } }) : []
+          ])
+          const itemById = Object.fromEntries((items || []).map((it: any) => [it.id, it]))
+          const cardById = Object.fromEntries((cards || []).map((c: any) => [c.id, c]))
+          const lootById = Object.fromEntries((lootItems || []).map((l: any) => [l.id, l]))
+
+          const detailedInventory = (playerLootRows || []).map((pl: any) => {
+            const skill = pl.skillId ? (skillById[pl.skillId] || null) : null
+            const item = pl.itemId ? (itemById[pl.itemId] || null) : null
+            const card = pl.cardId ? (cardById[pl.cardId] || null) : null
+            const loot = pl.lootItemId ? (lootById[pl.lootItemId] || null) : null
+            const lootNameStr = pl.name || (card ? card.name : (skill ? skill.name : (loot ? loot.name : '')))
+            return {
+              ...pl,
+              card,
+              skill: skill ? { ...skill, isSellable: skill.isSellable } : null,
+              name: lootNameStr,
+              type: card ? (card.type || 'Card') : skill ? 'Skill' : (loot?.type || 'Loot Item'),
+              isSellable: !!(pl.itemId || (skill && skill.isSellable)),
+              isTreasure: !!(pl.itemId && itemById[pl.itemId] && String(itemById[pl.itemId].type || '').toUpperCase() === 'TREASURE')
+            }
+          })
+
+          // Split out treasures (explicit Item.type === TREASURE) from the general inventory
+          const treasures = detailedInventory.filter((pl: any) => !!pl.isTreasure)
+          const inventory = detailedInventory.filter((pl: any) => !pl.isTreasure)
+
+          const finalSkills = Object.values(skillsMap).filter((s: any) => s && s.isSellable)
+          try { console.debug('[DBG] getPlayerSkills', { playerId: player.id, playerSkillRows: (playerSkillRows || []).length, playerLootRows: (playerLootRows || []).length, allSkillIds: allSkillIds.length, finalSkills: finalSkills.length }) } catch (e) {}
+          // Include lightweight debug info to help front-end troubleshooting (temporary)
+          const debug = {
+            playerSkillRows: (playerSkillRows || []).length,
+            playerLootRows: (playerLootRows || []).length,
+            allSkillIds: allSkillIds.length,
+            returnedSkillIds: finalSkills.map((s: any) => s.id).slice(0, 20)
+          }
+          return res.status(200).json({ playerSkills: finalSkills, inventory, treasures, debug })
+        } catch (e) {
+          console.error('Failed to load playerSkills', e)
+          return res.status(500).json({ error: 'Failed to load player skills' })
+        }
+      }
+
+      case 'sellItem': {
+        // Sell an inventory item or a playerSkill for a flat amount (1 gold)
+        try {
+          const { type, id: sellId } = payload || {}
+          if (!type || !sellId) return res.status(400).json({ error: 'Missing sell parameters' })
+          const goldGain = 1
+
+          if (type === 'playerLoot' || type === 'playerItem') {
+            // Delete playerItem entry and credit gold
+            const pl = await prisma.playerItem.findFirst({ 
+              where: ({ id: sellId, OR: [ { kdrPlayerId: player.id }, { AND: [ { userId: user.id }, { kdrId: kdr.id } ] } ] } as any)
+            })
+            if (!pl) return res.status(404).json({ error: 'Inventory item not found' })
+
+            // Enforce isSellable for skills found in inventory
+            if (pl.skillId) {
+              const s = await prisma.skill.findUnique({ 
+                where: { id: pl.skillId }, 
+                select: { id: true, isSellable: true, type: true } 
+              })
+              if (s) {
+                let isCore = false
+                if (player.classId) {
+                  const cls = await prisma.class.findUnique({ 
+                    where: { id: player.classId }, 
+                    select: { skills: { select: { id: true, type: true } } } 
+                  })
+                  if (cls?.skills?.some(cs => cs.id === s.id && (cs.type === 'MAIN' || cs.type === 'INNATE' || cs.type === 'STARTING'))) {
+                    isCore = true
+                  }
+                }
+                if (s.isSellable === false || isCore) {
+                  return res.status(403).json({ error: 'This item cannot be sold' })
+                }
+              }
+            } else if (!pl.itemId) {
+              // Not a core skill, so if it doesn't have an itemId (LootItem reference), it is a core class card and is not sellable.
+              return res.status(403).json({ error: 'This item cannot be sold' })
+            }
+
+            await prisma.$transaction(async (tx) => {
+              // Re-verify the existence of the playerItem inside the transaction
+              const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
+              await tx.playerItem.delete({ where: { id: pl.id } })
+              await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
+            })
+            const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            return res.status(200).json({ message: 'Item sold', player: attachPlayerKey(fresh) })
+          }
+
+          if (type === 'lootItem') {
+            // Sell by lootItemId (used when client only has purchase placeholders)
+            // or by itemId (for TREASUREs which are Item model instances)
+            
+            // First check if it's a TREASURE (Item model instance)
+            const item = await prisma.item.findUnique({ 
+              where: { id: sellId }
+            })
+            console.debug('[DBG] sellItem: lootItem payload', { sellId, itemFound: !!item, itemType: item?.type, playerId: player.id, userId: user.id, kdrId: kdr.id })
+
+            const goldGainTreasure = 1 // Corrected: All items sell for 1 gold
+
+            if (item && String(item.type || '').toUpperCase() === 'TREASURE') {
+              // It's a treasure. Find corresponding playerItem.
+              const foundPl = await prisma.playerItem.findFirst({ 
+                where: ({ OR: [ { kdrPlayerId: player.id, itemId: item.id }, { AND: [ { userId: user.id }, { kdrId: kdr.id }, { itemId: item.id } ] } ] } as any)
+              })
+              console.debug('[DBG] sellItem: lootItem playerItem lookup', { sellId, itemId: item.id, foundPl: !!foundPl, foundPlId: foundPl?.id })
+              if (!foundPl) {
+                // Log any playerItem rows referencing this item for further diagnosis
+                try {
+                  const candidates = await prisma.playerItem.findMany({ where: { itemId: item.id } })
+                  console.debug('[DBG] sellItem: lootItem candidate playerItems for itemId', { itemId: item.id, candidatesCount: (candidates || []).length, candidateIds: (candidates || []).map(c => c.id) })
+                } catch (e) {}
+                return res.status(404).json({ error: 'Treasure not found in your inventory' })
+              }
+              
+              await prisma.$transaction(async (tx) => {
+                const check = await tx.playerItem.findUnique({ where: { id: foundPl.id } })
+                if (!check) throw new Error('ALREADY_SOLD')
+
+                await tx.playerItem.delete({ where: { id: foundPl.id } })
+                
+                // FIX: Remove from shopState.purchases if it's there, to ensure immediate UI removal in the modal
+                const currentPurchases = Array.isArray(shopState.purchases) ? [...shopState.purchases] : []
+                const newPurchases = currentPurchases.filter((p: any) => p.itemId !== item.id && p.id !== item.id)
+                const newState = { ...shopState, purchases: newPurchases }
+                
+                await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure }, shopState: newState } })
+              })
+              const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+              return res.status(200).json({ message: 'Treasure sold', player: attachPlayerKey(fresh) })
+            }
+
+            // Fallback for legacy lootItem (LootItem model)
+            const loot = await prisma.lootItem.findUnique({ 
+              where: { id: sellId }
+            })
+            if (!loot) return res.status(404).json({ error: 'Loot item not found' })
+
+            // Check sellability
+            if (loot.skillId) {
+              const s = await prisma.skill.findUnique({ where: { id: loot.skillId }, select: { isSellable: true } })
+              if (s?.isSellable === false) return res.status(403).json({ error: 'This skill cannot be sold' })
+            }
+
+            const pl = await prisma.playerItem.findFirst({ 
+              where: ({ OR: [ { kdrPlayerId: player.id, OR: [{ cardId: loot.cardId || undefined }, { skillId: loot.skillId || undefined }] }, { AND: [ { userId: user.id }, { kdrId: kdr.id }, { OR: [{ cardId: loot.cardId || undefined }, { skillId: loot.skillId || undefined }] } ] } ] } as any)
+            })
+            if (!pl) return res.status(404).json({ error: 'Inventory item not found for lootItemId' })
+            await prisma.$transaction(async (tx) => {
+              const check = await tx.playerItem.findUnique({ where: { id: pl.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
+              await tx.playerItem.delete({ where: { id: pl.id } })
+              await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
+            })
+            const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            return res.status(200).json({ message: 'Item sold', player: attachPlayerKey(fresh) })
+          }
+
+          if (type === 'playerSkill') {
+            // First check if it is an inventory-based skill (Loot pools or manual adds)
+            let ps = await prisma.playerItem.findFirst({ 
+              where: { id: sellId, userId: user.id, NOT: { skillId: null } }
+            })
+            
+            // If not found by row ID, it might be a Shop-Picked skill (represented as skillId in chosenSkills)
+            if (!ps) {
+              const shopSkills = Array.isArray(shopState.chosenSkills) ? shopState.chosenSkills : []
+              const sid = sellId // In this case, sellId passed IS the skill UUID
+              if (shopSkills.includes(sid)) {
+                // Check if sellable
+                const s = await prisma.skill.findUnique({ where: { id: sid } })
+                if (s?.isSellable === false) return res.status(403).json({ error: 'This skill is not sellable' })
+
+                // Remove from shopState
+                const newChosen = shopSkills.filter((id: string) => id !== sid)
+                const newState = { ...shopState, chosenSkills: newChosen }
+                
+                await prisma.$transaction(async (tx) => {
+                  const check = await tx.kDRPlayer.findUnique({ where: { id: player.id } })
+                  const checkState = (check?.shopState as any) || {}
+                  const checkSkills = Array.isArray(checkState.chosenSkills) ? checkState.chosenSkills : []
+                  if (!checkSkills.includes(sid)) throw new Error('ALREADY_SOLD')
+
+                  await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState, gold: { increment: goldGain } } })
+                })
+                const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+                return res.status(200).json({ message: 'Shop skill sold', player: attachPlayerKey(fresh) })
+              }
+              return res.status(404).json({ error: 'Skill not found in inventory or shop picks' })
+            }
+
+            // Enforce sellability for inventory-based playerItems
+            if (ps.skillId) {
+              const s = await prisma.skill.findUnique({ where: { id: ps.skillId }, select: { isSellable: true, id: true, type: true } })
+              if (s) {
+                let isCore = false
+                if (player.classId) {
+                  const cls = await prisma.class.findUnique({ 
+                    where: { id: player.classId }, 
+                    select: { skills: { select: { id: true, type: true } } } 
+                  })
+                  if (cls?.skills?.some(cs => cs.id === s.id && (cs.type === 'MAIN' || cs.type === 'INNATE' || cs.type === 'STARTING'))) {
+                    isCore = true
+                  }
+                }
+                if (s.isSellable === false || isCore) {
+                  return res.status(403).json({ error: 'This skill cannot be sold' })
+                }
+              }
+            }
+            
+            await prisma.$transaction(async (tx) => {
+              const check = await tx.playerItem.findFirst({ where: { id: ps.id } })
+              if (!check) throw new Error('ALREADY_SOLD')
+
+              await tx.playerItem.delete({ where: { id: ps.id } })
+              await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
+            })
+            const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            return res.status(200).json({ message: 'Skill sold', player: attachPlayerKey(fresh) })
+          }
+
+          return res.status(400).json({ error: 'Invalid sell type' })
+        } catch (e: any) {
+          console.error('Failed to sell item', e)
+          if (e.message === 'ALREADY_SOLD') {
+            return res.status(400).json({ error: 'Item already sold' })
+          }
+          return res.status(500).json({ error: 'Failed to sell item' })
+        }
+      }
+
+      default:
+        return res.status(400).json({ error: 'Unknown action' })
+    }
+  } catch (e: any) {
+    console.error('shop-v2 handler failed', e)
+    return res.status(500).json({ error: 'shop-v2 failed', detail: e?.message || String(e) })
+  }
+}

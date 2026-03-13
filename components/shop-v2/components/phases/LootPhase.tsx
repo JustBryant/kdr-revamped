@@ -2,7 +2,7 @@ import React, { useCallback, useState, useRef } from 'react'
 import { useShopContext } from '../../ShopContext'
 import LootPoolInstance from '../loot/LootPoolInstance'
 import LootPoolDetailModal from '../loot/LootPoolDetailModal'
-import useShopCaches from '../../../shop/useShopCaches'
+import useShopCaches from '../../utils/useShopCaches'
 import HoverTooltip from '../HoverTooltip'
 
 

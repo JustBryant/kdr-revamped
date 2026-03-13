@@ -376,7 +376,7 @@ model Item {
 model PlayerItem {
   id         String   @id @default(cuid())
   userId     String
-  itemId     String?
+  itemId     String? 
   qty        Int      @default(1)
   cardId     String?
   createdAt  DateTime @default(now())
