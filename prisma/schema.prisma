@@ -431,6 +431,8 @@ model KDR {
   format           Format?     @relation(fields: [formatId], references: [id])
   matches          KDRMatch[]
   players          KDRPlayer[]
+  // playerItems: link to PlayerItem records that reference this KDR (nullable on PlayerItem)
+  playerItems      PlayerItem[]
   rounds           KDRRound[]
 }
 
