@@ -112,7 +112,16 @@ export default function useCollaborative(
       // Explicit allowlist for essential message types/sections. Everything else
       // is treated as UI/noise and ignored at the hook level to avoid floods.
       const allowedTypes = new Set(['update', 'refresh'])
-      const allowedSections = new Set(['presence', 'control', 'kdr', 'match'])
+      // Allowlist of sections that should be broadcasted. Add editor sections
+      // so that in-page updates (deck, startingSkills, lootPools, tipSkills,
+      // classDetails) are actually sent to other collaborators.
+      const allowedSections = new Set([
+        'presence', 'control', 'kdr', 'match',
+        // editor sections
+        'deck', 'startingSkills', 'lootPools', 'tipSkills', 'classDetails',
+        // legacy names used elsewhere
+        'startingCards'
+      ])
 
       const bypass = msg?.force === true || allowedTypes.has(msg?.type || '') || allowedSections.has(msg?.section || '')
 
