@@ -400,6 +400,85 @@ export default function ClassEditor() {
     }
   }
 
+  // Precompute collaborators panel contents to avoid complex inline IIFE in JSX
+  const collabPeersElements = (() => {
+    const groups: Record<string, any> = {}
+    Object.entries(peers || {}).forEach(([k, v]) => {
+      const u = (v && v.user) || { name: k }
+      const key = (u.email || u.name || k)
+      const col = (v && v.color) || (() => { let s = (u.email || u.name || ''); let h = 0; for (let ii = 0; ii < s.length; ii++) h = (h * 31 + s.charCodeAt(ii)) % 360; return `hsl(${h} 70% 45%)` })()
+      if (!groups[key]) groups[key] = { user: u, color: col, areas: [] }
+      const p: any = v || {}
+      let label = ''
+      if (p.section === 'classDetails') {
+        const field = p.field
+        if (field === 'name') label = 'Class Name'
+        else if (field === 'skillName') label = 'Skill Name'
+        else if (field === 'skillDescription') label = 'Skill Description'
+        else if (field === 'questDescription') label = 'Legendary Quest'
+        else if (field === 'relicDescription') label = 'Relic Description'
+        else label = 'Class Details'
+      } else if (p.section === 'startingCards') {
+        if (p.itemId) {
+          const card = deck.find((d: any) => d.id === p.itemId)
+          label = card ? `Starting Card: ${card.name}` : `Starting Card (${p.itemId})`
+        } else label = 'Starting Cards'
+      } else if (p.section === 'lootPools') {
+        if (p.field === 'pool') {
+          const pool = lootPools.find((pl: any) => pl.id === p.poolId)
+          label = pool ? `Loot Pool: ${pool.name}` : `Loot Pool (${p.poolId})`
+        } else if (p.field === 'poolItem') {
+          const pool = lootPools.find((pl: any) => pl.id === p.poolId)
+          const item = pool?.items?.find((it: any) => it.id === p.itemId)
+          if (item) label = `Pool Item: ${item.type}${item.card?.name ? ' - ' + (item.card.name) : ''}`
+          else label = `Pool Item (${p.itemId})`
+        } else label = 'Loot Pools'
+      } else if (p.section === 'tipSkills') {
+        if (p.itemId) {
+          const s = tipSkills.find((t: any) => t.id === p.itemId)
+          label = s ? `Tip Skill: ${s.name}` : `Tip Skill (${p.itemId})`
+        } else label = 'Tip Skills'
+      } else if (p.section === 'deck') {
+        label = 'Deck Editor'
+      } else if (p.section) {
+        label = p.section
+      } else {
+        label = 'idle'
+      }
+      if (p.field && !label.includes(p.field)) label = label
+      if (!groups[key].areas.includes(label)) groups[key].areas.push(label)
+    })
+
+    const meKey = (me && (me.email || me.name)) || 'me'
+    if (!groups[meKey]) {
+      const myCol = (me && ((me.email || me.name) ? (() => { let s = (me.email || me.name || ''); let h = 0; for (let ii = 0; ii < s.length; ii++) h = (h * 31 + s.charCodeAt(ii)) % 360; return `hsl(${h} 70% 45%)` })() : undefined)) || '#666'
+      groups[meKey] = { user: me, color: myCol, areas: ['idle'] }
+    }
+
+    return Object.values(groups).map((g: any, idx: number) => (
+      <div key={idx} className="flex items-start space-x-3">
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ background: g.color || '#444' }}>
+          {g.user?.image ? <img src={g.user.image} className="w-full h-full object-cover" alt={g.user.name || 'U'} /> : <div className="text-white text-sm font-bold flex items-center justify-center">{(g.user && (g.user.name || '') || '?')[0]}</div>}
+        </div>
+        <div className="flex-1">
+          <div className="font-medium truncate" style={{ color: g.color || undefined }}>{g.user?.name || 'Unknown'}</div>
+          <div className="text-xs text-gray-500 space-y-0.5 mt-1">
+            {g.areas.map((a: string, i: number) => (<div key={i} className="truncate">{a}</div>))}
+          </div>
+        </div>
+      </div>
+    ))
+  })()
+
+  const outlineFor = (section: string) => {
+    try {
+      const p = Object.values(peers || {}).find((x: any) => x.section === section) || {}
+      return p.color ? `3px solid ${p.color}` : undefined
+    } catch (e) {
+      return undefined
+    }
+  }
+
   return (
     <>
       <Head>
@@ -560,87 +639,19 @@ export default function ClassEditor() {
               selectedCard={legendaryMonster}
               onChange={setLegendaryMonster}
             />
-            {/* Collab Peers Panel */}
-            <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-bold">Collaborators</div>
-                <div className="text-xs text-gray-500">{clients} online</div>
-              </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+            {/* Collab Peers Panel (show only when multiple clients present) */}
+            {typeof clients === 'number' && clients > 1 && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold">Collaborators</div>
+                  <div className="text-xs text-gray-500">{clients} online</div>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                 {/* Build grouped view of presences by user */}
-                {(() => {
-                  const groups: Record<string, any> = {}
-                  Object.entries(peers).forEach(([k, v]) => {
-                    const u = (v && v.user) || { name: k }
-                    const key = (u.email || u.name || k)
-                    const col = (v && v.color) || (()=>{let s=(u.email||u.name||''); let h=0; for(let ii=0;ii<s.length;ii++)h=(h*31+s.charCodeAt(ii))%360; return `hsl(${h} 70% 45%)`})()
-                    if (!groups[key]) groups[key] = { user: u, color: col, areas: [] }
-                    // derive a human readable label for this presence
-                    const p: any = v || {}
-                    let label = ''
-                    if (p.section === 'classDetails') {
-                      const field = p.field
-                      if (field === 'name') label = 'Class Name'
-                      else if (field === 'skillName') label = 'Skill Name'
-                      else if (field === 'skillDescription') label = 'Skill Description'
-                      else if (field === 'questDescription') label = 'Legendary Quest'
-                      else if (field === 'relicDescription') label = 'Relic Description'
-                      else label = 'Class Details'
-                    } else if (p.section === 'startingCards') {
-                      if (p.itemId) {
-                        const card = deck.find((d:any)=>d.id===p.itemId)
-                        label = card ? `Starting Card: ${card.name}` : `Starting Card (${p.itemId})`
-                      } else label = 'Starting Cards'
-                    } else if (p.section === 'lootPools') {
-                      if (p.field === 'pool') {
-                        const pool = lootPools.find((pl:any)=>pl.id===p.poolId)
-                        label = pool ? `Loot Pool: ${pool.name}` : `Loot Pool (${p.poolId})`
-                      } else if (p.field === 'poolItem') {
-                        const pool = lootPools.find((pl:any)=>pl.id===p.poolId)
-                        const item = pool?.items?.find((it:any)=>it.id===p.itemId)
-                        if (item) label = `Pool Item: ${item.type}${item.card?.name? ' - ' + (item.card.name): ''}`
-                        else label = `Pool Item (${p.itemId})`
-                      } else label = 'Loot Pools'
-                    } else if (p.section === 'tipSkills') {
-                      if (p.itemId) {
-                        const s = tipSkills.find((t:any)=>t.id===p.itemId)
-                        label = s ? `Tip Skill: ${s.name}` : `Tip Skill (${p.itemId})`
-                      } else label = 'Tip Skills'
-                    } else if (p.section === 'deck') {
-                      label = 'Deck Editor'
-                    } else if (p.section) {
-                      label = p.section
-                    } else {
-                      label = 'idle'
-                    }
-                    // include field-specific cursor info
-                    if (p.field && !label.includes(p.field)) label = label
-                    if (!groups[key].areas.includes(label)) groups[key].areas.push(label)
-                  })
-
-                  // ensure the current user is included
-                  const meKey = (me && (me.email || me.name)) || 'me'
-                  if (!groups[meKey]) {
-                    const myCol = (me && ((me.email||me.name) ? (()=>{let s=(me.email||me.name||''); let h=0; for(let ii=0;ii<s.length;ii++)h=(h*31+s.charCodeAt(ii))%360; return `hsl(${h} 70% 45%)`})() : undefined)) || '#666'
-                    groups[meKey] = { user: me, color: myCol, areas: ['idle'] }
-                  }
-
-                  return Object.values(groups).map((g:any, idx:number) => (
-                    <div key={idx} className="flex items-start space-x-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ background: g.color || '#444' }}>
-                        {g.user?.image ? <img src={g.user.image} className="w-full h-full object-cover" alt={g.user.name||'U'} /> : <div className="text-white text-sm font-bold flex items-center justify-center">{(g.user && (g.user.name||'') || '?')[0]}</div>}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium truncate" style={{ color: g.color || undefined }}>{g.user?.name || 'Unknown'}</div>
-                        <div className="text-xs text-gray-500 space-y-0.5 mt-1">
-                          {g.areas.map((a:string, i:number)=>(<div key={i} className="truncate">{a}</div>))}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                })()}
+                {collabPeersElements}
+                </div>
               </div>
-            </div>
+              )}
           </div>
         </div>
         {/* Skill Forms for main skill and relic */}

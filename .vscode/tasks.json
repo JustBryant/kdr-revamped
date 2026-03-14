@@ -1,11 +1,4 @@
 {
 	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Run Collab Server",
-			"type": "shell",
-			"command": "node scripts/collab-server.js",
-			"isBackground": true
-		}
-	]
+	"tasks": []
 }

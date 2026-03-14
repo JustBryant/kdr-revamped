@@ -124,10 +124,26 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
   const handleSave = () => {
     onChange(editValues)
     setActiveSection(null)
+    // announce we've stopped editing this section
+    try {
+      if (collabSend) collabSend({ section: 'presence', data: { section: 'classDetails', field: activeSection, user: me, status: 'stop' }, ts: Date.now() })
+    } catch (e) {}
   }
 
   const handleChange = (key: keyof ClassDetails, value: string) => {
     setEditValues(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleFocusInput = (field: string, el: HTMLInputElement | HTMLTextAreaElement | null) => {
+    try {
+      sendPresenceForElement(field, el)
+    } catch (e) {}
+  }
+
+  const handleBlurInput = (field: string) => {
+    try {
+      if (collabSend) collabSend({ section: 'presence', data: { section: 'classDetails', field, user: me, status: 'stop' }, ts: Date.now() })
+    } catch (e) {}
   }
 
   const renderModalContent = () => {
@@ -154,6 +170,9 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
               type="text"
               value={editValues.name}
               onChange={(e) => handleChange('name', e.target.value)}
+              onFocus={(e) => handleFocusInput('name', e.currentTarget)}
+              onKeyUp={(e) => handleFocusInput('name', e.currentTarget)}
+              onBlur={() => handleBlurInput('name')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
               placeholder="e.g. Pyromancer"
               autoFocus
@@ -213,6 +232,9 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
                 type="text"
                 value={editValues.skillName}
                 onChange={(e) => handleChange('skillName', e.target.value)}
+                onFocus={(e) => handleFocusInput('skillName', e.currentTarget)}
+                onKeyUp={(e) => handleFocusInput('skillName', e.currentTarget)}
+                onBlur={() => handleBlurInput('skillName')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g. Fireball"
                 autoFocus
@@ -238,6 +260,9 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
               <textarea
                 value={editValues.skillDescription}
                 onChange={(e) => handleChange('skillDescription', e.target.value)}
+                onFocus={(e) => handleFocusInput('skillDescription', e.currentTarget)}
+                onKeyUp={(e) => handleFocusInput('skillDescription', e.currentTarget)}
+                onBlur={() => handleBlurInput('skillDescription')}
                 rows={5}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe what the skill does..."
@@ -275,6 +300,9 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
             <textarea
               value={editValues.questDescription}
               onChange={(e) => handleChange('questDescription', e.target.value)}
+              onFocus={(e) => handleFocusInput('questDescription', e.currentTarget)}
+              onKeyUp={(e) => handleFocusInput('questDescription', e.currentTarget)}
+              onBlur={() => handleBlurInput('questDescription')}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               placeholder="Describe the quest requirements and reward..."
@@ -304,6 +332,9 @@ export default function ClassDetailsEditor({ details, onChange, onEditSkillExtra
             <textarea
               value={editValues.relicDescription}
               onChange={(e) => handleChange('relicDescription', e.target.value)}
+              onFocus={(e) => handleFocusInput('relicDescription', e.currentTarget)}
+              onKeyUp={(e) => handleFocusInput('relicDescription', e.currentTarget)}
+              onBlur={() => handleBlurInput('relicDescription')}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               placeholder="Describe the relic's effects..."

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, DeckCard, Skill, SkillModification } from '../../types/class-editor'
-import CardDescription from './shared/CardDescription'
 import CardPreview from './shared/CardPreview'
 import SkillForm from './shared/SkillForm'
-import CardGallery from './CardGallery'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
 import HoverTooltip from '../shop-v2/components/HoverTooltip'
 import { RichTextRenderer } from '../RichText'
@@ -399,11 +397,13 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
   const handleAddSkill = () => {
     setEditingSkill(null)
     setIsSkillFormOpen(true)
+    try { if (send) send({ section: 'startingCards', data: { action: 'openSkillForm' , user: me }, ts: Date.now() }) } catch (e) {}
   }
 
   const handleEditSkill = (skill: Skill) => {
     setEditingSkill(skill)
     setIsSkillFormOpen(true)
+    try { if (send) send({ section: 'startingCards', data: { action: 'editSkill', skillId: skill.id, user: me }, ts: Date.now() }) } catch (e) {}
   }
 
   const handleSaveSkill = (skill: Skill) => {
@@ -613,13 +613,13 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
             {filtered.map(card => (
             <div 
               key={card.id} 
-              className="group relative flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-md hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
-                onMouseEnter={async (e) => { const enriched = await enrichCard(card); setHoveredCard(enriched); const key = String(card.id || card.konamiId || ''); setHoverTooltip({ visible: true, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY, idKey: key, cardLike: enriched, skills: [] }); }}
+              className="group relative flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-md hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+                onMouseEnter={async (e) => { const enriched = await enrichCard(card); setHoveredCard(enriched); const key = String(card.id || card.konamiId || ''); setHoverTooltip({ visible: true, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY, idKey: key, cardLike: enriched, skills: [] }); try { if (send) send({ section: 'startingCards', data: { field: 'cardHover', itemId: card.id, user: me }, ts: Date.now() }) } catch (e) {} }}
                 onMouseMove={(e) => { if (hoverTooltip?.visible) setHoverTooltip((h: any)=> ({ ...h, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })); }}
-                onMouseLeave={() => { setHoveredCard(null); setHoverTooltip({ visible: false }); }}
+                onMouseLeave={() => { setHoveredCard(null); setHoverTooltip({ visible: false }); try { if (send) send({ section: 'startingCards', data: { field: 'cardHover', itemId: card.id, user: me, status: 'stop' }, ts: Date.now() }) } catch (e) {} }}
             >
               <div className="flex items-center space-x-3 overflow-hidden">
-                    <div style={{ width: 40, flexShrink: 0 }}>
+                    <div style={{ width: 36, flexShrink: 0 }}>
                       <CardImage card={card} konamiId={card.konamiId} alt={card.name} className="w-full h-full object-cover" />
                     </div>
                 <div className="min-w-0">
@@ -736,8 +736,8 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
 
   // Modal View
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl flex overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: '72vh', minWidth: '1200px', marginTop: '12vh' }}>
         
         {/* Left Panel: Content */}
         <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700">
@@ -798,44 +798,64 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                     <div className="text-sm text-gray-600 dark:text-gray-400">Filters</div>
                     <button onClick={() => setFilterOpen(true)} className="text-sm px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Open Filters</button>
                     {filterOpen && (
-                      <DeckFiltersPanel
-                        isDark={isDark}
-                        setFilterOpen={setFilterOpen}
-                        selectedSubtypes={selectedSubtypes}
-                        toggleSubtype={toggleSubtype}
-                        selectedAttributes={selectedAttributes}
-                        toggleAttribute={toggleAttribute}
-                        TYPES={TYPES}
-                        selectedTypes={selectedTypes}
-                        toggleType={toggleType}
-                        selectedLevels={selectedLevels}
-                        toggleLevel={toggleLevel}
-                        selectedLinkRatings={selectedLinkRatings}
-                        toggleLinkRating={toggleLinkRating}
-                        selectedLinkArrows={selectedLinkArrows}
-                        toggleLinkArrow={toggleLinkArrow}
-                        hoveredLinkArrow={hoveredLinkArrow}
-                        setHoveredLinkArrow={setHoveredLinkArrow}
-                        linkArrowsMode={linkArrowsMode}
-                        selectedPendulumScales={selectedPendulumScales}
-                        togglePendulumScale={togglePendulumScale}
-                        atkMin={atkMin}
-                        atkMax={atkMax}
-                        setAtkMinFromInput={setAtkMinFromInput}
-                        setAtkMaxFromInput={setAtkMaxFromInput}
-                        sliderRef={sliderRef}
-                        startDrag={startDrag}
-                        defMin={defMin}
-                        defMax={defMax}
-                        setDefMinFromInput={setDefMinFromInput}
-                        setDefMaxFromInput={setDefMaxFromInput}
-                        defSliderRef={defSliderRef}
-                        defStartDrag={defStartDrag}
-                        selectedAbilities={selectedAbilities}
-                        toggleAbility={toggleAbility}
-                        resetAll={resetAll}
-                        onCancel={() => setFilterOpen(false)}
-                      />
+                      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                        <div className="w-[90vw] max-w-4xl max-h-[70vh] overflow-y-auto rounded-2xl bg-slate-900 border-2 border-emerald-500/20 shadow-lg p-6 custom-scrollbar relative">
+                          <div className="absolute top-4 right-4 z-50">
+                            <button
+                              onClick={() => setFilterOpen(false)}
+                              className="p-3 rounded-md bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 transition-all border border-white/10"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          <div className="mb-6 flex items-center gap-4">
+                            <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+                            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Advanced Filters</h2>
+                          </div>
+
+                          <DeckFiltersPanel
+                            isDark={isDark}
+                            setFilterOpen={setFilterOpen}
+                            selectedSubtypes={selectedSubtypes}
+                            toggleSubtype={toggleSubtype}
+                            selectedAttributes={selectedAttributes}
+                            toggleAttribute={toggleAttribute}
+                            TYPES={TYPES}
+                            selectedTypes={selectedTypes}
+                            toggleType={toggleType}
+                            selectedLevels={selectedLevels}
+                            toggleLevel={toggleLevel}
+                            selectedLinkRatings={selectedLinkRatings}
+                            toggleLinkRating={toggleLinkRating}
+                            selectedLinkArrows={selectedLinkArrows}
+                            toggleLinkArrow={toggleLinkArrow}
+                            hoveredLinkArrow={hoveredLinkArrow}
+                            setHoveredLinkArrow={setHoveredLinkArrow}
+                            linkArrowsMode={linkArrowsMode}
+                            selectedPendulumScales={selectedPendulumScales}
+                            togglePendulumScale={togglePendulumScale}
+                            atkMin={atkMin}
+                            atkMax={atkMax}
+                            setAtkMinFromInput={setAtkMinFromInput}
+                            setAtkMaxFromInput={setAtkMaxFromInput}
+                            sliderRef={sliderRef}
+                            startDrag={startDrag}
+                            defMin={defMin}
+                            defMax={defMax}
+                            setDefMinFromInput={setDefMinFromInput}
+                            setDefMaxFromInput={setDefMaxFromInput}
+                            defSliderRef={defSliderRef}
+                            defStartDrag={defStartDrag}
+                            selectedAbilities={selectedAbilities}
+                            toggleAbility={toggleAbility}
+                            resetAll={resetAll}
+                            onCancel={() => setFilterOpen(false)}
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
                   {/* Search Results Dropdown */}
@@ -855,10 +875,10 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
                             onMouseEnter={async (e) => { const enriched = await enrichCard(card); setHoveredCard(enriched); const key = String(card.id || card.konamiId || ''); setHoverTooltip({ visible: true, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY, idKey: key, cardLike: enriched, skills: [] }) }}
                             onMouseMove={(e) => { if (hoverTooltip?.visible) setHoverTooltip((h: any)=> ({ ...h, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })); }}
                             onMouseLeave={() => { setHoveredCard(null); setHoverTooltip({ visible: false }); }}
-                            className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors"
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors"
                           >
-                            <div style={{ width: 40, flexShrink: 0 }}>
-                              <CardImage src={(card as any).artworkUrl || (card as any).imageUrlCropped || getImageUrl(card.konamiId)} card={card} konamiId={card.konamiId} alt={card.name} />
+                            <div style={{ width: 36, flexShrink: 0 }}>
+                              <CardImage src={(card as any).artworkUrl || (card as any).imageUrlCropped || getImageUrl(card.konamiId)} card={card} konamiId={card.konamiId} alt={card.name} className="w-full h-full object-cover" />
                             </div>
                             <div>
                               <div className="font-bold text-gray-900 dark:text-white">{card.name}</div>
@@ -945,7 +965,7 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
 
         {/* Right Panel: Card Preview (Only visible in Cards tab) */}
         {activeTab === 'cards' && (
-          <div className="w-96 md:w-1/3 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center">
+          <div className="w-72 md:w-80 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-3 flex flex-col items-center">
             <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 w-full text-center">Card Preview</h3>
             {hoveredCard ? (
                   <div className="w-full flex-1 flex flex-col min-h-0">

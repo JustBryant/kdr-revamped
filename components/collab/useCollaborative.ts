@@ -65,18 +65,19 @@ export default function useCollaborative(
     // Handle generic 'update' events
     channel.bind('update', async (data: CollaborativeMessage) => {
       try {
+        // If payload was truncated, fetch the full payload from store
         if (data && (data as any).truncated && (data as any).refId) {
           const r = await fetch(`/api/collab/message/${encodeURIComponent((data as any).refId)}`)
           if (r.ok) {
             const full = await r.json()
-            if (onMessageRef.current) onMessageRef.current(full)
+            if (onMessageRef.current) onMessageRef.current({ payload: full, sender: (data as any).sender || 'pusher', ts: Date.now() })
             return
           }
         }
       } catch (e) {
         console.error('Failed to fetch truncated collab message:', e)
       }
-      if (onMessageRef.current) onMessageRef.current(data)
+      if (onMessageRef.current) onMessageRef.current({ payload: data, sender: (data as any).sender || 'pusher', ts: Date.now() })
     })
 
     // Handle match update events (legacy)
@@ -86,14 +87,14 @@ export default function useCollaborative(
           const r = await fetch(`/api/collab/message/${encodeURIComponent((data as any).refId)}`)
           if (r.ok) {
             const full = await r.json()
-            if (onMessageRef.current) onMessageRef.current({ type: 'match-update', ...full })
+            if (onMessageRef.current) onMessageRef.current({ payload: { type: 'match-update', ...full }, sender: (data as any).sender || 'pusher', ts: Date.now() })
             return
           }
         }
       } catch (e) {
         console.error('Failed to fetch truncated collab match message:', e)
       }
-      if (onMessageRef.current) onMessageRef.current({ type: 'match-update', ...data })
+      if (onMessageRef.current) onMessageRef.current({ payload: { type: 'match-update', ...data }, sender: (data as any).sender || 'pusher', ts: Date.now() })
     })
 
     // Handle presence/user update events
@@ -123,10 +124,16 @@ export default function useCollaborative(
       const now = Date.now()
       const last = lastSentRef.current.get(key) || 0
 
+      // Choose throttle window: presence and hover-type messages are higher-volume
+      const PRESENCE_THROTTLE = 800
+      const DEFAULT_THROTTLE = THROTTLE_MS
+      const throttleMs = (msg?.section === 'presence' || (msg?.section && String(msg.section).toLowerCase().includes('hover'))) ? PRESENCE_THROTTLE : DEFAULT_THROTTLE
+
       // Drop non-essential UI messages (no bypass and not allowed)
       if (!bypass) return
 
-      if (!bypass && now - last < THROTTLE_MS) {
+      // Apply throttling for identical message keys
+      if (now - last < throttleMs) {
         // skip high-frequency duplicate messages
         return
       }
