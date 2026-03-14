@@ -4,6 +4,7 @@ import SkillForm from './shared/SkillForm'
 import CardDescription from './shared/CardDescription'
 import CardPreview from './shared/CardPreview'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
+import HoverTooltip from '../shop-v2/components/HoverTooltip'
 import DeckFiltersPanel from '../DeckFiltersPanel'
 
 // Stable HoverPreview (module scope) to avoid remounting on parent re-renders
@@ -155,8 +156,9 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     }
   }
   const [pinnedCard, setPinnedCard] = useState<Card | null>(null)
-  const [hoverTooltip, setHoverTooltip] = useState<{ card: Card, modification?: any } | null>(null)
+  const [hoverTooltip, setHoverTooltip] = useState<any>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const tooltipScrollRef = React.useRef<HTMLDivElement | null>(null)
   const hoverHideTimeout = React.useRef<number | null>(null)
 
   // Controlled filter state (lifted from DeckBuilderOverlay)
@@ -343,7 +345,9 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     lastMouseRef.current = { x: e.clientX, y: e.clientY }
     if (mouseRafRef.current == null) {
       mouseRafRef.current = requestAnimationFrame(() => {
-        setMousePos({ x: lastMouseRef.current.x, y: lastMouseRef.current.y })
+        const nx = lastMouseRef.current.x, ny = lastMouseRef.current.y
+        setMousePos({ x: nx, y: ny })
+        try { if (hoverTooltip && hoverTooltip.visible) setHoverTooltip((h: any) => ({ ...(h || {}), x: nx, y: ny })) } catch (e) {}
         if (mouseRafRef.current != null) { cancelAnimationFrame(mouseRafRef.current); mouseRafRef.current = null }
       })
     }
@@ -592,13 +596,16 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                               if (!item.card) return
                               // prevent hide action if scheduled
                               cancelHoverHide()
-                              setMousePos({ x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })
+                              const nx = (e as React.MouseEvent).clientX
+                              const ny = (e as React.MouseEvent).clientY
+                              setMousePos({ x: nx, y: ny })
+                              const key = String(item.card.id || item.card.konamiId || '')
                               try {
                                 const full = await enrichCard(item.card)
-                                setHoverTooltip({ card: full, modification: matchingMod })
+                                setHoverTooltip({ visible: true, x: nx, y: ny, idKey: key, cardLike: full, skills: activePoolSkills, modification: matchingMod })
                                 try { if (send) send({ section: 'lootPools', data: { field: 'poolItemHover', poolId: pool.id, itemId: item.id, user: me }, ts: Date.now() }) } catch (e) {}
                               } catch (ex) {
-                                setHoverTooltip({ card: item.card, modification: matchingMod })
+                                setHoverTooltip({ visible: true, x: nx, y: ny, idKey: key, cardLike: item.card, skills: activePoolSkills, modification: matchingMod })
                                 try { if (send) send({ section: 'lootPools', data: { field: 'poolItemHover', poolId: pool.id, itemId: item.id, user: me }, ts: Date.now() }) } catch (e) {}
                               }
                             }}
@@ -968,10 +975,8 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
         initialSkill={editingSkill}
         formatVariant={formatVariant}
       />
-      {/* Tooltip like SkillForm (moved outside modal so it works anywhere) */}
-      {hoverTooltip && (
-        <HoverPreview card={hoverTooltip.card} modification={hoverTooltip.modification} skills={activePoolSkills} mousePos={mousePos} />
-      )}
+      {/* Shared HoverTooltip (moved outside modal so it works anywhere) */}
+      <HoverTooltip hoverTooltip={hoverTooltip || { visible: false }} cardDetailsCacheRef={cardCache} tooltipScrollRef={tooltipScrollRef} onTooltipEnter={() => {}} onTooltipLeave={() => {}} />
     </div>
   )
 }

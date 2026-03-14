@@ -69,6 +69,8 @@ export default function ClassEditor() {
     return null
   }, [id, slug])
 
+  
+
   const { send, clients, connected, url, lastPayload } = useCollaborative(collabRoom, (msg: any) => {
     if (!msg || !msg.payload) return
     const p = msg.payload
@@ -171,6 +173,19 @@ export default function ClassEditor() {
     }, 2000)
     return () => clearInterval(iv)
   }, [clients])
+
+  // Presence heartbeat: ensure peers remain visible (send lightweight presence every 3s)
+  useEffect(() => {
+    if (!send) return
+    const iv = setInterval(() => {
+      try {
+        send({ section: 'presence', data: { user: me, info: 'heartbeat' }, ts: Date.now() })
+      } catch (e) {
+        // ignore
+      }
+    }, 3000)
+    return () => clearInterval(iv)
+  }, [send, me])
 
   // debounce broadcasters
   useEffect(() => {
@@ -423,7 +438,8 @@ export default function ClassEditor() {
       const u = (v && v.user) || { name: k }
       const key = (u.email || u.name || k)
       const col = (v && v.color) || (() => { let s = (u.email || u.name || ''); let h = 0; for (let ii = 0; ii < s.length; ii++) h = (h * 31 + s.charCodeAt(ii)) % 360; return `hsl(${h} 70% 45%)` })()
-      if (!groups[key]) groups[key] = { user: u, color: col, areas: [] }
+      if (!groups[key]) groups[key] = { user: u, color: col, areas: [], lastSeen: v?.ts || Date.now() }
+      else groups[key].lastSeen = Math.max(groups[key].lastSeen || 0, v?.ts || Date.now())
       const p: any = v || {}
       let label = ''
       if (p.section === 'classDetails') {
@@ -473,11 +489,14 @@ export default function ClassEditor() {
 
     return Object.values(groups).map((g: any, idx: number) => (
       <div key={idx} className="flex items-start space-x-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ background: g.color || '#444' }}>
+        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white/10" style={{ background: g.color || '#444' }}>
           {g.user?.image ? <img src={g.user.image} className="w-full h-full object-cover" alt={g.user.name || 'U'} /> : <div className="text-white text-sm font-bold flex items-center justify-center">{(g.user && (g.user.name || '') || '?')[0]}</div>}
         </div>
         <div className="flex-1">
-          <div className="font-medium truncate" style={{ color: g.color || undefined }}>{g.user?.name || 'Unknown'}</div>
+          <div className="flex items-center justify-between">
+            <div className="font-medium truncate" style={{ color: g.color || undefined }}>{g.user?.name || 'Unknown'}</div>
+            <div className="text-xs text-gray-400 ml-2">{g.lastSeen ? `${Math.max(0, Math.round((Date.now() - g.lastSeen)/1000))}s` : ''}</div>
+          </div>
           <div className="text-xs text-gray-500 space-y-0.5 mt-1">
             {g.areas.map((a: string, i: number) => (<div key={i} className="truncate">{a}</div>))}
           </div>
@@ -485,6 +504,15 @@ export default function ClassEditor() {
       </div>
     ))
   })()
+
+  const visiblePeers = Object.values(peers || {}).filter((p: any) => {
+    try {
+      const u = (p && p.user) || {}
+      const key = (u.email || u.name) || ''
+      const myKey = (me && (me.email || me.name)) || 'me'
+      return key && key !== myKey
+    } catch (e) { return false }
+  }).length
 
   const outlineFor = (section: string) => {
     try {
@@ -655,9 +683,9 @@ export default function ClassEditor() {
               selectedCard={legendaryMonster}
               onChange={setLegendaryMonster}
             />
-            {/* Collab Peers Panel (show only when multiple clients present) */}
-            {typeof clients === 'number' && clients > 1 && (
-              <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            {/* Collab Peers Panel (show when other peers present) */}
+            {visiblePeers > 0 && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-bold">Collaborators</div>
                   <div className="text-xs text-gray-500">{clients} online</div>
