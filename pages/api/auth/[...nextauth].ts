@@ -62,6 +62,26 @@ export const authOptions: NextAuthOptions = {
         token.image = dbUser?.image || null
       }
 
+      // Ensure token.role is populated from the authoritative DB record when possible.
+      // This covers flows where the JWT is reused across requests and the provider
+      // user object doesn't include the `role` field.
+      try {
+        if (!token.role) {
+          const email = (token as any).email || (user as any)?.email
+          if (email) {
+            const db = await prisma.user.findUnique({ where: { email }, select: { role: true, image: true, name: true, id: true } })
+            if (db) {
+              token.role = db.role
+              token.image = token.image || db.image || null
+              token.name = token.name || db.name || null
+              token.sub = token.sub || db.id
+            }
+          }
+        }
+      } catch (e) {
+        console.error('JWT callback DB lookup failed', e)
+      }
+
       if (trigger === "update" && session?.user) {
         token.image = (session.user as any).image || null
         token.name = (session.user as any).name || token.name
