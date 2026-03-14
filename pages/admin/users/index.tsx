@@ -78,8 +78,14 @@ export default function UserManagement() {
         return
       }
 
-      // Optimistic update or refetch
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as any } : u))
+      // Use authoritative response from server to update local state
+      const updated = await res.json()
+      if (updated && updated.id) {
+        setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, role: updated.role } : u))
+      } else {
+        // Fallback: refetch the list to ensure UI matches DB
+        fetchUsers(searchQuery)
+      }
     } catch (error) {
       console.error('Failed to update role', error)
       alert('An error occurred')
