@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const cards = await prisma.card.findMany({
       where,
-      take: 10,
+      take: 15,
       select: {
         id: true,
         konamiId: true,
