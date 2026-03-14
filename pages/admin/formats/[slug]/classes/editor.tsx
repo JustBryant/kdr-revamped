@@ -86,14 +86,22 @@ export default function ClassEditor() {
     }
 
     // section updates: apply when different
-    try {
+      try {
       if (p.section === 'classDetails') {
-        const same = JSON.stringify(p.data) === JSON.stringify(classDetails)
-        if (!same) setClassDetails(p.data || classDetails)
+        if (p && typeof p.data === 'object' && !Array.isArray(p.data)) {
+          const same = JSON.stringify(p.data) === JSON.stringify(classDetails)
+          if (!same) setClassDetails(p.data || classDetails)
+        } else {
+          console.warn('Ignored invalid classDetails payload from collab:', p.data)
+        }
       }
       if (p.section === 'deck') {
-        const same = JSON.stringify(p.data) === JSON.stringify(deck)
-        if (!same) setDeck(p.data || [])
+        if (Array.isArray(p.data)) {
+          const same = JSON.stringify(p.data) === JSON.stringify(deck)
+          if (!same) setDeck(p.data)
+        } else {
+          console.warn('Ignored invalid deck payload from collab:', p.data)
+        }
       }
       if (p.section === 'startingSkills') {
         try {
@@ -108,16 +116,24 @@ export default function ClassEditor() {
         } catch (e) {
           // fallback to original behavior on error
           const same = JSON.stringify(p.data) === JSON.stringify(startingSkills)
-          if (!same) setStartingSkills(p.data || [])
+          if (!same && Array.isArray(p.data)) setStartingSkills(p.data || [])
         }
       }
       if (p.section === 'lootPools') {
-        const same = JSON.stringify(p.data) === JSON.stringify(lootPools)
-        if (!same) setLootPools(p.data || [])
+        if (Array.isArray(p.data)) {
+          const same = JSON.stringify(p.data) === JSON.stringify(lootPools)
+          if (!same) setLootPools(p.data)
+        } else {
+          console.warn('Ignored invalid lootPools payload from collab:', p.data)
+        }
       }
       if (p.section === 'tipSkills') {
-        const same = JSON.stringify(p.data) === JSON.stringify(tipSkills)
-        if (!same) setTipSkills(p.data || [])
+        if (Array.isArray(p.data)) {
+          const same = JSON.stringify(p.data) === JSON.stringify(tipSkills)
+          if (!same) setTipSkills(p.data)
+        } else {
+          console.warn('Ignored invalid tipSkills payload from collab:', p.data)
+        }
       }
     } catch (e) {
       // ignore
