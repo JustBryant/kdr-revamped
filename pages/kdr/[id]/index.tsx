@@ -1262,13 +1262,18 @@ export default function KdrViewPage() {
 
                     setLoading(true);
                     try {
-                      const res = await axios.post('/api/kdr/match/report', {
-                        matchId: selectedMatchForReport.id,
-                        scoreA: selectedMatchForReport.scoreA,
-                        scoreB: selectedMatchForReport.scoreB,
-                        replayUrl: selectedMatchForReport.replayUrl
-                      });
-                      setKdr(res.data);
+                        await axios.post('/api/kdr/match/report', {
+                          matchId: selectedMatchForReport.id,
+                          scoreA: selectedMatchForReport.scoreA,
+                          scoreB: selectedMatchForReport.scoreB,
+                          replayUrl: selectedMatchForReport.replayUrl
+                        });
+                        try {
+                          const fresh = await axios.get(`/api/kdr/${id}`)
+                          setKdr(fresh.data)
+                        } catch (err) {
+                          // ignore - global refresh will update shortly
+                        }
                       setReportOpen(false);
                       triggerGlobalRefresh();
                       triggerMatchUpdate();
