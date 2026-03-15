@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
+import { invalidateKdrCache } from '../../../../lib/redis'
 import { findKdr } from '../../../../lib/kdrHelpers'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -14,6 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const kdr = await findKdr(id)
     if (!kdr) return res.status(404).json({ error: 'KDR not found' })
+
+    const maybeInvalidate = async () => { try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache (available-classes)', e) } }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -145,6 +148,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       where: { id: player.id },
       data: { offeredClasses: finalClassIds } as any
     })
+
+    try { await maybeInvalidate() } catch (e) {}
 
     const classes = await prisma.class.findMany({
       where: { id: { in: finalClassIds } },

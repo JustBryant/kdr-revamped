@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { computeLevel } from '../../../../lib/shopHelpers'
 import { useShopContext } from '../../ShopContext'
 
@@ -130,14 +130,34 @@ const TrainingPhase: React.FC<Props> = ({ player, loading, setPlayer, call, appe
   // Keep the training buttons hidden when the server-stage indicates
   // we've moved past TRAINING. This ensures the UI doesn't remain
   // visible until a manual refresh.
+  // Guard against rapid stage flips that can cause the training-entry
+  // animation to play briefly when we actually want the buttons to stay hidden
+  // (for example during an optimistic level-up followed by a quick server sync).
+  const _lastStageRef = useRef<string | null>(null)
+  const _lastStageChangeTs = useRef<number>(0)
   React.useEffect(() => {
     try {
       const stage = (player && player.shopState && player.shopState.stage) ? player.shopState.stage : 'TRAINING'
+      const prev = _lastStageRef.current
+      const now = Date.now()
+      // If we're no longer in TRAINING, ensure buttons are hidden.
       if (stage !== 'TRAINING') {
         setTrainingButtonsExit(true)
       } else {
-        setTrainingButtonsExit(false)
+        // stage === 'TRAINING'
+        // Only allow the buttons to slide back in if the previous stage
+        // was also TRAINING or if enough time has passed since the last
+        // stage change (to avoid quick re-entry flashes).
+        const elapsed = now - (_lastStageChangeTs.current || 0)
+        if (prev === 'TRAINING' || elapsed > 800) {
+          setTrainingButtonsExit(false)
+        } else {
+          // keep hidden during short transitions
+          setTrainingButtonsExit(true)
+        }
       }
+      _lastStageRef.current = stage
+      _lastStageChangeTs.current = now
     } catch (e) {}
   }, [player && player.shopState && player.shopState.stage])
 

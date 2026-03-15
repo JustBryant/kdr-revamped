@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import crypto from 'crypto'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -96,6 +97,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await triggerPusher('kdr-lobby', 'update', { type: 'update', action: 'create' })
     } catch (e) {
       console.error('Failed to trigger Pusher for create:', e)
+    }
+
+    // Invalidate any cached KDR responses for this id/slug
+    try {
+      if (created && created.id) await invalidateKdrCache(created.id)
+      if (created && (created as any).slug) await invalidateKdrCache((created as any).slug)
+    } catch (e) {
+      console.warn('Failed to invalidate KDR cache after create', e)
     }
 
     return res.status(201).json(created)

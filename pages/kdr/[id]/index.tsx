@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
@@ -51,19 +52,39 @@ export default function KdrViewPage() {
   }
 
   const { send: sendUpdate, userIds, setUserId } = useCollaborative(id ? `kdr-${id}` : null, (msg) => {
-    // Both 'refresh' (legacy) and 'update' (standard) should trigger a fetch
-    if (msg.type === 'refresh' || msg.type === 'update') {
-      console.log('[collab] Remote trigger refresh', msg)
-      fetchKdr()
+    // Only trigger a full fetch for important events to avoid thundering updates.
+    try {
+      const t = msg?.type
+      const action = msg?.action || (msg?.meta && msg.meta.action) || null
+      const importantActions = new Set([
+        'join', 'leave', 'match-reported', 'start', 'kick', 'create', 'generate', 'round-generated', 'match-update'
+      ])
+
+      if (t === 'refresh') {
+        console.log('[collab] Remote refresh requested', msg)
+        fetchKdr()
+        return
+      }
+
+      if (t === 'update' && action && importantActions.has(action)) {
+        console.log('[collab] Remote important update', action, msg)
+        fetchKdr()
+      }
+    } catch (e) {
+      // ignore malformed messages
     }
   })
 
   // Hook into lobby too for cross-page refreshes
   const { send: sendLobbyUpdate, userIds: lobbyUserIds, setUserId: setLobbyUserId } = useCollaborative('kdr-lobby', (msg) => {
-    // Also listen for lobby updates while on the dashboard to keep player counts in sync
-    if (msg.type === 'update') {
-      fetchKdr()
-    }
+    // Listen for specific lobby actions that affect this view.
+    try {
+      const t = msg?.type
+      const action = msg?.action || (msg?.meta && msg.meta.action) || null
+      if (t === 'update' && (action === 'join' || action === 'leave' || action === 'create' || action === 'match-update')) {
+        fetchKdr()
+      }
+    } catch (e) {}
   })
 
   const currentPlayer = (kdr?.players || []).find((p: any) => p.user?.id === session?.user?.id || p.user?.email === session?.user?.email)
@@ -162,12 +183,9 @@ export default function KdrViewPage() {
     }
     fetch()
     
-    // Set up polling to keep the lobby state fresh without manual refreshes
-    const pollInterval = setInterval(fetch, 10000)
-    
+    // Initial fetch only; live updates come via Pusher/collab
     return () => { 
       mounted = false 
-      clearInterval(pollInterval)
     }
   }, [id])
 
@@ -865,10 +883,10 @@ export default function KdrViewPage() {
         </div>
       )}
 
-      {pickOpen && (
+      {pickOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setPickOpen(false)} />
-          <div className={`relative z-10 ${isDark ? 'bg-[#0b1220] border-white/10' : 'bg-white border-gray-200'} rounded-3xl shadow-2xl border p-8 w-full max-w-4xl transform transition-all overflow-hidden flex flex-col max-h-[90vh]`}> 
+          <div className={`relative z-10 ${isDark ? 'bg-[#0b1220] border-white/10' : 'bg-white border-gray-200'} rounded-3xl shadow-2xl border p-6 w-full max-w-2xl transform transition-all overflow-hidden flex flex-col max-h-[85vh] min-h-0`}> 
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-4xl font-black italic uppercase tracking-tighter text-indigo-500">Select your Class</h3>
@@ -879,23 +897,25 @@ export default function KdrViewPage() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pr-4 custom-scrollbar pb-4">
-              {classes.length === 0 && (
+            <div className="flex-1 min-h-0 pr-3">
+              <div className="max-h-[56vh] overflow-y-auto custom-scrollbar pb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5 text-sm">
+                  {classes.length === 0 && (
                 <div className="col-span-full py-20 text-center">
                    <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
                    <div className="text-lg font-bold opacity-30 uppercase tracking-tighter italic">Loading available identities...</div>
                 </div>
-              )}
-              {classes.map((c: any) => {
+                  )}
+                  {classes.map((c: any) => {
                 const imgSource = c.image 
                 ? (c.image.includes('/') ? c.image : `${CLASS_IMAGE_BASE_URL}/${c.image}`)
                 : getClassImageUrl(c.name)
                 
                 return (
-                  <div key={c.id} className={`group relative p-6 rounded-2xl border-2 transition-all duration-500 flex flex-col items-center text-center overflow-hidden h-full ${isDark ? 'border-white/5 bg-white/2 hover:border-indigo-500/50 hover:bg-indigo-500/5' : 'border-gray-100 bg-gray-50 hover:border-indigo-500/50 hover:bg-white hover:shadow-2xl'}`}>
+                  <div key={c.id} className={`group relative p-4 rounded-2xl border-2 transition-all duration-500 flex flex-col justify-between items-center text-center overflow-hidden h-full ${isDark ? 'border-white/5 bg-white/2 hover:border-indigo-500/50 hover:bg-indigo-500/5' : 'border-gray-100 bg-gray-50 hover:border-indigo-500/50 hover:bg-white hover:shadow-2xl'}`}>
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     
-                    <div className="w-48 h-48 mb-6 relative transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-2">
+                    <div className="w-36 h-36 mb-4 relative transition-all duration-400 transform group-hover:scale-105 group-hover:rotate-1">
                       <div className="absolute inset-0 bg-indigo-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
                       <img 
                         src={imgSource} 
@@ -911,17 +931,17 @@ export default function KdrViewPage() {
                       </div>
                     </div>
 
-                    <div className="mb-6 flex-1">
-                      <h4 className="text-2xl font-black uppercase italic tracking-tighter mb-2 group-hover:text-indigo-400 transition-colors leading-none">{c.name}</h4>
-                      <div className="h-0.5 w-12 bg-indigo-500/30 mx-auto rounded-full mb-4 group-hover:w-20 transition-all duration-500" />
-                      <p className="text-xs opacity-40 font-medium leading-relaxed max-w-[200px] mx-auto line-clamp-3">
+                    <div className="mb-2 flex-1 min-h-0 flex flex-col justify-start">
+                      <h4 className="text-xl font-black uppercase italic tracking-tighter mb-1 group-hover:text-indigo-400 transition-colors leading-none">{c.name}</h4>
+                      <div className="h-0.5 w-12 bg-indigo-500/30 mx-auto rounded-full mb-2 group-hover:w-20 transition-all duration-500" />
+                      <p className="text-xs opacity-40 font-medium leading-relaxed max-w-[200px] mx-auto line-clamp-3 mb-2">
                         {c.description || 'No description available for this class.'}
                       </p>
                     </div>
 
                     <button 
                       disabled={loading}
-                      className={`w-full py-3 rounded-xl font-black uppercase italic tracking-widest text-sm transition-all duration-300 relative overflow-hidden active:scale-95 ${isDark ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/30'}`}
+                      className={`w-full py-2 rounded-lg font-black uppercase italic tracking-widest text-sm transition-all duration-200 relative overflow-hidden active:scale-95 ${isDark ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/16' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/20'}`}
                       onClick={async (e) => { 
                         e.stopPropagation(); 
                         setLoading(true);
@@ -952,10 +972,13 @@ export default function KdrViewPage() {
                     </button>
                   </div>
                 )
-              })}
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {kdr && (

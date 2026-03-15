@@ -1,10 +1,27 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../../lib/prisma'
+import crypto from 'crypto'
+import { getJson, setJson } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
+    const cacheKey = `kdr:matches:recent`
+    const ifNone = req.headers['if-none-match'] as string | undefined
+
+    // If we have a cached payload, serve it (or 304 if ETag matches) without hitting DB
+    try {
+      const cached = await getJson(cacheKey)
+      if (cached && cached.etag) {
+        if (ifNone && ifNone === cached.etag) return res.status(304).end()
+        res.setHeader('ETag', cached.etag)
+        return res.status(200).json({ matches: cached.matches })
+      }
+    } catch (e) {
+      console.warn('Failed to read recent matches cache', e)
+    }
+
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
     const matches = await prisma.kDRMatch.findMany({
@@ -41,6 +58,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         replayUrl: m.replayUrl,
       }
     }))
+
+    // Compute ETag and cache the enriched result for a short TTL
+    try {
+      const payloadStr = JSON.stringify(enriched)
+      const etag = crypto.createHash('sha256').update(payloadStr).digest('hex')
+      await setJson(cacheKey, { etag, matches: enriched }, 3)
+      res.setHeader('ETag', etag)
+    } catch (e) {
+      console.warn('Failed to set recent matches cache', e)
+    }
 
     return res.status(200).json({ matches: enriched })
   } catch (error) {

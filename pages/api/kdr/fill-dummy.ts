@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
+import { invalidateKdrCache } from '../../../lib/redis'
 import { findKdr } from '../../../lib/kdrHelpers'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -53,6 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     const updated = await findKdr(kdr.id, { include: { players: { include: { user: { select: { id: true, name: true, image: true } } } }, createdBy: { select: { id: true, name: true, email: true } } } })
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache after fill-dummy', e) }
     return res.status(200).json(updated)
   } catch (err) {
     console.error('Failed to fill dummy players', err)

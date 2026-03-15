@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
+import { getJson, setJson } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -17,6 +18,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate')
       res.setHeader('Pragma', 'no-cache')
       res.setHeader('Expires', '0')
+
+      // Try short-lived Redis cache first (if configured). Cache stores
+      // the KDR payload common to all users (not currentPlayer).
+      const reqCacheKey = `kdr:resp:${id}`
+      const cached = await getJson(reqCacheKey)
+      if (cached) {
+        try {
+          const kdr = cached.kdr
+          const genericLootPools = cached.genericLootPools || []
+
+          // Attach currentPlayer for the requesting session user if present
+          let currentPlayer = null
+          try {
+            const userId = (session?.user as any)?.id
+            const userEmail = session?.user?.email
+            if (userId || userEmail) {
+              const user = await prisma.user.findFirst({
+                where: { OR: [
+                  { id: userId || undefined },
+                  { email: userEmail || undefined }
+                ]}
+              })
+              if (user) {
+                const cp = await (prisma.kDRPlayer as any).findFirst({ 
+                  where: { kdrId: kdr.id, userId: user.id }, 
+                  include: { 
+                    playerDeck: true, 
+                    playerClass: { select: { id: true, name: true, image: true } },
+                    user: { select: { id: true, name: true, email: true } } 
+                  } 
+                })
+                if (cp) currentPlayer = cp
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load currentPlayer', e)
+          }
+
+          const playersWithKey = (kdr.players || []).filter((p: any) => p.status === 'ACTIVE').map((p: any) => ({
+            ...p,
+            playerKey: (p.user?.id && kdr?.id) ? generatePlayerKey(p.user.id, kdr.id) : null
+          }))
+
+          const currentWithKey = currentPlayer && currentPlayer.status === 'ACTIVE' ? { ...currentPlayer, playerKey: (currentPlayer.user?.id && kdr?.id) ? generatePlayerKey(currentPlayer.user.id, kdr.id) : null } : null
+
+          return res.status(200).json({
+            ...kdr,
+            hasPassword: !!kdr.password,
+            players: playersWithKey,
+            currentPlayer: currentWithKey,
+            genericLootPools
+          })
+        } catch (e) {
+          console.error('Error serving cached KDR', e)
+          // fall through to fresh fetch
+        }
+      }
 
       const kdr = await findKdr(id, {
         include: {
@@ -118,6 +176,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Omit raw password from response, instead provide a boolean flag
       const { password: _, ...passlessKdr } = kdr
       const hasPassword = !!kdr.password
+
+      // Cache the common (non-user-specific) payload in Redis for a short TTL.
+      try {
+        const cacheKey = `kdr:resp:${kdr.id}`
+        await setJson(reqCacheKey, { kdr: passlessKdr, genericLootPools }, 3)
+        // also set canonical id key
+        if (cacheKey !== reqCacheKey) await setJson(cacheKey, { kdr: passlessKdr, genericLootPools }, 3)
+      } catch (e) {
+        // non-fatal
+      }
 
       return res.status(200).json({
         ...passlessKdr,

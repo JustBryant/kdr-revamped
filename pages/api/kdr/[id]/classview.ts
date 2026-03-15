@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../../lib/kdrHelpers'
+import { getJson, setJson } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -15,6 +16,25 @@ const { id, playerKey } = req.query
     if (!id || typeof id !== 'string') return res.status(400).json({ error: 'Missing id' })
 
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+    // Try short-lived Redis cache for expensive classview payloads.
+    const cacheKey = `kdr:resp:${id}:classview`
+    try {
+        const cached = await getJson(cacheKey)
+        if (cached) {
+            let currentPlayer = null
+            if (playerKey && typeof playerKey === 'string') {
+                currentPlayer = (cached.players || []).find((p: any) => p.playerKey === playerKey) || null
+            }
+            if (!currentPlayer && session?.user?.email) {
+                const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+                if (user) currentPlayer = (cached.players || []).find((p: any) => p.user?.id === user.id || p.userId === user.id) || null
+            }
+            return res.status(200).json({ ...cached, currentPlayer })
+        }
+    } catch (e) {
+        console.warn('Failed to read classview cache', e)
+    }
 
     try {
         // Minimal KDR payload optimized for the class page
@@ -196,7 +216,7 @@ const { id, playerKey } = req.query
             console.warn('Failed to load generic loot pools', e)
         }
 
-        return res.status(200).json({ 
+        const responsePayload = { 
             id: kdr.id, 
             name: kdr.name, 
             slug: kdr.slug, 
@@ -205,9 +225,10 @@ const { id, playerKey } = req.query
             settingsSnapshot: kdr.settingsSnapshot, 
             players, 
             rounds: kdr.rounds || [], 
-            currentPlayer, 
             genericLootPools 
-        })
+        }
+        try { await setJson(cacheKey, responsePayload, 3) } catch (e) { console.warn('Failed to set classview cache', e) }
+        return res.status(200).json({ ...responsePayload, currentPlayer })
     } catch (error) {
         console.error('Failed to fetch classview KDR', error)
         return res.status(500).json({ error: 'Failed to fetch KDR' })

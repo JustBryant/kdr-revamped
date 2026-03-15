@@ -445,6 +445,9 @@ model KDRPlayer {
   bye                 Boolean           @default(false)
   shopComplete        Boolean           @default(false)
   shopState           Json?
+  // Track which loot pools the player has seen and purchased at DB level
+  seenPools           String[]          @default([])
+  purchasedPools      String[]          @default([])
   gold                Int               @default(0)
   xp                  Int               @default(0)
   status              String            @default("ACTIVE")

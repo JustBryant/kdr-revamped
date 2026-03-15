@@ -178,6 +178,7 @@ export default function LootPhase({ lootExitPhase }: { lootExitPhase?: boolean }
         />
       )}
       <HoverTooltip hoverTooltip={hoverTooltip} cardDetailsCacheRef={cardDetailsCacheRef} tooltipScrollRef={tooltipScrollRef} />
+      {/* Sell/Finish controls moved to ShopPage chrome */}
     </div>
   )
 }

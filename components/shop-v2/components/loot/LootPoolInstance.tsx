@@ -88,6 +88,16 @@ export default function LootPoolInstance({
     displayedGroups[key] = animatingOutGroups.has(key) ? (frozenPools[key] || groups[key]) : groups[key]
   })
 
+  try {
+    // Debugging: log grouping and stock counts to help diagnose missing tiers
+    try {
+      const purchasesList = (player?.shopState?.purchases || []).map((p: any) => ({ lootPoolId: String(p.lootPoolId || p.poolId || p.itemId || ''), source: p.source, name: p.name }))
+      const groupPools: Record<string, any[]> = {}
+      Object.keys(groups).forEach(k => { groupPools[k] = (groups[k] || []).map((p: any) => String(p.id)) })
+      console.debug('[SHOP DEBUG] loot groups', { sortedKeys, categoryStock, groupPools, purchases: purchasesList.slice(0,50) })
+    } catch (e) { console.debug('[SHOP DEBUG] loot groups logging failed', e) }
+  } catch (e) {}
+
   const tierOrderMap: Record<string, number> = { STARTER: 0, MID: 1, HIGH: 2 }
 
   return (

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -47,6 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         where: { id: exists.id },
         data: { status: 'ACTIVE' }
       })
+      try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache on re-activate', e) }
       return res.status(200).json({ message: 'Re-activated', player: attachPlayerKey(reactivated) })
     }
 
@@ -70,6 +72,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (e) {
       console.error('Failed to trigger Pusher for join:', e)
     }
+
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache on join', e) }
 
     // Award the per-KDR class pick once when joining, if a class was chosen
     if (chosenClassId) {

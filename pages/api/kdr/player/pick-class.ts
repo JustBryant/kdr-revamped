@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -109,6 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!stat) await prisma.playerClassStats.create({ data: { userId: user.id, classId: newClassId, picks: 1 } })
     else await prisma.playerClassStats.update({ where: { id: stat.id }, data: { picks: { increment: 1 } } })
 
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache after pick-class', e) }
     return res.status(200).json({ message: 'Class picked', player: attachPlayerKey(updated) })
   } catch (err) {
     console.error('Failed to pick class', err)

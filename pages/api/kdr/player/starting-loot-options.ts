@@ -70,6 +70,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .sort(() => 0.5 - Math.random())
       .slice(0, 2)
 
+    try {
+      // Persist that these packs were shown to the player (seenPools)
+      const existingSeenPools = Array.isArray((player as any).seenPools) ? [...(player as any).seenPools] : []
+      const packIds = (packsChoice || []).map(p => String(p.id))
+      const mergedSeenPools = Array.from(new Set([...(existingSeenPools || []), ...packIds]))
+
+      const prevState = (player.shopState as any) || {}
+      const prevSeen = Array.isArray(prevState.seen) ? [...prevState.seen.map((s:any)=>String(s))] : []
+      const mergedSeen = Array.from(new Set([...(prevSeen || []), ...packIds]))
+
+      await prisma.kDRPlayer.update({
+        where: { id: player.id },
+        data: {
+          seenPools: mergedSeenPools,
+          shopState: {
+            ...(prevState || {}),
+            seen: mergedSeen,
+            seenPools: mergedSeenPools
+          } as any
+        }
+      })
+    } catch (e) {
+      console.warn('[STARTING-LOOT] failed to persist seenPools', e)
+    }
+
     return res.status(200).json({
       skills: skillsChoice,
       packs: packsChoice

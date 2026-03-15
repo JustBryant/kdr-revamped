@@ -46,7 +46,10 @@ export default function LootPoolGroup({
 
   const purchases = player?.shopState?.purchases || []
   const categoryStock = (poolsInGroup || []).filter((p: any) => !purchases.some((pur: any) => String(pur.lootPoolId) === String(p.id))).length
-  if (categoryStock === 0 && !animatingOutGroups.has(keyId)) return null
+  // Show the group header even if all pools in the category have been purchased
+  // (this allows the UI to display Starter Packs headers and empty/refill slots).
+  // Previously we hid the whole group when categoryStock === 0 which made
+  // starter-class groups disappear entirely.
 
   const isRefilled = (poolsInGroup || []).some(
     (p: any) => !p.__seen && !purchases.some((pur: any) => String(pur.lootPoolId) === String(p.id))
@@ -137,16 +140,17 @@ export default function LootPoolGroup({
             const isPurchasedId = (id: any) => purchasedList.some((p: any) => String(p.lootPoolId) === String(id))
 
             // If the group is animating out, show the frozen pools as-is (for animation continuity).
-            // Otherwise, filter out pools that were purchased so they are removed/replaced immediately.
-            const displayPools = basePools.filter((pool: any) => animatingOutGroups.has(keyId) ? true : !isPurchasedId(pool.id))
+            // Otherwise, show all pools (including ones already purchased) but mark them as purchased
+            // so the UI can render a claimed/disabled state instead of hiding the group entirely.
+            const displayPools = basePools
 
             return displayPools.map((pool: any) => {
-              const isPurchased = animatingOutGroups.has(keyId) ? false : false
+              const isPurchased = animatingOutGroups.has(keyId) ? false : isPurchasedId(pool.id)
               return (
                 <LootPoolTile
                   key={pool.id}
                   pool={pool}
-                  isPurchased={isPurchased || animatingOutGroups.has(keyId)}
+                  isPurchased={isPurchased}
                   loading={loading}
                   onSelect={() => {
                     try { console.debug('[SHOP DEBUG] LootPoolGroup invoking openPoolViewer', { poolId: pool?.id, keyId, hasHandler: typeof openPoolViewer === 'function' }) } catch (e) {}

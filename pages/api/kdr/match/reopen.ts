@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr } from '../../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -44,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Revert match: clear winner and reset status to SCHEDULED
     const reverted = await prisma.kDRMatch.update({ where: { id: matchId }, data: { status: 'SCHEDULED', winnerId: null, scoreA: 0, scoreB: 0 } })
 
+    try { await invalidateKdrCache(round.kdrId) } catch (e) { console.warn('Failed to invalidate KDR cache after reopen', e) }
     // Adjust PlayerStats counters safely (do not go below zero)
     const safeAdjust = async (userId: string | undefined, deltaWins: number, deltaLosses: number, deltaGames: number) => {
       if (!userId) return
