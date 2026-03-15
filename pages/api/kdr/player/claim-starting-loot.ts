@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr } from '../../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -87,10 +88,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const mergedSeen = Array.from(new Set([...prevSeen.map((s: any) => String(s)), String(pack.id)]))
 
+    // Maintain DB-level purchasedPools and seenPools arrays as the canonical record
+    const existingPurchasedPools = Array.isArray((player as any).purchasedPools) ? [...(player as any).purchasedPools] : []
+    const mergedPurchasedPools = Array.from(new Set([...(existingPurchasedPools || []).map((p:any)=>String(p)), String(pack.id)]))
+    const existingSeenPools = Array.isArray((player as any).seenPools) ? [...(player as any).seenPools] : []
+    const mergedSeenPools = Array.from(new Set([...(existingSeenPools || []).map((p:any)=>String(p)), String(pack.id)]))
+
     await prisma.kDRPlayer.update({
       where: { id: player.id },
       data: {
         startingLootClaimed: true,
+        purchasedPools: mergedPurchasedPools,
+        seenPools: mergedSeenPools,
         shopState: {
           ...(prevState || {}),
           startingLoot: {
@@ -101,10 +110,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             claimedAt: new Date().toISOString()
           },
           purchases: mergedPurchases,
-          seen: mergedSeen
+          seen: mergedSeen,
+          purchasedPools: mergedPurchasedPools,
+          seenPools: mergedSeenPools
         }
       } as any
     })
+
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache after claim-starting-loot', e) }
 
     return res.status(200).json({ success: true, message: 'Starting loot claimed' })
   } catch (err) {

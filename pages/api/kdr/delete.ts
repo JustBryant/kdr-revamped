@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr } from '../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -26,6 +27,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Hard-delete: remove the KDR row so DB-level ON DELETE CASCADE
     // will remove related rows (PlayerItem, KDRPlayer, rounds, etc.).
     await prisma.kDR.delete({ where: { id: kdr.id } })
+
+    try {
+      await invalidateKdrCache(kdr.id)
+      if (kdr.slug) await invalidateKdrCache((kdr as any).slug)
+    } catch (e) {
+      console.warn('Failed to invalidate KDR cache after delete', e)
+    }
 
     return res.status(200).json({ success: true, deleted: true })
   } catch (error) {

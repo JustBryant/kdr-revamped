@@ -11,8 +11,6 @@ import LootTierUnlocks from './components/panels/LootTierUnlocks'
 import QuickClassButton from './components/panels/QuickClassButton'
 import ClassQuickView from './components/panels/ClassQuickView'
 import StartButton from './components/ui/StartButton'
-import FinishShopButton from './components/ui/FinishShopButton'
-import RerollAllButton from './components/ui/RerollAllButton'
 import useShopFlow from './flow/useShopFlow'
 import { computeLevel } from '../../lib/shopHelpers'
 import LevelUpAnimation from './components/animations/LevelUpAnimation'
@@ -29,13 +27,10 @@ function Inner({ kdrId }: { kdrId: string }) {
   const fullParentRef = useRef<HTMLDivElement | null>(null)
   const fullChildRef = useRef<HTMLDivElement | null>(null)
   const shopWindowRef = useRef<HTMLDivElement | null>(null)
-  const lootRef = useRef<HTMLDivElement | null>(null)
-  const quickWrapperRef = useRef<HTMLDivElement | null>(null)
   const quickBtnRef = useRef<HTMLButtonElement | null>(null)
   const [scale, setScale] = useState<number>(1)
   const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined)
   const [currentDesignWidth, setCurrentDesignWidth] = useState<number>(1600)
-  const [quickOffset, setQuickOffset] = useState<number | null>(null)
   const [rightColHeight, setRightColHeight] = useState<number | null>(null)
 
   useLayoutEffect(() => {
@@ -66,28 +61,7 @@ function Inner({ kdrId }: { kdrId: string }) {
     }
   }, [])
 
-  // Measure LootTierUnlocks and quick button to align them vertically
-  useLayoutEffect(() => {
-    const computeOffset = () => {
-      try {
-        const lootEl = lootRef.current
-        const quickEl = quickWrapperRef.current
-        const container = fullChildRef.current
-        if (!lootEl || !quickEl || !container) return
-        const lootRect = lootEl.getBoundingClientRect()
-        const containerRect = container.getBoundingClientRect()
-        const quickH = quickEl.offsetHeight || 0
-        // position quick button so its center aligns with loot element center
-        const desired = (lootRect.top - containerRect.top) + (lootRect.height / 2) - (quickH / 2)
-        setQuickOffset(Math.max(8, Math.round(desired)))
-      } catch (e) {
-        // ignore
-      }
-    }
-    computeOffset()
-    window.addEventListener('resize', computeOffset)
-    return () => { try { window.removeEventListener('resize', computeOffset) } catch (e) {} }
-  }, [scale])
+  // quick button ref exists for class quick view anchor
 
   // Measure ShopWindow height so right column can match and we can anchor top/bottom
   useLayoutEffect(() => {
@@ -108,7 +82,7 @@ function Inner({ kdrId }: { kdrId: string }) {
       try { ro.disconnect() } catch (e) {}
     }
   }, [scale, shopWindowRef?.current])
-  const { player, loading, startShop, setPlayer, call, appendHistory, kdr, delayTrainingUntil, addHistory, shopHistory, rerollLoot, lootExitPhase } = useShopContext()
+  const { player, loading, startShop, setPlayer, call, appendHistory, kdr, delayTrainingUntil, addHistory, shopHistory, rerollLoot, lootExitPhase, finishLootPhase } = useShopContext()
   const router = useRouter()
   const [sellOpen, setSellOpen] = useState(false)
   const [classDetails, setClassDetails] = useState<any | null>(null)
@@ -242,20 +216,7 @@ function Inner({ kdrId }: { kdrId: string }) {
                       <QuickClassButton ref={quickBtnRef} onClick={(e: any) => { e.stopPropagation(); openClassQuickView() }} classDetails={classDetails || player?.classDetails || player?.class} player={player} />
                   </div>
                   <div className="flex items-center space-x-4">
-                    {(player?.shopState?.stage === 'LOOT') && (
-                      <>
-                        <button
-                          onClick={() => setSellOpen(true)}
-                          className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-4 rounded-xl shadow-lg flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-amber-500/10 min-w-[120px]"
-                          style={{ transform: 'translateZ(0)' }}
-                        >
-                          <span className="text-xl leading-none font-black uppercase tracking-tighter">Sell</span>
-                          <span className="text-[10px] font-bold text-black/70 mt-1">Treasures & Skills</span>
-                        </button>
-                        <RerollAllButton />
-                        <FinishShopButton />
-                      </>
-                    )}
+                    {/* Controls moved into ShopWindow absolute area above */}
                   </div>
                 </div>
               </div>
@@ -292,89 +253,84 @@ function Inner({ kdrId }: { kdrId: string }) {
             </div>
 
             <div className="flex-1">
-                <div style={{ transform: 'translateY(60px)' }}>
+                <div style={{ transform: 'translateY(60px)', position: 'relative' }}>
                   <ShopWindow ref={shopWindowRef}>
-                <div className="flex items-start justify-center">
-                  {/* Loot pools are disabled in the v2 preview. */}
-                </div>
-                <div className="absolute left-6 right-6 z-10" style={{ top: '44px' }}>
-                  <ShopkeeperDialogue />
-                </div>
-                {player?.shopState?.stage === 'DONE' && (
-                  <div style={{ marginTop: '84px' }}>
-                    <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-                      <div className="text-4xl">👋</div>
-                      <h2 className="text-2xl font-bold text-white">Shop Complete!</h2>
-                      <p className="text-gray-400 max-w-sm">
-                        You've finished your shop session. You can now close this window or continue to review your gains.
-                      </p>
-                      <button
-                        onClick={() => router.push(`/kdr/${kdrId}`)}
-                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-8 py-3 rounded-lg shadow-lg"
-                      >
-                        Close Shop
-                      </button>
+                    <div className="flex items-start justify-center">
+                      {/* Loot pools are disabled in the v2 preview. */}
+                    </div>
+                    <div className="absolute left-6 right-6 z-10" style={{ top: '44px' }}>
+                      <ShopkeeperDialogue />
+                    </div>
+                    {player?.shopState?.stage === 'DONE' && (
+                      <div style={{ marginTop: '84px' }}>
+                        <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+                          <div className="text-4xl">👋</div>
+                          <h2 className="text-2xl font-bold text-white">Shop Complete!</h2>
+                          <p className="text-gray-400 max-w-sm">
+                            You've finished your shop session. You can now close this window or continue to review your gains.
+                          </p>
+                          <button
+                            onClick={() => router.push(`/kdr/${kdrId}`)}
+                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-8 py-3 rounded-lg shadow-lg"
+                          >
+                            Close Shop
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {flow.phase === 'SKILL_OFFER' ? (
+                      <div style={{ marginTop: '84px' }}>
+                        <SkillChoicePanel shopWindowRef={shopWindowRef} finishSkillOffer={flow.finishSkillOffer} />
+                      </div>
+                    ) : null}
+                    {flow.phase === 'STAT_POINT' ? (
+                      <div style={{ marginTop: '84px' }}>
+                        <StatPhase
+                          player={player}
+                          displayedStats={displayedStats}
+                          statPoints={statPoints}
+                          loading={loading}
+                          setPlayer={setPlayer}
+                          call={call}
+                          appendHistory={addHistory}
+                          finishStatPoint={flow.finishStatPoint}
+                          showStatOverlay={flow.showStatOverlay}
+                          shopWindowRef={shopWindowRef}
+                        />
+                      </div>
+                    ) : null}
+                    {player?.shopState?.stage === 'TRAINING' && !(delayTrainingUntil && Date.now() < delayTrainingUntil) ? (
+                      <div style={{ marginTop: '84px' }}>
+                        <TrainingPhase player={player} loading={loading} setPlayer={setPlayer} call={call} appendHistory={addHistory} onTrainingResult={flow.handleTrainingResult} />
+                      </div>
+                    ) : null}
+                    {player?.shopState?.stage === 'LOOT' ? (
+                      <div style={{ marginTop: '84px' }}>
+                        <LootPhase />
+                      </div>
+                    ) : null}
+                    {((player?.shopState?.stage === 'TREASURES') || ((player?.shopState?.treasureOffers || []).length > 0)) ? (
+                      <div style={{ marginTop: '84px' }}>
+                        <TreasurePhase shopWindowRef={shopWindowRef} />
+                      </div>
+                    ) : null}
+                    {/* Loot phase disabled in v2 preview */}
+                  </ShopWindow>
+
+                  {/* Absolute controls below the ShopWindow (aligned right) */}
+                  <div style={{ position: 'absolute', right: '18px', top: 'calc(100% + 12px)', zIndex: 50 }}>
+                    <div className="flex items-center space-x-3">
+                      <button onClick={() => setSellOpen(true)} className="px-4 py-2 bg-amber-600 text-white font-black text-[12px] uppercase tracking-widest rounded-lg hover:bg-amber-500">Sell</button>
+                      <button onClick={async () => { try { if (typeof finishLootPhase === 'function') await finishLootPhase() } catch (e) {} }} disabled={loading} className="px-4 py-2 bg-gray-800 text-white font-black text-[12px] uppercase tracking-widest rounded-lg disabled:opacity-50">Finish</button>
                     </div>
                   </div>
-                )}
-                {flow.phase === 'SKILL_OFFER' ? (
-                  <div style={{ marginTop: '84px' }}>
-                    <SkillChoicePanel shopWindowRef={shopWindowRef} finishSkillOffer={flow.finishSkillOffer} />
-                  </div>
-                ) : null}
-                {flow.phase === 'STAT_POINT' ? (
-                  <div style={{ marginTop: '84px' }}>
-                    <StatPhase
-                      player={player}
-                      displayedStats={displayedStats}
-                      statPoints={statPoints}
-                      loading={loading}
-                      setPlayer={setPlayer}
-                      call={call}
-                      appendHistory={addHistory}
-                      finishStatPoint={flow.finishStatPoint}
-                      showStatOverlay={flow.showStatOverlay}
-                      shopWindowRef={shopWindowRef}
-                    />
-                  </div>
-                ) : null}
-                {player?.shopState?.stage === 'TRAINING' && !(delayTrainingUntil && Date.now() < delayTrainingUntil) ? (
-                  <div style={{ marginTop: '84px' }}>
-                    <TrainingPhase player={player} loading={loading} setPlayer={setPlayer} call={call} appendHistory={addHistory} onTrainingResult={flow.handleTrainingResult} />
-                  </div>
-                ) : null}
-                {((player?.shopState?.stage === 'TREASURES') || ((player?.shopState?.treasureOffers || []).length > 0)) ? (
-                  <div style={{ marginTop: '84px' }}>
-                    <TreasurePhase shopWindowRef={shopWindowRef} />
-                  </div>
-                ) : null}
-                {player?.shopState?.stage === 'LOOT' ? (
-                  <div style={{ marginTop: '84px' }}>
-                    <LootPhase />
-                  </div>
-                ) : null}
-                  </ShopWindow>
                 </div>
               <div style={{ marginTop: '88px' }} className="flex items-center justify-between">
                 <div className="flex items-center">
                   <QuickClassButton ref={quickBtnRef} onClick={(e: any) => { e.stopPropagation(); openClassQuickView() }} classDetails={classDetails || player?.classDetails || player?.class} player={player} />
                 </div>
                 <div className="flex items-center space-x-4">
-                  {(player?.shopState?.stage === 'LOOT') && (
-                    <>
-                      <button
-                        onClick={() => setSellOpen(true)}
-                        className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-4 rounded-xl shadow-lg flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-amber-500/10 min-w-[120px]"
-                        style={{ transform: 'translateZ(0)' }}
-                      >
-                        <span className="text-xl leading-none font-black uppercase tracking-tighter">Sell</span>
-                        <span className="text-[10px] font-bold text-black/70 mt-1">Treasures & Skills</span>
-                      </button>
-                      {/* Reroll button: visible when player has CHA >= 2 (chaVal > 0) */}
-                        <RerollAllButton />
-                      <FinishShopButton />
-                    </>
-                  )}
+                  {/* Loot-phase controls removed for v2 rewrite */}
                 </div>
               </div>
             </div>

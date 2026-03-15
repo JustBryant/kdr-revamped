@@ -4,6 +4,7 @@ import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
 import { appendAudit } from '../../../lib/adminAudit'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -54,6 +55,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Mark player as kicked. Do not hard-delete to preserve history.
     await prisma.kDRPlayer.update({ where: { id: targetPlayerId }, data: { status: 'KICKED' } })
+
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache after kick', e) }
 
     // Trigger Pusher updates
     try {

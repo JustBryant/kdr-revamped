@@ -36,9 +36,18 @@ export async function persistStateForPlayer(opts: { playerId: string; roundNumbe
 
   const playerShopStateForUpdate = { ...existingPlayerState, ...newState, seen: mergedSeen, purchases: mergedPurchases }
 
+  // Also merge and persist top-level `seenPools` and `purchasedPools` arrays
+  const existingSeenPoolsFromPlayer: any[] = Array.isArray(currentPlayer?.seenPools) ? (currentPlayer as any).seenPools : []
+  const newSeenPoolsFromState: any[] = Array.isArray(newState?.seenPools) ? newState.seenPools : []
+  const mergedSeenPools = Array.from(new Set([...(existingSeenPoolsFromPlayer || []), ...(newSeenPoolsFromState || [])]))
+
+  const existingPurchasedPoolsFromPlayer: any[] = Array.isArray(currentPlayer?.purchasedPools) ? (currentPlayer as any).purchasedPools : []
+  const newPurchasedPoolsFromState: any[] = Array.isArray(newState?.purchasedPools) ? newState.purchasedPools : []
+  const mergedPurchasedPools = Array.from(new Set([...(existingPurchasedPoolsFromPlayer || []), ...(newPurchasedPoolsFromState || [])]))
+
   const updatedPlayer = await prisma.kDRPlayer.update({
     where: { id: playerId },
-    data: { shopState: playerShopStateForUpdate as any, shopComplete: isActuallyDone, lastShopRound: roundNumber },
+    data: { shopState: playerShopStateForUpdate as any, shopComplete: isActuallyDone, lastShopRound: roundNumber, seenPools: mergedSeenPools, purchasedPools: mergedPurchasedPools },
     include: { shopInstances: { where: { roundNumber } } }
   })
   return { updated: updatedPlayer, shopState: newState }

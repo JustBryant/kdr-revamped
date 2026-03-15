@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr } from '../../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../../lib/redis'
 import { sendKdrStartedEmail } from '../../../../lib/email'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -51,6 +52,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const updated = await findKdr(id, { include: { players: { include: { user: { select: { id: true, name: true, email: true, image: true } } } }, createdBy: { select: { id: true, name: true, email: true } } } })
+
+    try {
+      if (kdr && kdr.id) await invalidateKdrCache(kdr.id)
+      if (kdr && (kdr as any).slug) await invalidateKdrCache((kdr as any).slug)
+    } catch (e) {
+      console.warn('Failed to invalidate KDR cache after start', e)
+    }
     return res.status(200).json(updated)
   } catch (err) {
     console.error('Failed to start KDR', err)

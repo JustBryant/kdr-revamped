@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { appendAudit } from '../../../../lib/adminAudit'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -34,6 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Finalize match (do not set reportedById - field removed from schema)
     const updatedMatch = await prisma.kDRMatch.update({ where: { id: matchId }, data: { scoreA: typeof scoreA === 'number' ? scoreA : match.scoreA, scoreB: typeof scoreB === 'number' ? scoreB : match.scoreB, winnerId: winnerId || (typeof scoreA === 'number' && typeof scoreB === 'number' ? (scoreA > scoreB ? match.playerAId : (scoreB > scoreA ? match.playerBId : null)) : null), status: 'COMPLETED' } })
+
+    try { if (match && match.kdrId) await invalidateKdrCache(match.kdrId) } catch (e) { console.warn('Failed to invalidate KDR cache after match resolve', e) }
 
     // Log the override
     appendAudit({

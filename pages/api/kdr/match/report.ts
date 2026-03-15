@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { persistStateForPlayer } from '../../../../lib/shop-v2/state'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -138,6 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('Failed to ensure per-round shop instances after match report:', e)
       }
 
+      try { if (match.kdrId) await invalidateKdrCache(match.kdrId) } catch (e) { console.warn('Failed to invalidate KDR cache after match report', e) }
       return res.status(200).json({ message: 'Match result confirmed and finalized' })
     }
 

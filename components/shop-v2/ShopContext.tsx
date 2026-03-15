@@ -145,59 +145,34 @@ export function ShopProvider({ kdrId, children }: { kdrId: string; children: Rea
 
   const finishLootPhase = useCallback(async () => {
     try {
-      const call = (base as any).call
-      const loading = (base as any).loading
-      if (loading || !call) return
-      try { (window as any).__shopLootExitPhase = true } catch (e) {}
-      setLootExitPhase(true)
-      await new Promise((r) => setTimeout(r, 900))
-      try {
-        const res = await call('finish')
-        if (res && res.player) {
-          try { (base as any).setPlayer(res.player) } catch (e) {}
+      if (!base || typeof (base as any).call !== 'function') return
+      // Call server-side finish action and merge returned player snapshot
+      const res = await (base as any).call('finish', {}, { autoSetPlayer: false })
+      if (res && res.player) {
+        const incoming = res.player
+        try {
+          (base as any).setPlayer((prev: any) => {
+            if (!prev) return incoming
+            const merged = { ...(prev || {}), ...(incoming || {}) }
+            merged.shopState = { ...(prev?.shopState || {}), ...(incoming?.shopState || {}) }
+            return merged
+          })
+        } catch (e) {
+          try { (base as any).setPlayer(incoming) } catch (e) {}
         }
-      } catch (e) {
-        // swallow - call already logs
       }
-    } finally {
-      try { setLootExitPhase(false) } catch (e) {}
-      try { (window as any).__shopLootExitPhase = false } catch (e) {}
+    } catch (e) {
+      console.error('[ShopContext] finishLootPhase error', e)
     }
   }, [base])
 
   const rerollLoot = useCallback(async () => {
+    // Loot phase disabled in v2: noop to avoid server calls/animations
     try {
-      const call = (base as any).call
-      const loading = (base as any).loading
-      if (loading || !call) return
-      try { (window as any).__shopLootExitPhase = true } catch (e) {}
-      setLootExitPhase(true)
-      await new Promise((r) => setTimeout(r, 600))
-      try {
-        const res = await call('rerollLoot')
-        if (res && res.player) {
-          try {
-            // Perform a full legacy-style entrance reset so the pools animate in
-            resetEntranceAnimation({
-              prevOfferIdsRef,
-              animatedPoolsRef,
-              initialEntranceRef,
-              setLootTierTyping,
-              setLootLineProgress,
-              setLootPoolDropProgress,
-              setLootCardFlips,
-              setStartLootPoolAnimation,
-              setResyncKey
-            })
-          } catch (e) {}
-          try { (base as any).setPlayer(res.player) } catch (e) {}
-        }
-      } catch (e) {
-        // swallow - call already logs
-      }
-    } finally {
-      try { setLootExitPhase(false) } catch (e) {}
-      try { (window as any).__shopLootExitPhase = false } catch (e) {}
+      console.warn('[ShopContext] rerollLoot called but LOOT is disabled; no-op')
+      return
+    } catch (e) {
+      return
     }
   }, [base])
 

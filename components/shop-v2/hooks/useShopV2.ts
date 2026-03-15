@@ -1,6 +1,19 @@
 import { useState, useCallback, useEffect } from 'react'
 import axios from 'axios'
 
+// Previously forced LOOT -> DONE to disable the phase. Keep snapshots intact now.
+function sanitizeIncomingPlayer(p: any) {
+  try {
+    if (!p) return p
+    // Return a shallow copy so callers can merge safely, but preserve stage
+    const copy = { ...(p || {}) }
+    copy.shopState = { ...(p.shopState || {}) }
+    return copy
+  } catch (e) {
+    return p
+  }
+}
+
 export default function useShopV2({ kdrId }: { kdrId: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +31,7 @@ export default function useShopV2({ kdrId }: { kdrId: string }) {
         try { console.debug('[useShopV2.call] autoSetPlayer', { action, autoSetPlayer: opts.autoSetPlayer, playerStage: data.player?.shopState?.stage }) } catch (e) {}
         setPlayer((prev: any) => {
           try {
-            const incoming = data.player || {}
+            const incoming = sanitizeIncomingPlayer(data.player || {})
             if (!prev) return incoming
             const merged = { ...(prev || {}), ...(incoming || {}) }
             merged.shopState = { ...(prev?.shopState || {}), ...(incoming?.shopState || {}) }
@@ -70,7 +83,7 @@ export default function useShopV2({ kdrId }: { kdrId: string }) {
         const data = res.data || {}
         // API returns the KDR as the response body and may include `currentPlayer`
         setKdr(data)
-        if (data.currentPlayer) setPlayer(data.currentPlayer)
+        if (data.currentPlayer) setPlayer(sanitizeIncomingPlayer(data.currentPlayer))
       } catch (e: any) {
         // ignore
       } finally { if (mounted) setLoading(false) }
@@ -103,18 +116,7 @@ export default function useShopV2({ kdrId }: { kdrId: string }) {
     return () => { mounted = false }
   }, [player?.shopState?.shopkeeper?.id])
 
-  // Safety-net: if server advanced to LOOT but lootOffers are missing,
-  // fetch them so v2 components render the pools (mirrors legacy page behavior).
-  useEffect(() => {
-    try {
-      const stage = player?.shopState?.stage
-      const offers = player?.shopState?.lootOffers
-      if (stage === 'LOOT' && typeof offers === 'undefined') {
-        // fire-and-forget; call will update player when the server responds
-        call('lootOffers').catch(() => {})
-      }
-    } catch (e) {}
-  }, [player?.shopState?.stage, player?.shopState?.lootOffers, call])
+  // Loot disabled: removed safety-net that fetched loot offers from server
 
   // Ensure player snapshot is refreshed when the shop stage changes.
   // Some client actions use `autoSetPlayer: false` and rely on callers to setPlayer;
@@ -136,7 +138,7 @@ export default function useShopV2({ kdrId }: { kdrId: string }) {
             if (!mounted) return
             if (res && res.player) {
               try {
-                const incoming = res.player || {}
+                const incoming = sanitizeIncomingPlayer(res.player || {})
                 setPlayer((prev: any) => {
                   try {
                     if (!prev) return { ...incoming, _lastRefreshedStage: stage }

@@ -114,6 +114,8 @@ export default function LootTierUnlocks() {
               <div className="flex flex-col gap-2">
                 {tiers.map((tier) => {
                   const shortLabel = (tier === 'STARTER' ? 'Starter' : (tier === 'MID' ? 'Mid' : 'High'))
+                  const genericLabels: Record<string, string> = { STARTER: 'Staples', MID: 'Removal/Disruption', HIGH: 'Engine' }
+                  const displayLabel = isClass ? `${shortLabel} Packs` : (genericLabels[tier as keyof typeof genericLabels] || `${shortLabel} Packs`)
                   const minKey = `${isClass ? 'class' : 'generic'}${shortLabel}MinLevel`
                   const fallbackKey = `${isClass ? 'class' : 'generic'}StarterMinLevel`
                   const minLevel = Number(settings?.[minKey] ?? settings?.[fallbackKey] ?? 1)
@@ -157,7 +159,7 @@ export default function LootTierUnlocks() {
                   return (
                     <div key={tier} onClick={() => openTierModal(tier, isClass)} className="flex items-center justify-between p-3.5 bg-gray-900/30 rounded-lg hover:bg-gray-800/30 transition-all duration-150 cursor-pointer">
                       <div>
-                        <div className="text-base text-white font-medium">{shortLabel} Packs</div>
+                        <div className="text-base text-white font-medium">{displayLabel}</div>
                         <div className="text-xs text-gray-400">{unlocked ? 'Available' : `Requires Lvl ${minLevel}`}</div>
                         <div className="text-xs text-gray-300">Seen: {poolsCount} • Purchased: {purchasedCount} / {totalPools}</div>
                       </div>

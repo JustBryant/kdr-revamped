@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 function shuffle<T>(arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -136,7 +137,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    try { await invalidateKdrCache(canonicalKdrId) } catch (e) { console.warn('Failed to invalidate KDR cache after generate', e) }
     return res.status(201).json({ round: createdRound, matches: createdMatches })
+    
   } catch (error) {
     console.error('Failed to generate bracket:', error)
     return res.status(500).json({ error: 'Failed to generate bracket' })

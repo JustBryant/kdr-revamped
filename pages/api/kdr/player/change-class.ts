@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]'
 import { prisma } from '../../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -69,6 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await prisma.playerClassStats.update({ where: { id: newStat.id }, data: { picks: { increment: 1 } } })
     }
 
+    try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache after change-class', e) }
     return res.status(200).json({ message: 'Player class updated', player: attachPlayerKey(updatedPlayer) })
   } catch (error) {
     console.error('Error changing player class:', error)

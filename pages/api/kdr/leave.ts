@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { resolveKdrId } from '../../../lib/kdrHelpers'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -34,6 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Change status to LEFT.
     await prisma.kDRPlayer.update({ where: { id: player.id }, data: { status: 'LEFT' } })
+
+    try { await invalidateKdrCache(id) } catch (e) { console.warn('Failed to invalidate KDR cache on leave', e) }
 
     // Trigger Pusher updates
     try {
