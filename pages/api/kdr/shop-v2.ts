@@ -6,6 +6,7 @@ import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
 import { getPlayerShopModifiers, applyShopModifiers } from '../../../lib/shopModifiers'
 import { computeLevel, sampleArray, weightedPickIndex } from '../../../lib/shopHelpers'
 import { persistStateForPlayer, appendHistoryForPlayer } from '../../../lib/shop-v2/state'
+import { invalidateKdrCache } from '../../../lib/redis'
 
 // Minimal dedicated shop-v2 handler: implements the core actions used by
 // shop-v2 client (`get`, `start`, `appendHistory`, `train`, `chooseSkill`, `chooseStat`).
@@ -25,6 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const kdr = await findKdr(kdrId)
     if (!kdr) return res.status(404).json({ error: 'KDR not found' })
+
+    const maybeInvalidate = async () => {
+      try { await invalidateKdrCache(kdr.id) } catch (e) { console.warn('Failed to invalidate KDR cache (shop-v2)', e) }
+    }
 
     const latestRoundAtStart = await prisma.kDRRound.findFirst({ where: { kdrId: kdr.id }, orderBy: { number: 'desc' }, select: { id: true, number: true } })
     const currentRoundNumberAtStart = Number(latestRoundAtStart?.number || 0)
@@ -69,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const finalRound = shopInst ? shopInst.roundNumber : (p.lastShopRound || currentRoundNumberAtStart)
 
         try {
-          console.debug('[SHOP:ATTACH] merged purchases', { playerId: p.id, instCount: (instPurch || []).length, persistedCount: (persistedPurch || []).length, mergedCount: mergedPurchases.length })
+          console.log('[SHOP:ATTACH] merged purchases', { playerId: p.id, instCount: (instPurch || []).length, persistedCount: (persistedPurch || []).length, mergedCount: mergedPurchases.length })
         } catch (e) {}
         return { ...p, playerKey: key, shopState: { ...finalState, purchases: mergedPurchases, seen: mergedSeen }, shopComplete: finalComplete, lastShopRound: finalRound }
       } catch (e) { return p }
@@ -148,8 +153,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const newLevel = computeLevel((updatedPlayer.xp || 0), settings.levelXpCurve)
 
           // pick initial loot offers (provide full pool details so client can render them)
+          // Ensure class pools are restricted to the player's class and generic pools remain generic.
           const allPools = await prisma.lootPool.findMany({ include: { items: { include: { card: true, skill: true } } } })
-          const sampled = allPools.slice(0, Number(settings.genericStarterCount || 0))
+          const availablePools = allPools.filter((p: any) => {
+            const hasTreasure = (p.items || []).some((i: any) => {
+              const t = String(i.type || '').toUpperCase()
+              return t === 'TREASURE' || (t === 'CARD' && (String(i.card?.rarity || '').toUpperCase() === 'UR' || String(i.card?.rarity || '').toUpperCase() === 'SR'))
+            })
+            return !hasTreasure
+          })
+
+          const classPools = availablePools.filter((p: any) => p.classId && player.classId && p.classId === player.classId)
+          const genericPools = availablePools.filter((p: any) => !p.classId)
+          try { console.log('[SHOP-V2] start sampling', { playerId: player.id, playerClass: player.classId, classPools: classPools.length, genericPools: genericPools.length, classStarterCount: Number(settings.classStarterCount||0), genericStarterCount: Number(settings.genericStarterCount||0) }) } catch (e) {}
+
+          const sampleFromPools = (pools: any[], count: number) => { if (!Array.isArray(pools) || count <= 0) return []; const shuffled = [...pools].sort(() => Math.random() - 0.5); return shuffled.slice(0, count) }
+
+          const sampled: any[] = []
+          if (Number(settings.classStarterCount || 0) > 0) sampled.push(...sampleFromPools(classPools.filter((p: any) => ((p.tier || '').toUpperCase() === 'STARTER')), Number(settings.classStarterCount || 0)).map(p => ({ ...p, isGeneric: false })))
+          if (Number(settings.genericStarterCount || 0) > 0) sampled.push(...sampleFromPools(genericPools.filter((p: any) => ((p.tier || '').toUpperCase() === 'STARTER')), Number(settings.genericStarterCount || 0)).map(p => ({ ...p, isGeneric: true })))
+
           const initialLootOffers = sampled.map((fullPool: any) => {
             const poolTierNormalized = (fullPool.tier || 'STARTER').toUpperCase()
             const poolCards = (fullPool.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, konamiId: i.card.konamiId || null, imageUrlCropped: i.card.imageUrlCropped || null, variant: i.card.variant || 'TCG', artworks: i.card.artworks || null, primaryArtworkIndex: i.card.primaryArtworkIndex || 0 }))
@@ -182,6 +205,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: lev, playerShopState: inst?.shopState || player.shopState }) } catch (e) {}
             levelEntry = lev
           }
+          try { await maybeInvalidate() } catch (e) {}
           return res.status(200).json({ message: 'Shop initialized', player: attachPlayerKey(updated), next: nextStage, prevLevel, newLevel, awarded: { gold: awardedGold, xp: awardedXp }, levelEntry })
         }
         return res.status(200).json({ message: 'Shop resumed', player: attachPlayerKey(player, inst), next: (inst?.shopState as any).stage || 'SKILL' })
@@ -198,7 +222,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const ownedSkillIds = await prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { skillId: null } } as any), select: { skillId: true } }).then(list => list.map(li => li.skillId).filter(Boolean) as string[])
           const availableSkills = await prisma.skill.findMany({ where: { classId: null, type: 'GENERIC', id: { notIn: ownedSkillIds } } }) as any[]
           const choices = sampleArray(availableSkills, settings.skillSelectionCount).map((s: any) => ({ id: s.id, name: s.name, description: s.description || '' }))
-            try { console.debug('[DBG] server.train pendingSkillChoices', { playerId: player.id, choices: choices.map(c => ({ id: c.id, name: c.name, hasDescription: !!c.description })) }) } catch (e) {}
+            try { console.log('[DBG] server.train pendingSkillChoices', { playerId: player.id, choices: choices.map(c => ({ id: c.id, name: c.name, hasDescription: !!c.description })) }) } catch (e) {}
           const levelGain = newLevel - prevLevel
           const existingPoints = ((shopInstance?.shopState as any)?.statPoints || 0) || 0
           const newPoints = existingPoints + levelGain
@@ -209,6 +233,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: lev, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
             levelEntry = lev
           } catch (e) {}
+          try { await maybeInvalidate() } catch (e) {}
           return res.status(200).json({ message: 'Trained and leveled', player: attachPlayerKey(updated), pendingSkillChoices: choices, prevLevel, newLevel, levelEntry })
         }
         const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: {}, playerShopState: shopInstance?.shopState || player.shopState })
@@ -217,6 +242,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const appendRes = await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'train', text: `Player trained and gained ${xpGain} XP`, xp: xpGain, gold: -cost }, playerShopState: shopInstance?.shopState || player.shopState })
           if (appendRes && appendRes.updated) returnedPlayer = appendRes.updated
         } catch (e) {}
+        try { await maybeInvalidate() } catch (e) {}
         return res.status(200).json({ message: 'Trained', player: attachPlayerKey(returnedPlayer), prevLevel, newLevel })
       }
 
@@ -231,6 +257,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const havePoints = Number((shopInstance?.shopState as any)?.statPoints || 0) > 0
         const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { chosenSkills: chosen, pendingSkillChoices: undefined, stage: (havePoints ? 'STATS' : 'TRAINING') }, playerShopState: shopInstance?.shopState || player.shopState })
         try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'skill', text: `Player chose skill: ${skill.name}`, skillId: skill.id, skillName: skill.name }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        try { await maybeInvalidate() } catch (e) {}
         return res.status(200).json({ message: 'Skill chosen', player: attachPlayerKey(updated), chosenSkills: chosen })
       }
 
@@ -248,6 +275,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { updated } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stats: newStats, statPoints: remaining, stage: (remaining > 0 ? ((shopInstance?.shopState as any)?.stage || 'STATS') : 'TRAINING') }, playerShopState: shopInstance?.shopState || player.shopState })
         await prisma.kDRPlayer.update({ where: { id: player.id }, data: { stats: newStats } as any })
         try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'stat', text: `Player increased ${key.toUpperCase()} to ${newStats[key]}`, stat: key, value: newStats[key] }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        try { await maybeInvalidate() } catch (e) {}
         return res.status(200).json({ message: 'Stat increased', player: attachPlayerKey(updated) })
       }
 
@@ -331,10 +359,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (offers.length === 0) {
           const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'LOOT', treasureOffers: [] }, playerShopState: shopInstance?.shopState || player.shopState })
+          try { await maybeInvalidate() } catch (e) {}
           return res.status(200).json({ message: 'No treasures available, skipping to loot stage', player: attachPlayerKey(updated), skippedToLoot: true })
         }
 
         const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'TREASURES', treasureOffers: offers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed }, playerShopState: shopInstance?.shopState || player.shopState })
+        try { await maybeInvalidate() } catch (e) {}
         return res.status(200).json({ message: isReroll ? 'Treasure rerolled' : 'Entered treasure stage', player: attachPlayerKey(updated), treasureOffers: offers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, maxRerolls })
       }
 
@@ -353,6 +383,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { purchases, stage: 'LOOT', treasureOffers: [] }, playerShopState: shopInstance?.shopState || player.shopState })
           await prisma.playerItem.create({ data: { userId: user.id, kdrId: kdr.id, kdrPlayerId: player.id, itemId: treasure.id, cardId: treasure.cardId || null, skillId: treasure.skillId || null, qty: 1, purchased: true, seen: true } })
           try { await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'treasure', text: `Player chose treasure: ${treasure.name || treasure.card?.name || treasure.skill?.name}`, itemId: treasure.id, name: treasure.name, rarity: finalRarity }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+          try { await maybeInvalidate() } catch (e) {}
           return res.status(200).json({ message: 'Treasure chosen', player: attachPlayerKey(updated), next: 'LOOT' })
         } catch (e) {
           console.error('Failed to choose treasure', e)
@@ -367,17 +398,83 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const maxRerolls = Number(settings.rerollsAvailable || 0)
         if (isReroll && rerollsUsed >= maxRerolls) return res.status(400).json({ error: 'No rerolls remaining' })
 
-        const [allPurchasesForExclusion, inventoryPools] = await Promise.all([
+        // If the client is not requesting an explicit reroll and we already have
+        // loot offers stored in the instance/persisted shop state, return those
+        // cached offers instead of re-sampling all qualities. This prevents a
+        // single-quality refresh (e.g. Starter Packs) from causing a full
+        // re-sample of every quality when nothing changed for them.
+        const existingState = (shopInstance?.shopState as any) || (player.shopState as any) || {}
+        const existingOffers = Array.isArray(existingState.lootOffers) ? existingState.lootOffers : []
+        const purchasedPoolIds = new Set<string>()
+
+        // Pre-collect purchased pool ids (from previous shop instances and player inventory)
+        const [allPurchasesForExclusion_pre, inventoryPools_pre] = await Promise.all([
           prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
           prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any }) as Promise<any[]>
         ])
-
-        const purchasedPoolIds = new Set<string>()
-        inventoryPools.forEach(i => { if ((i as any).lootPoolId) purchasedPoolIds.add(String((i as any).lootPoolId)) })
-        allPurchasesForExclusion.forEach(inst => {
+        inventoryPools_pre.forEach(i => { if ((i as any).lootPoolId) purchasedPoolIds.add(String((i as any).lootPoolId)) })
+        allPurchasesForExclusion_pre.forEach(inst => {
           const state = inst.shopState as any
           if (state && Array.isArray(state.purchases)) state.purchases.forEach((p: any) => { const poolId = p.lootPoolId || p.poolId; if (poolId) purchasedPoolIds.add(String(poolId)) })
         })
+
+        if (!isReroll && existingOffers.length > 0) {
+          // Determine expected counts per tier/generic based on settings and player level
+          const currentLevel = computeLevel((player.xp || 0), settings.levelXpCurve) + 1
+          const expected = {
+            class: { STARTER: Number(settings.classStarterCount || 0), MID: (Number(settings.classMidCount || 0) && currentLevel >= (settings.classMidMinLevel || 1)) ? Number(settings.classMidCount || 0) : 0, HIGH: (Number(settings.classHighCount || 0) && currentLevel >= (settings.classHighMinLevel || 1)) ? Number(settings.classHighCount || 0) : 0 },
+            generic: { STARTER: Number(settings.genericStarterCount || 0), MID: (Number(settings.genericMidCount || 0) && currentLevel >= (settings.genericMidMinLevel || 1)) ? Number(settings.genericMidCount || 0) : 0, HIGH: (Number(settings.genericHighCount || 0) && currentLevel >= (settings.genericHighMinLevel || 1)) ? Number(settings.genericHighCount || 0) : 0 }
+          }
+
+          // Adjust expected counts to account for pools the player has already purchased
+          const purchasedCounts: any = { class: { STARTER: 0, MID: 0, HIGH: 0 }, generic: { STARTER: 0, MID: 0, HIGH: 0 } }
+          try {
+            if (purchasedPoolIds.size > 0) {
+              const purchasedPoolsDetails = await prisma.lootPool.findMany({ where: { id: { in: Array.from(purchasedPoolIds) } } })
+              purchasedPoolsDetails.forEach((pp: any) => {
+                const t = ((pp.tier || 'STARTER') as string).toUpperCase()
+                const bucket = pp.classId ? 'class' : 'generic'
+                if (purchasedCounts[bucket] && purchasedCounts[bucket][t] !== undefined) purchasedCounts[bucket][t]++
+              })
+            }
+          } catch (e) { /* ignore purchased lookup failures */ }
+
+          const adjustedExpected: any = { class: { STARTER: 0, MID: 0, HIGH: 0 }, generic: { STARTER: 0, MID: 0, HIGH: 0 } }
+          for (const b of ['class','generic'] as const) {
+            for (const t of ['STARTER','MID','HIGH'] as const) {
+              const need = expected[b][t] || 0
+              const purchased = purchasedCounts[b][t] || 0
+              adjustedExpected[b][t] = Math.max(0, need - purchased)
+            }
+          }
+
+          const counts: any = { class: { STARTER: 0, MID: 0, HIGH: 0 }, generic: { STARTER: 0, MID: 0, HIGH: 0 } }
+          existingOffers.forEach((o: any) => {
+            const tier = ((o.tier || 'STARTER') as string).toUpperCase()
+            const bucket = o.isGeneric ? 'generic' : 'class'
+            if (counts[bucket] && counts[bucket][tier] !== undefined) counts[bucket][tier]++
+          })
+
+          // If all expected counts are satisfied, return cached offers.
+          let allSatisfied = true
+          for (const bucket of ['class', 'generic'] as const) {
+            for (const tier of ['STARTER', 'MID', 'HIGH'] as const) {
+              const need = adjustedExpected[bucket][tier]
+              const have = counts[bucket][tier] || 0
+              if ((need || 0) > have) { allSatisfied = false; break }
+            }
+            if (!allSatisfied) break
+          }
+
+          if (allSatisfied) {
+            const mergedSeen = Array.from(new Set([...(existingState.seen || []), ...existingOffers.map((o: any) => String(o.id))]))
+            try { await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { lootOffers: existingOffers, seen: mergedSeen }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+            return res.status(200).json({ message: 'Loot offers (cached)', player: attachPlayerKey(player, shopInstance), offers: existingOffers, rerollsUsed, maxRerolls })
+          }
+          // Otherwise fall through to re-sample missing categories below
+        }
+
+        
 
         const allPoolsRaw = await prisma.lootPool.findMany({ include: { items: { include: { card: true, skill: true } } } }) as any[]
         const availablePools = allPoolsRaw.filter(p => {
@@ -401,6 +498,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (settings.classMidCount > 0 && currentLevel >= (settings.classMidMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(classPools, 'MID'), Number(settings.classMidCount)).map(p => ({ ...p, isGeneric: false })))
         if (settings.classHighCount > 0 && currentLevel >= (settings.classHighMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(classPools, 'HIGH'), Number(settings.classHighCount)).map(p => ({ ...p, isGeneric: false })))
         if (settings.genericStarterCount > 0) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'STARTER'), Number(settings.genericStarterCount)).map(p => ({ ...p, isGeneric: true })))
+        try { console.log('[SHOP-V2] lootOffers sampledPools', { playerId: player.id, playerClass: player.classId, sampledCount: sampledPools.length, sampledByTier: sampledPools.reduce((acc:any,p:any)=>{ const t=(p.tier||'STARTER').toUpperCase(); const b = p.isGeneric ? 'generic' : 'class'; acc[b]=acc[b]||{}; acc[b][t]=(acc[b][t]||0)+1; return acc }, {}) }) } catch(e) {}
         if (settings.genericMidCount > 0 && currentLevel >= (settings.genericMidMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'MID'), Number(settings.genericMidCount)).map(p => ({ ...p, isGeneric: true })))
         if (settings.genericHighCount > 0 && currentLevel >= (settings.genericHighMinLevel || 1)) sampledPools.push(...sampleFromPools(getPoolsByTier(genericPools, 'HIGH'), Number(settings.genericHighCount)).map(p => ({ ...p, isGeneric: true })))
 
@@ -418,6 +516,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const mergedSeen = Array.from(new Set([...(((shopInstance?.shopState as any)?.seen) || ((player.shopState as any)?.seen) || []), ...((poolOffers || []).map((o: any) => String(o.id)))]))
         const { updated } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { lootOffers: poolOffers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, seen: mergedSeen }, playerShopState: shopInstance?.shopState || player.shopState })
         try { if (isReroll) await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'reroll', text: `Player rerolled ALL loot offers (${rerollsUsed + 1}/${maxRerolls})` }, playerShopState: shopInstance?.shopState || player.shopState }) } catch (e) {}
+        try { await maybeInvalidate() } catch (e) {}
         return res.status(200).json({ message: isReroll ? 'Loot rerolled' : 'Loot offers', player: attachPlayerKey(updated), offers: poolOffers, rerollsUsed: isReroll ? rerollsUsed + 1 : rerollsUsed, maxRerolls })
       }
 
@@ -499,29 +598,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     }
 
                     const freshPlayerOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
-                    // Remove any picked pools from offers
-                    let updatedOffers = freshPlayerOffers.filter((o: any) => !picks.some((pb: any) => String(pb.id) === String(o.id)))
 
+                    // Remove any picked pools from offers first, then compute how many
+                    // replacements we need for this category. This ensures displayed
+                    // slots that were purchased are counted as empty and get refilled.
+                    const updatedOffersBeforeRefill = freshPlayerOffers.filter((o: any) => !picks.some((pb: any) => String(pb.id) === String(o.id)))
                     // Refill offers up to desiredCount for the category if needed
-                    let currentCategoryCount = updatedOffers.filter((o: any) => ((o.tier || '').toUpperCase() === tierKey) && (!!o.isGeneric === !!isGenericBool)).length
+                    let currentCategoryCount = updatedOffersBeforeRefill.filter((o: any) => ((o.tier || '').toUpperCase() === tierKey) && (!!o.isGeneric === !!isGenericBool)).length
                     let need = Math.max(0, Number(desiredCount || 0) - currentCategoryCount)
+                    let refillPicks: any[] = []
                     if (need > 0) {
                       const refillCandidates = await tx.lootPool.findMany({ where: { id: { notIn: Array.from(excluded) }, tier: tierKey, ...(isGenericBool ? { classId: null } : { classId: player.classId }) }, include: { items: { include: { card: true, skill: true } } } })
                       if (refillCandidates && refillCandidates.length > 0) {
                         const picks2 = sampleArray(refillCandidates, Math.min(need, refillCandidates.length))
-                        for (const pick of picks2) {
+                        refillPicks = picks2.map((pick: any) => {
                           const isPickGeneric = !pick.classId
                           const pickBaseCost = isPickGeneric ? (pick.tier === 'STARTER' ? (settings.genericStarterCost || 0) : pick.tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)) : (pick.tier === 'STARTER' ? (settings.classStarterCost || 0) : pick.tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0))
-                          updatedOffers.push({ id: pick.id, name: pick.name, tier: pick.tier, isGeneric: isPickGeneric, tax: pick.tax || 0, cost: Number(pickBaseCost || 0) + Number(pick.tax || 0), cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })), items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) })
-                        }
+                          return {
+                            id: pick.id,
+                            name: pick.name,
+                            tier: pick.tier,
+                            isGeneric: isPickGeneric,
+                            tax: pick.tax || 0,
+                            cost: Number(pickBaseCost || 0) + Number(pick.tax || 0),
+                            cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })),
+                            items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount }))
+                          }
+                        })
                       }
                     }
 
-                    const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
+                    // Build finalOffers by replacing purchased slots in-place
+                    const originalOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
+                    const picksQueue = Array.from(picks || [])
+                    const refillQueue = Array.from(refillPicks || [])
+                    let finalOffers = originalOffers.map((o: any) => {
+                      if (picksQueue.some((pb: any) => String(pb.id) === String(o.id))) {
+                        if (refillQueue.length > 0) return refillQueue.shift() as any
+                        // No refill available for this slot; remove the purchased entry
+                        return null
+                      }
+                      return o
+                    }).filter((x: any) => x)
+                    try { console.log('[SHOP-V2] randomPurchase replacement', { playerId: player.id, picks: picks.map((p:any)=>String(p.id)), refillCount: refillQueue.length, finalOffersCount: finalOffers.length }) } catch(e) {}
+
+                    const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((finalOffers || []).map((o: any) => String(o.id)))]))
 
                     if (playerItemsToCreate.length > 0) await tx.playerItem.createMany({ data: playerItemsToCreate })
 
-                    const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: totalBaseCost - totalGoldInc }, shopState: { ...baseShopState, purchases: txPurchases, lootOffers: updatedOffers, seen: mergedSeenFinal, stage: 'LOOT' }, shopComplete: false, lastShopRound: currentRoundNumberAtStart } })
+                    const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: totalBaseCost - totalGoldInc }, shopState: { ...baseShopState, purchases: txPurchases, lootOffers: finalOffers, seen: mergedSeenFinal, stage: 'LOOT' }, shopComplete: false, lastShopRound: currentRoundNumberAtStart } })
 
                     await tx.kDRShopInstance.upsert({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } }, create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: updatedPlayer.shopState, isComplete: false }, update: { shopState: updatedPlayer.shopState, isComplete: false } })
 
@@ -542,6 +667,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return { id: p.id, name: p.name, tier: p.tier, isGeneric: !!p.classId ? false : true, cards: poolCards }
                   })
 
+                  try { await maybeInvalidate() } catch (e) {}
                   return res.status(200).json({ message: 'Random quality purchased', player: result, purchasedPools })
                 } catch (e: any) {
                   console.error('Random bulk purchase failed', e)
@@ -574,6 +700,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               for (const o of updatedOffersBefore) if (o && o.id) excluded.add(String(o.id))
               for (const pb of (poolsToBuy || [])) if (pb && pb.id) excluded.add(String(pb.id))
 
+              try { console.log('[SHOP-V2] bulk-quality debug PRE-EXCLUDE', { playerId: player.id, tier: tierKey, isGeneric: isGenericBool, poolsToBuy: poolsToBuy.map((p:any)=>String(p.id)), updatedOffersBeforeCount: updatedOffersBefore.length, updatedOffersBeforeIds: updatedOffersBefore.map((o:any)=>String(o.id)), excludedCount: excluded.size }) } catch(e) {}
+
               const [allPurchasesEx, inventoryPoolsEx] = await Promise.all([
                 prisma.kDRShopInstance.findMany({ where: { playerId: player.id }, select: { shopState: true } }),
                 prisma.playerItem.findMany({ where: ({ OR: [ { kdrPlayerId: player.id }, { userId: user.id, kdrId: kdr.id } ], NOT: { ['lootPoolId' as any]: null } } as any), select: { ['lootPoolId' as any]: true } as any })
@@ -584,7 +712,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 if (s && Array.isArray(s.purchases)) s.purchases.forEach((p: any) => { if (p.lootPoolId) excluded.add(String(p.lootPoolId)) })
               })
 
-              const refillCandidates = await prisma.lootPool.findMany({ where: { id: { notIn: Array.from(excluded) }, tier: tierKey, ...(isGenericBool ? { classId: null } : { classId: (poolsToBuy[0] as any).classId }) }, include: { items: { include: { card: true, skill: true } } } })
+              try { console.log('[SHOP-V2] bulk-quality debug POST-EXCLUDE', { playerId: player.id, tier: tierKey, excludedCount: excluded.size }) } catch(e) {}
+
+              const refillCandidates = await prisma.lootPool.findMany({ where: { id: { notIn: Array.from(excluded) }, tier: tierKey, ...(isGenericBool ? { classId: null } : { classId: player.classId }) }, include: { items: { include: { card: true, skill: true } } } })
+
+              try { console.log('[SHOP-V2] bulk-quality candidates', { playerId: player.id, tier: tierKey, refillCandidatesCount: refillCandidates.length, refillCandidatesIds: refillCandidates.map((r:any)=>String(r.id)) }) } catch(e) {}
 
               const result = await prisma.$transaction(async (tx) => {
                 const freshPlayer = await tx.kDRPlayer.findUnique({ where: { id: player.id }, include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } } }) as any
@@ -618,33 +750,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
 
                 const freshPlayerOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
-                let updatedOffers = freshPlayerOffers.filter((o: any) => !poolsToBuy.some((pb: any) => String(pb.id) === String(o.id)))
+                const originalOffers = Array.isArray(baseShopState.lootOffers) ? [...baseShopState.lootOffers] : []
 
                 const tierKeyLower = (tierKey || 'STARTER').toUpperCase()
                 const desiredCount = isGenericBool ? (tierKeyLower === 'STARTER' ? (settings.genericStarterCount || 0) : tierKeyLower === 'MID' ? (settings.genericMidCount || 0) : (settings.genericHighCount || 0)) : (tierKeyLower === 'STARTER' ? (settings.classStarterCount || 0) : tierKeyLower === 'MID' ? (settings.classMidCount || 0) : (settings.classHighCount || 0))
-                let currentCategoryCount = updatedOffers.filter((o: any) => ((o.tier || '').toUpperCase() === tierKeyLower) && (!!o.isGeneric === !!isGenericBool)).length
+                // Count current category slots after removing the pools that were just purchased
+                let currentCategoryCount = updatedOffersBefore.filter((o: any) => ((o.tier || '').toUpperCase() === tierKeyLower) && (!!o.isGeneric === !!isGenericBool)).length
                 let need = Math.max(0, Number(desiredCount || 0) - currentCategoryCount)
 
+                // Collect refill picks (as mapped offers) if needed
+                let refillPicks: any[] = []
                 if (need > 0 && refillCandidates?.length > 0) {
                   const picks = sampleArray(refillCandidates, Math.min(need, refillCandidates.length))
-                  for (const pick of picks) {
+                  refillPicks = picks.map((pick: any) => {
                     const isPickGeneric = !pick.classId
                     const pickBaseCost = isPickGeneric ? (pick.tier === 'STARTER' ? (settings.genericStarterCost || 0) : pick.tier === 'MID' ? (settings.genericMidCost || 0) : (settings.genericHighCost || 0)) : (pick.tier === 'STARTER' ? (settings.classStarterCost || 0) : pick.tier === 'MID' ? (settings.classMidCost || 0) : (settings.classHighCost || 0))
-                    updatedOffers.push({ id: pick.id, name: pick.name, tier: pick.tier, isGeneric: isPickGeneric, tax: pick.tax || 0, cost: Number(pickBaseCost || 0) + Number(pick.tax || 0), cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })), items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount })) })
-                  }
+                    return {
+                      id: pick.id,
+                      name: pick.name,
+                      tier: pick.tier,
+                      isGeneric: isPickGeneric,
+                      tax: pick.tax || 0,
+                      cost: Number(pickBaseCost || 0) + Number(pick.tax || 0),
+                      cards: (pick.items || []).filter((i: any) => i.type === 'Card' && i.card).map((i: any) => ({ id: i.card.id, name: i.card.name, imageUrlCropped: i.card.imageUrlCropped, artworks: i.card.artworks })),
+                      items: (pick.items || []).map((i: any) => ({ id: i.id, type: i.type, card: { ...i.card, imageUrlCropped: i.card?.imageUrlCropped, artworks: i.card?.artworks }, skill: i.skill ? { ...i.skill, statRequirements: i.skill.statRequirements ? (typeof i.skill.statRequirements === 'string' ? JSON.parse(i.skill.statRequirements) : i.skill.statRequirements) : [] } : null, skillName: i.skillName, skillDescription: i.skillDescription, amount: i.amount }))
+                    }
+                  })
                 }
 
-                const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
-                const FINAL_STATE = { ...baseShopState, purchases: txPurchases, lootOffers: updatedOffers, seen: mergedSeenFinal }
+                // Build finalOffers by replacing purchased slots in-place for this category
+                const purchasedSet = new Set((poolsToBuy || []).map((p: any) => String(p.id)))
+                const refillQueue = Array.from(refillPicks || [])
+                const finalOffers = originalOffers.map((o: any) => {
+                  if (((o.tier || '').toUpperCase() === tierKeyLower) && (!!o.isGeneric === !!isGenericBool) && purchasedSet.has(String(o.id))) {
+                    return refillQueue.length ? refillQueue.shift() as any : null
+                  }
+                  return o
+                }).filter((x: any) => x)
+
+                const mergedSeenFinal = Array.from(new Set([...(((baseShopState as any)?.seen) || []), ...((finalOffers || []).map((o: any) => String(o.id)))]))
+
                 // Ensure we remain in LOOT stage after purchase to keep client UI stable
-                FINAL_STATE.stage = 'LOOT'
-                const isComplete = (FINAL_STATE.stage === 'DONE')
+                const isComplete = false
 
                 if (playerItemsToCreate.length > 0) await tx.playerItem.createMany({ data: playerItemsToCreate })
 
-                const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: baseCost - totalGoldInc }, shopState: FINAL_STATE, shopComplete: isComplete, lastShopRound: currentRoundNumberAtStart } })
+                try { console.log('[SHOP-V2] bulk-quality finalOffers', { playerId: player.id, finalCount: (finalOffers||[]).length, byTier: (finalOffers||[]).reduce((acc:any,o:any)=>{ const t=(o.tier||'STARTER').toUpperCase(); const b=o.isGeneric?'generic':'class'; acc[b]=acc[b]||{}; acc[b][t]=(acc[b][t]||0)+1; return acc }, {}) }) } catch(e) {}
+                const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { decrement: baseCost - totalGoldInc }, shopState: { ...baseShopState, purchases: txPurchases, lootOffers: finalOffers, seen: mergedSeenFinal, stage: 'LOOT' }, shopComplete: isComplete, lastShopRound: currentRoundNumberAtStart } })
 
-                await tx.kDRShopInstance.upsert({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } }, create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: FINAL_STATE, isComplete }, update: { shopState: FINAL_STATE, isComplete } })
+                await tx.kDRShopInstance.upsert({ where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } }, create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: updatedPlayer.shopState, isComplete }, update: { shopState: updatedPlayer.shopState, isComplete } })
 
                 return attachPlayerKey(updatedPlayer)
               }, { timeout: 10000 })
@@ -667,9 +821,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const text = `Player has purchased ${count} ${tierLabel} Loot Pool${count === 1 ? '' : 's'} - ${names.map(n => `"${n}"`).join(', ')}`
                 try {
                   const appendRes = await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'loot_purchase', text, tier: tierKey, isGeneric: isGenericBool, count, poolNames: names, poolIds: poolsToBuy.map((p: any) => p.id) }, playerShopState: shopInstance?.shopState || player.shopState })
-                  if (appendRes && appendRes.updated) return res.status(200).json({ message: 'Quality purchased', player: attachPlayerKey(appendRes.updated) })
+                  if (appendRes && appendRes.updated) { try { await maybeInvalidate() } catch (e) {} ; return res.status(200).json({ message: 'Quality purchased', player: attachPlayerKey(appendRes.updated) }) }
                 } catch (e) {}
               } catch (e) {}
+              try { await maybeInvalidate() } catch (e) {}
               return res.status(200).json({ message: 'Quality purchased', player: result })
             } catch (e: any) {
               console.error('Bulk purchase failed', e)
@@ -740,7 +895,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 for (const o of updatedOffers) if (o && o.id) excluded2.add(String(o.id))
                 excluded2.add(String(pool.id))
 
-                const candidates = await tx.lootPool.findMany({ where: { id: { notIn: Array.from(excluded2) }, tier: tierKey2, ...(isGeneric ? { classId: null } : { classId: pool.classId }) }, include: { items: { include: { card: true, skill: true } } } })
+                const candidates = await tx.lootPool.findMany({ where: { id: { notIn: Array.from(excluded2) }, tier: tierKey2, ...(isGeneric ? { classId: null } : { classId: player.classId }) }, include: { items: { include: { card: true, skill: true } } } })
 
                 if (candidates && candidates.length > 0) {
                   const picks = sampleArray(candidates, Math.min(need2, candidates.length))
@@ -760,7 +915,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
 
               const mergedSeenAfterPurchase = Array.from(new Set([...(((currentState as any)?.seen) || []), ...((updatedOffers || []).map((o: any) => String(o.id)))]))
-              const { updated: finalPlayer } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { purchases: [...purchases, { lootPoolId: pool.id, qty: 1, cost: totalCost }], lootOffers: updatedOffers, stage: 'LOOT', seen: mergedSeenAfterPurchase }, playerShopState: currentState })
+
+              // Merge updatedOffers into the existing currentState offers for
+              // this category (tierKey2 + isGeneric) to avoid altering other
+              // qualities shown to the player.
+              const originalOffersCur = Array.isArray(currentState.lootOffers) ? [...currentState.lootOffers] : []
+              const catKey = (tierKey2 || 'STARTER').toUpperCase()
+              const catIsGeneric = !!isGeneric
+              const filteredOrigCur = originalOffersCur
+              const newCatOffers = (updatedOffers || []).filter((o: any) => ((o.tier || '').toUpperCase() === catKey) && (!!o.isGeneric === catIsGeneric))
+              const newCatQueue = Array.from(newCatOffers || [])
+              const finalOffersCur = filteredOrigCur.map((o: any) => {
+                if (((o.tier || '').toUpperCase() === catKey) && (!!o.isGeneric === catIsGeneric) && purchasedPoolIds.has(String(o.id))) {
+                  return newCatQueue.length ? newCatQueue.shift() as any : null
+                }
+                return o
+              }).filter((x: any) => x)
+
+              try { console.log('[SHOP-V2] single-pool finalOffersCur', { playerId: player.id, finalCount: (finalOffersCur||[]).length, byTier: (finalOffersCur||[]).reduce((acc:any,o:any)=>{ const t=(o.tier||'STARTER').toUpperCase(); const b=o.isGeneric?'generic':'class'; acc[b]=acc[b]||{}; acc[b][t]=(acc[b][t]||0)+1; return acc }, {}) }) } catch(e) {}
+              const { updated: finalPlayer } = await persistState({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { purchases: [...purchases, { lootPoolId: pool.id, qty: 1, cost: totalCost }], lootOffers: finalOffersCur, stage: 'LOOT', seen: mergedSeenAfterPurchase }, playerShopState: currentState })
 
               return { updatedPlayer: finalPlayer }
             })
@@ -781,9 +954,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const text = `Player has purchased 1 ${tierLabel} Loot Pool - ${names.map(n => `"${n}"`).join(', ')}`
               try {
                 const appendRes = await appendHistoryServer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'loot_purchase', text, tier, isGeneric, count: 1, poolNames: names, poolIds: [pool.id] }, playerShopState: shopInstance?.shopState || player.shopState })
-                if (appendRes && appendRes.updated) return res.status(200).json({ message: 'Pool purchased', player: attachPlayerKey(appendRes.updated) })
+                if (appendRes && appendRes.updated) { try { await maybeInvalidate() } catch (e) {} ; return res.status(200).json({ message: 'Pool purchased', player: attachPlayerKey(appendRes.updated) }) }
               } catch (e) {}
             } catch (e) {}
+            try { await maybeInvalidate() } catch (e) {}
             return res.status(200).json({ message: 'Pool purchased', player: attachPlayerKey(result.updatedPlayer) })
           } catch (e: any) {
             if (e && typeof e.message === 'string' && e.message.startsWith('INSUFFICIENT_GOLD')) {
@@ -834,6 +1008,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   // append a history entry to record the interest award
                   try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'interest', text: `Interest awarded: +${awardedAmount} gold`, gold: awardedAmount }, playerShopState: finalState }) } catch (e) {}
                   console.log(`[SHOP:TRACE] finish: applied interest ${awardedAmount} to player ${player.id} for round ${currentRoundNumberAtStart}`)
+                  try { await maybeInvalidate() } catch (e) {}
                   return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(txRes.updatedPlayer, txRes.inst) })
                 } catch (e: any) {
                   console.error('Failed to apply interest award', e)
@@ -856,6 +1031,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } }
               })
               console.log(`[SHOP:TRACE] finish: Player finished round ${currentRoundNumberAtStart}. interestAwarded=${interestAwarded} amount=${awardedAmount}`)
+              try { await maybeInvalidate() } catch (e) {}
               return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final, updatedInst) })
             } catch (e: any) {
               console.error('Failed to finish shop-v2', e)
@@ -979,7 +1155,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const inventory = detailedInventory.filter((pl: any) => !pl.isTreasure)
 
           const finalSkills = Object.values(skillsMap).filter((s: any) => s && s.isSellable)
-          try { console.debug('[DBG] getPlayerSkills', { playerId: player.id, playerSkillRows: (playerSkillRows || []).length, playerLootRows: (playerLootRows || []).length, allSkillIds: allSkillIds.length, finalSkills: finalSkills.length }) } catch (e) {}
+          try { console.log('[DBG] getPlayerSkills', { playerId: player.id, playerSkillRows: (playerSkillRows || []).length, playerLootRows: (playerLootRows || []).length, allSkillIds: allSkillIds.length, finalSkills: finalSkills.length }) } catch (e) {}
           // Include lightweight debug info to help front-end troubleshooting (temporary)
           const debug = {
             playerSkillRows: (playerSkillRows || []).length,
@@ -1043,6 +1219,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
             })
             const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            try { await maybeInvalidate() } catch (e) {}
             return res.status(200).json({ message: 'Item sold', player: attachPlayerKey(fresh) })
           }
 
@@ -1054,7 +1231,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const item = await prisma.item.findUnique({ 
               where: { id: sellId }
             })
-            console.debug('[DBG] sellItem: lootItem payload', { sellId, itemFound: !!item, itemType: item?.type, playerId: player.id, userId: user.id, kdrId: kdr.id })
+            console.log('[DBG] sellItem: lootItem payload', { sellId, itemFound: !!item, itemType: item?.type, playerId: player.id, userId: user.id, kdrId: kdr.id })
 
             const goldGainTreasure = 1 // Corrected: All items sell for 1 gold
 
@@ -1063,12 +1240,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const foundPl = await prisma.playerItem.findFirst({ 
                 where: ({ OR: [ { kdrPlayerId: player.id, itemId: item.id }, { AND: [ { userId: user.id }, { kdrId: kdr.id }, { itemId: item.id } ] } ] } as any)
               })
-              console.debug('[DBG] sellItem: lootItem playerItem lookup', { sellId, itemId: item.id, foundPl: !!foundPl, foundPlId: foundPl?.id })
+              console.log('[DBG] sellItem: lootItem playerItem lookup', { sellId, itemId: item.id, foundPl: !!foundPl, foundPlId: foundPl?.id })
               if (!foundPl) {
                 // Log any playerItem rows referencing this item for further diagnosis
                 try {
                   const candidates = await prisma.playerItem.findMany({ where: { itemId: item.id } })
-                  console.debug('[DBG] sellItem: lootItem candidate playerItems for itemId', { itemId: item.id, candidatesCount: (candidates || []).length, candidateIds: (candidates || []).map(c => c.id) })
+                  console.log('[DBG] sellItem: lootItem candidate playerItems for itemId', { itemId: item.id, candidatesCount: (candidates || []).length, candidateIds: (candidates || []).map(c => c.id) })
                 } catch (e) {}
                 return res.status(404).json({ error: 'Treasure not found in your inventory' })
               }
@@ -1087,6 +1264,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGainTreasure }, shopState: newState } })
               })
               const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+              try { await maybeInvalidate() } catch (e) {}
               return res.status(200).json({ message: 'Treasure sold', player: attachPlayerKey(fresh) })
             }
 
@@ -1114,6 +1292,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
             })
             const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            try { await maybeInvalidate() } catch (e) {}
             return res.status(200).json({ message: 'Item sold', player: attachPlayerKey(fresh) })
           }
 
@@ -1145,6 +1324,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopState: newState, gold: { increment: goldGain } } })
                 })
                 const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+                try { await maybeInvalidate() } catch (e) {}
                 return res.status(200).json({ message: 'Shop skill sold', player: attachPlayerKey(fresh) })
               }
               return res.status(404).json({ error: 'Skill not found in inventory or shop picks' })
@@ -1178,6 +1358,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: goldGain } } })
             })
             const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
+            try { await maybeInvalidate() } catch (e) {}
             return res.status(200).json({ message: 'Skill sold', player: attachPlayerKey(fresh) })
           }
 
