@@ -4,6 +4,8 @@ import SkillForm from './shared/SkillForm'
 import CardDescription from './shared/CardDescription'
 import CardPreview from './shared/CardPreview'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
+import HoverTooltip from '../shop-v2/components/HoverTooltip'
+import DeckFiltersPanel from '../DeckFiltersPanel'
 
 // Stable HoverPreview (module scope) to avoid remounting on parent re-renders
 const HoverPreview: React.FC<{ card: any, modification?: any, mousePos: { x: number, y: number }, skills?: any[], onTooltipEnter?: () => void, onTooltipLeave?: () => void }> = React.memo(({ card, modification, mousePos, skills, onTooltipEnter, onTooltipLeave }) => {
@@ -110,6 +112,9 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   const [activeTier, setActiveTier] = useState<Tier>('STARTER')
   const [activePoolId, setActivePoolId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [nameDraft, setNameDraft] = useState<string>('')
+  const [editingName, setEditingName] = useState<boolean>(false)
+  const [localPool, setLocalPool] = useState<LootPool | null>(null)
 
   const getTierLabel = (tier: Tier) => {
     if (tierLabels && tierLabels[tier]) return tierLabels[tier]
@@ -154,9 +159,187 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     }
   }
   const [pinnedCard, setPinnedCard] = useState<Card | null>(null)
-  const [hoverTooltip, setHoverTooltip] = useState<{ card: Card, modification?: any } | null>(null)
+  const [hoverTooltip, setHoverTooltip] = useState<any>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const tooltipScrollRef = React.useRef<HTMLDivElement | null>(null)
   const hoverHideTimeout = React.useRef<number | null>(null)
+
+  // Controlled filter state (lifted from DeckBuilderOverlay)
+  const [selectedSubtypes, setSelectedSubtypes] = useState<string[]>([])
+  const toggleSubtype = (s: string) => setSelectedSubtypes(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev,s])
+
+  const TYPES = [
+    'Spellcaster','Dragon','Zombie','Warrior','Beast-Warrior','Beast','Winged Beast','Machine',
+    'Fiend','Fairy','Insect','Dinosaur','Reptile','Fish','Sea Serpent','Aqua',
+    'Pyro','Thunder','Rock','Plant','Psychic','Wyrm','Cyberse','Divine-Beast','Illusion'
+  ]
+
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
+  const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])
+  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([])
+  const toggleAttribute = (a: string) => setSelectedAttributes(prev => prev.includes(a) ? prev.filter(x=>x!==a) : [...prev, a])
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([])
+  const toggleLevel = (lv: number) => setSelectedLevels(prev => prev.includes(lv) ? prev.filter(x=>x!==lv) : [...prev, lv])
+  const [selectedAbilities, setSelectedAbilities] = useState<string[]>([])
+  const toggleAbility = (ab: string) => setSelectedAbilities(prev => prev.includes(ab) ? prev.filter(x=>x!==ab) : [...prev, ab])
+
+  const [selectedPendulumScales, setSelectedPendulumScales] = useState<number[]>([])
+  const togglePendulumScale = (n: number) => setSelectedPendulumScales(prev => prev.includes(n) ? prev.filter(x=>x!==n) : [...prev, n])
+
+  const [selectedLinkRatings, setSelectedLinkRatings] = useState<number[]>([])
+  const toggleLinkRating = (n: number) => setSelectedLinkRatings(prev => prev.includes(n) ? prev.filter(x=>x!==n) : [...prev, n])
+
+  const ARROWS = ['NW','N','NE','W','E','SW','S','SE']
+  const [selectedLinkArrows, setSelectedLinkArrows] = useState<string[]>([])
+  const [linkArrowsMode, setLinkArrowsMode] = useState<'AND'|'OR'>('AND')
+  const toggleLinkArrow = (d: string) => setSelectedLinkArrows(prev => prev.includes(d) ? prev.filter(x=>x!==d) : [...prev, d])
+  const [hoveredLinkArrow, setHoveredLinkArrow] = useState<string | null>(null)
+
+  // ATK/DEF sliders
+  const [atkMin, setAtkMin] = useState<number>(0)
+  const [atkMax, setAtkMax] = useState<number>(5000)
+  const setAtkMinFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setAtkMin(0); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setAtkMin(Math.min(n, atkMax))
+  }
+  const setAtkMaxFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setAtkMax(5000); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setAtkMax(Math.max(n, atkMin))
+  }
+
+  const sliderRef = React.useRef<HTMLDivElement | null>(null)
+  const draggingRef = React.useRef<'min'|'max'|null>(null)
+
+  const clientXFromEvent = (e: MouseEvent | TouchEvent) => {
+    if ((e as TouchEvent).touches && (e as TouchEvent).touches.length) return (e as TouchEvent).touches[0].clientX
+    if ((e as TouchEvent).changedTouches && (e as TouchEvent).changedTouches.length) return (e as TouchEvent).changedTouches[0].clientX
+    return (e as MouseEvent).clientX
+  }
+
+  const onDragMove = (e: MouseEvent | TouchEvent) => {
+    if (!sliderRef.current) return
+    const rect = sliderRef.current.getBoundingClientRect()
+    const clientX = clientXFromEvent(e)
+    if (clientX == null) return
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const raw = Math.round((pct * 5000) / 100) * 100
+    if (draggingRef.current === 'min') {
+      const val = Math.min(raw, atkMax)
+      setAtkMin(val)
+    } else if (draggingRef.current === 'max') {
+      const val = Math.max(raw, atkMin)
+      setAtkMax(val)
+    }
+  }
+
+  const endDrag = () => {
+    draggingRef.current = null
+    window.removeEventListener('mousemove', onDragMove as any)
+    window.removeEventListener('mouseup', endDrag)
+    window.removeEventListener('touchmove', onDragMove as any)
+    window.removeEventListener('touchend', endDrag)
+  }
+
+  const startDrag = (handle: 'min'|'max') => (e: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    draggingRef.current = handle
+    window.addEventListener('mousemove', onDragMove as any)
+    window.addEventListener('mouseup', endDrag)
+    window.addEventListener('touchmove', onDragMove as any, { passive: false } as any)
+    window.addEventListener('touchend', endDrag)
+  }
+
+  React.useEffect(() => { return () => { endDrag() } }, [])
+
+  // DEF
+  const [defMin, setDefMin] = useState<number>(0)
+  const [defMax, setDefMax] = useState<number>(5000)
+  const setDefMinFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setDefMin(0); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setDefMin(Math.min(n, defMax))
+  }
+  const setDefMaxFromInput = (s: string) => {
+    if (!s || s.trim() === '') { setDefMax(5000); return }
+    const n = Math.max(0, Math.min(5000, Math.round(parseInt(s || '0', 10) / 100) * 100))
+    setDefMax(Math.max(n, defMin))
+  }
+
+  const defSliderRef = React.useRef<HTMLDivElement | null>(null)
+  const defDraggingRef = React.useRef<'min'|'max'|null>(null)
+
+  const defOnDragMove = (e: MouseEvent | TouchEvent) => {
+    if (!defSliderRef.current) return
+    const rect = defSliderRef.current.getBoundingClientRect()
+    const clientX = clientXFromEvent(e)
+    if (clientX == null) return
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const raw = Math.round((pct * 5000) / 100) * 100
+    if (defDraggingRef.current === 'min') {
+      const val = Math.min(raw, defMax)
+      setDefMin(val)
+    } else if (defDraggingRef.current === 'max') {
+      const val = Math.max(raw, defMin)
+      setDefMax(val)
+    }
+  }
+
+  const defEndDrag = () => {
+    defDraggingRef.current = null
+    window.removeEventListener('mousemove', defOnDragMove as any)
+    window.removeEventListener('mouseup', defEndDrag)
+    window.removeEventListener('touchmove', defOnDragMove as any)
+    window.removeEventListener('touchend', defEndDrag)
+  }
+
+  const defStartDrag = (handle: 'min'|'max') => (e: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    defDraggingRef.current = handle
+    window.addEventListener('mousemove', defOnDragMove as any)
+    window.addEventListener('mouseup', defEndDrag)
+    window.addEventListener('touchmove', defOnDragMove as any, { passive: false } as any)
+    window.addEventListener('touchend', defEndDrag)
+  }
+
+  React.useEffect(() => { return () => { defEndDrag() } }, [])
+
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
+      const getPrefers = () => !!(mq && mq.matches)
+      const getByClass = () => document?.documentElement?.classList?.contains('dark') || false
+      const update = () => setIsDark(getPrefers() || getByClass())
+      update()
+      if (mq && mq.addEventListener) mq.addEventListener('change', update)
+      else if (mq && mq.addListener) mq.addListener(update)
+      const obs = new MutationObserver(() => update())
+      obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+      return () => { if (mq && mq.removeEventListener) mq.removeEventListener('change', update); else if (mq && mq.removeListener) mq.removeListener(update); obs.disconnect() }
+    } catch (e) { setIsDark(false) }
+  }, [])
+
+  const resetAll = () => {
+    setSelectedSubtypes([])
+    setSelectedTypes([])
+    setSelectedAttributes([])
+    setSelectedLevels([])
+    setSelectedAbilities([])
+    setSelectedPendulumScales([])
+    setSelectedLinkRatings([])
+    setSelectedLinkArrows([])
+    setAtkMin(0)
+    setAtkMax(5000)
+    setDefMin(0)
+    setDefMax(5000)
+    setFilterOpen(false)
+  }
 
   // Throttle mouse move updates via requestAnimationFrame to avoid excessive re-renders
   const mouseRafRef = React.useRef<number | null>(null)
@@ -165,7 +348,9 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     lastMouseRef.current = { x: e.clientX, y: e.clientY }
     if (mouseRafRef.current == null) {
       mouseRafRef.current = requestAnimationFrame(() => {
-        setMousePos({ x: lastMouseRef.current.x, y: lastMouseRef.current.y })
+        const nx = lastMouseRef.current.x, ny = lastMouseRef.current.y
+        setMousePos({ x: nx, y: ny })
+        try { if (hoverTooltip && hoverTooltip.visible) setHoverTooltip((h: any) => ({ ...(h || {}), x: nx, y: ny })) } catch (e) {}
         if (mouseRafRef.current != null) { cancelAnimationFrame(mouseRafRef.current); mouseRafRef.current = null }
       })
     }
@@ -185,7 +370,20 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   }
 
   const activePool = pools.find(p => p.id === activePoolId)
-  const activePoolSkills = activePool ? activePool.items.filter(i => i.type === 'Skill').map(i => i.skill).filter(Boolean) : []
+  const effectivePool = (isModalOpen && localPool && localPool.id === activePoolId) ? localPool : activePool
+  const activePoolSkills = effectivePool ? effectivePool.items.filter(i => i.type === 'Skill').map(i => i.skill).filter(Boolean) : []
+
+  // Keep a local editable copy while modal is open so live updates don't clobber edits
+  React.useEffect(() => {
+    if (isModalOpen && activePool) {
+      try {
+        setLocalPool(JSON.parse(JSON.stringify(activePool)))
+      } catch (e) {
+        setLocalPool(activePool)
+      }
+    }
+    if (!isModalOpen) setLocalPool(null)
+  }, [isModalOpen, activePoolId])
 
   // Debounce search
   useEffect(() => {
@@ -219,6 +417,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     }
     setPools([...pools, newPool])
     setActivePoolId(newPool.id)
+    setLocalPool(newPool)
     setIsModalOpen(true)
   }
 
@@ -228,12 +427,20 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
 
   const updatePoolName = (name: string) => {
     if (!activePoolId) return
-    setPools(pools.map(p => p.id === activePoolId ? { ...p, name } : p))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, name })
+    } else {
+      setPools(pools.map(p => p.id === activePoolId ? { ...p, name } : p))
+    }
   }
 
   const updatePoolTax = (tax: number) => {
     if (!activePoolId) return
-    setPools(pools.map(p => p.id === activePoolId ? { ...p, tax } : p))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, tax })
+    } else {
+      setPools(pools.map(p => p.id === activePoolId ? { ...p, tax } : p))
+    }
   }
 
   const addCardToPool = (card: Card) => {
@@ -243,13 +450,18 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
       type: 'Card',
       card: card
     }
-    setPools(pools.map(p => {
-      if (p.id === activePoolId) {
-        if (p.items.some(i => i.card?.id === card.id)) return p
-        return { ...p, items: [...p.items, newItem] }
-      }
-      return p
-    }))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      if ((localPool.items || []).some(i => i.card?.id === card.id)) return
+      setLocalPool({ ...localPool, items: [...(localPool.items || []), newItem] })
+    } else {
+      setPools(pools.map(p => {
+        if (p.id === activePoolId) {
+          if (p.items.some(i => i.card?.id === card.id)) return p
+          return { ...p, items: [...p.items, newItem] }
+        }
+        return p
+      }))
+    }
     // Keep the search query and results so admin can add multiple cards quickly
   }
 
@@ -257,6 +469,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     setEditingSkill(null)
     setEditingItemId(null)
     setIsSkillFormOpen(true)
+    try { if (send) send({ section: 'lootPools', data: { action: 'openSkillForm', poolId: activePoolId, user: me }, ts: Date.now() }) } catch (e) {}
   }
 
   const handleEditSkillClick = (item: LootPoolItem) => {
@@ -264,46 +477,48 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
       setEditingSkill(item.skill)
       setEditingItemId(item.id)
       setIsSkillFormOpen(true)
+      try { if (send) send({ section: 'lootPools', data: { action: 'editSkill', poolId: activePoolId, itemId: item.id, user: me }, ts: Date.now() }) } catch (e) {}
     }
   }
 
   const handleSaveSkill = (skill: Skill) => {
     if (!activePoolId) return
 
-    if (editingItemId) {
-      setPools(pools.map(p => {
-        if (p.id === activePoolId) {
-          return {
-            ...p,
-            items: p.items.map(i => i.id === editingItemId ? { ...i, skill: skill } : i)
-          }
-        }
-        return p
-      }))
-    } else {
-      const newItem: LootPoolItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: 'Skill',
-        skill: skill
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      if (editingItemId) {
+        setLocalPool({ ...localPool, items: localPool.items.map(i => i.id === editingItemId ? { ...i, skill } : i) })
+      } else {
+        const newItem: LootPoolItem = { id: Math.random().toString(36).substr(2, 9), type: 'Skill', skill }
+        setLocalPool({ ...localPool, items: [...localPool.items, newItem] })
       }
-      setPools(pools.map(p => {
-        if (p.id === activePoolId) {
-          return { ...p, items: [...p.items, newItem] }
-        }
-        return p
-      }))
+    } else {
+      if (editingItemId) {
+        setPools(pools.map(p => {
+          if (p.id === activePoolId) {
+            return { ...p, items: p.items.map(i => i.id === editingItemId ? { ...i, skill } : i) }
+          }
+          return p
+        }))
+      } else {
+        const newItem: LootPoolItem = { id: Math.random().toString(36).substr(2, 9), type: 'Skill', skill }
+        setPools(pools.map(p => p.id === activePoolId ? { ...p, items: [...p.items, newItem] } : p))
+      }
     }
     setIsSkillFormOpen(false)
   }
 
   const removeItem = (itemId: string) => {
     if (!activePoolId) return
-    setPools(pools.map(p => {
-      if (p.id === activePoolId) {
-        return { ...p, items: p.items.filter(i => i.id !== itemId) }
-      }
-      return p
-    }))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, items: localPool.items.filter(i => i.id !== itemId) })
+    } else {
+      setPools(pools.map(p => {
+        if (p.id === activePoolId) {
+          return { ...p, items: p.items.filter(i => i.id !== itemId) }
+        }
+        return p
+      }))
+    }
   }
 
   const getModsForCard = (card: Card | null) => {
@@ -412,18 +627,24 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                               if (!item.card) return
                               // prevent hide action if scheduled
                               cancelHoverHide()
-                              setMousePos({ x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })
+                              const nx = (e as React.MouseEvent).clientX
+                              const ny = (e as React.MouseEvent).clientY
+                              setMousePos({ x: nx, y: ny })
+                              const key = String(item.card.id || item.card.konamiId || '')
                               try {
                                 const full = await enrichCard(item.card)
-                                setHoverTooltip({ card: full, modification: matchingMod })
+                                setHoverTooltip({ visible: true, x: nx, y: ny, idKey: key, cardLike: full, skills: activePoolSkills, modification: matchingMod })
+                                try { if (send) send({ section: 'lootPools', data: { field: 'poolItemHover', poolId: pool.id, itemId: item.id, user: me }, ts: Date.now() }) } catch (e) {}
                               } catch (ex) {
-                                setHoverTooltip({ card: item.card, modification: matchingMod })
+                                setHoverTooltip({ visible: true, x: nx, y: ny, idKey: key, cardLike: item.card, skills: activePoolSkills, modification: matchingMod })
+                                try { if (send) send({ section: 'lootPools', data: { field: 'poolItemHover', poolId: pool.id, itemId: item.id, user: me }, ts: Date.now() }) } catch (e) {}
                               }
                             }}
                             onMouseMove={handleMouseMove}
                             onMouseLeave={() => {
                               // delay hiding slightly to avoid flicker when moving toward the tooltip
                               scheduleHoverHide()
+                              try { if (send) send({ section: 'lootPools', data: { field: 'poolItemHover', poolId: pool.id, itemId: item.id, user: me, status: 'stop' }, ts: Date.now() }) } catch (e) {}
                             }}
                             className="w-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center cursor-pointer flex-shrink-0"
                           >
@@ -474,16 +695,18 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
       </div>
 
       {/* Edit Modal */}
-      {isModalOpen && activePool && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-7xl h-[88vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
+        {isModalOpen && activePool && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: '72vh', minWidth: '1200px', marginTop: '12vh' }}>
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center space-x-4 flex-1">
                 <input 
                   type="text" 
-                  value={activePool.name}
-                  onChange={(e) => updatePoolName(e.target.value)}
+                  value={editingName ? nameDraft : (effectivePool?.name || '')}
+                  onFocus={() => { setNameDraft(effectivePool?.name || ''); setEditingName(true) }}
+                  onChange={(e) => { if (editingName) { setNameDraft(e.target.value) } else { updatePoolName(e.target.value) } }}
+                  onBlur={() => { if (editingName) { updatePoolName(nameDraft); setEditingName(false) } }}
                   className="text-2xl font-bold bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 w-full"
                   placeholder="Pool Name"
                 />
@@ -492,14 +715,26 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                   <input
                     type="number"
                     min="0"
-                    value={activePool.tax || 0}
+                    value={effectivePool?.tax || 0}
                     onChange={(e) => updatePoolTax(parseInt(e.target.value) || 0)}
                     className="w-16 text-sm border-none focus:ring-0 p-0 text-right font-mono bg-transparent text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  // Apply local edits back to pools when closing modal
+                  if (localPool) {
+                    setPools((prev) => {
+                      const exists = prev.some(p => p.id === localPool.id)
+                      if (exists) return prev.map(p => p.id === localPool.id ? localPool : p)
+                      return [...prev, localPool]
+                    })
+                  }
+                  setIsModalOpen(false)
+                  setActivePoolId(null)
+                  setLocalPool(null)
+                }}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 ml-4"
               >
                 ✕
@@ -508,7 +743,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
 
             <div className="flex-1 flex overflow-hidden">
               {/* Left: Search & Add */}
-              <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
+              <div className="w-72 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex space-x-2 mb-4">
                     <button 
@@ -536,6 +771,70 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                     <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Filters</div>
+                      <button onClick={() => setFilterOpen(true)} className="text-sm px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Open Filters</button>
+                      {filterOpen && (
+                        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                          <div className="w-[90vw] max-w-4xl max-h-[70vh] overflow-y-auto rounded-2xl bg-slate-900 border-2 border-emerald-500/20 shadow-lg p-6 custom-scrollbar relative">
+                            <div className="absolute top-4 right-4 z-50">
+                              <button
+                                onClick={() => setFilterOpen(false)}
+                                className="p-3 rounded-md bg-white/5 hover:bg-red-500/20 text-white hover:text-red-400 transition-all border border-white/10"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            <div className="mb-6 flex items-center gap-4">
+                              <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+                              <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Advanced Filters</h2>
+                            </div>
+
+                            <DeckFiltersPanel
+                              isDark={isDark}
+                              setFilterOpen={setFilterOpen}
+                              selectedSubtypes={selectedSubtypes}
+                              toggleSubtype={toggleSubtype}
+                              selectedAttributes={selectedAttributes}
+                              toggleAttribute={toggleAttribute}
+                              TYPES={TYPES}
+                              selectedTypes={selectedTypes}
+                              toggleType={toggleType}
+                              selectedLevels={selectedLevels}
+                              toggleLevel={toggleLevel}
+                              selectedLinkRatings={selectedLinkRatings}
+                              toggleLinkRating={toggleLinkRating}
+                              selectedLinkArrows={selectedLinkArrows}
+                              toggleLinkArrow={toggleLinkArrow}
+                              hoveredLinkArrow={hoveredLinkArrow}
+                              setHoveredLinkArrow={setHoveredLinkArrow}
+                              linkArrowsMode={linkArrowsMode}
+                              selectedPendulumScales={selectedPendulumScales}
+                              togglePendulumScale={togglePendulumScale}
+                              atkMin={atkMin}
+                              atkMax={atkMax}
+                              setAtkMinFromInput={setAtkMinFromInput}
+                              setAtkMaxFromInput={setAtkMaxFromInput}
+                              sliderRef={sliderRef}
+                              startDrag={startDrag}
+                              defMin={defMin}
+                              defMax={defMax}
+                              setDefMinFromInput={setDefMinFromInput}
+                              setDefMaxFromInput={setDefMaxFromInput}
+                              defSliderRef={defSliderRef}
+                              defStartDrag={defStartDrag}
+                              selectedAbilities={selectedAbilities}
+                              toggleAbility={toggleAbility}
+                              resetAll={resetAll}
+                              onCancel={() => setFilterOpen(false)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -551,7 +850,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                         onMouseEnter={async () => setHoveredCard(await enrichCard(card))}
                         onMouseLeave={() => setHoveredCard(null)}
                       >
-                        <div className="w-12 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        <div className="w-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
                                   <AspectImage konamiId={card.konamiId} card={card} src={undefined} alt={card.name} className="w-full" clampToCard={true} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -571,11 +870,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
               <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
                   <h3 className="font-bold text-gray-700 dark:text-gray-200">Pool Contents</h3>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{activePool.items.length} Items</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{(effectivePool?.items?.length) || 0} Items</span>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
-                  {activePool.items.length === 0 ? (
+                  {(effectivePool?.items?.length || 0) === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                       <p>This pool is empty.</p>
                       <p className="text-sm">Add cards or skills from the left panel.</p>
@@ -583,11 +882,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Cards Section */}
-                      {activePool.items.some(i => i.type === 'Card') && (
+                      {(effectivePool?.items || []).some(i => i.type === 'Card') && (
                         <div className="col-span-full">
                           <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Cards</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {activePool.items.filter(i => i.type === 'Card').map(item => (
+                            {(effectivePool?.items || []).filter(i => i.type === 'Card').map(item => (
                               <div
                                 key={item.id}
                                 onMouseEnter={async () => item.card && setHoveredCard(await enrichCard(item.card))}
@@ -618,7 +917,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                                     ⚠
                                   </button>
                                 )}
-                                <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0 cursor-help">
+                                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0 cursor-help">
                                   {item.card && (
                                       <AspectImage konamiId={item.card.konamiId} card={item.card} src={undefined} alt={item.card.name} className="w-full" />
                                     )}
@@ -634,11 +933,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                       )}
 
                       {/* Skills Section */}
-                      {activePool.items.some(i => i.type === 'Skill') && (
+                      {(effectivePool?.items || []).some(i => i.type === 'Skill') && (
                         <div className="col-span-full mt-4">
                           <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Skills</h4>
                           <div className="space-y-3">
-                            {activePool.items.filter(i => i.type === 'Skill').map(item => (
+                            {(effectivePool?.items || []).filter(i => i.type === 'Skill').map(item => (
                               <div key={item.id} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 relative group hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
                                 <div className="font-bold text-blue-900 dark:text-blue-100 text-sm">{item.skill?.name}</div>
                                 <div className="text-xs text-blue-700 dark:text-blue-300 mt-1 whitespace-pre-wrap">{item.skill?.description}</div>
@@ -667,7 +966,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
               </div>
 
               {/* Right: Preview */}
-              <div className="w-80 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-6 flex flex-col items-center min-h-0"
+              <div className="w-72 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-6 flex flex-col items-center min-h-0"
                 onMouseEnter={() => { /* keep preview visible while interacting */ }}
                 onMouseLeave={() => { /* noop; pinnedCard preserves preview */ }}
               >
@@ -721,10 +1020,8 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
         initialSkill={editingSkill}
         formatVariant={formatVariant}
       />
-      {/* Tooltip like SkillForm (moved outside modal so it works anywhere) */}
-      {hoverTooltip && (
-        <HoverPreview card={hoverTooltip.card} modification={hoverTooltip.modification} skills={activePoolSkills} mousePos={mousePos} />
-      )}
+      {/* Shared HoverTooltip (moved outside modal so it works anywhere) */}
+      <HoverTooltip hoverTooltip={hoverTooltip || { visible: false }} cardDetailsCacheRef={cardCache} tooltipScrollRef={tooltipScrollRef} onTooltipEnter={() => {}} onTooltipLeave={() => {}} />
     </div>
   )
 }

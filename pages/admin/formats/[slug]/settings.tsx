@@ -9,6 +9,13 @@ import { useRouter } from 'next/router';
 interface GameSettings {
   id: string;
   levelXpCurve: number[];
+  interest?: {
+    requirement?: number;
+    per?: number;
+  };
+  // legacy keys supported by some saved formats
+  interestRequirement?: number;
+  interestPer?: number;
   
   classStarterCount: number;
   classStarterCost: number;
@@ -444,6 +451,41 @@ export default function FormatSettings() {
                 type="number"
                 value={settings?.goldPerRound ?? 50}
                 onChange={(e) => setSettings(prev => prev ? ({ ...prev, goldPerRound: parseInt(e.target.value || '0') }) : null)}
+                className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interest Requirement</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">For every X gold you end the shop with, award interest.</p>
+              <input
+                type="number"
+                min="0"
+                value={(settings && settings.interest && Number(settings.interest.requirement)) ?? Number((settings && settings.interestRequirement) || 0)}
+                onChange={(e) => setSettings(prev => {
+                  if (!prev) return prev
+                  const v = Number(e.target.value || 0)
+                  const nextInterest = { ...(prev.interest || {}), requirement: v }
+                  return { ...prev, interest: nextInterest }
+                })}
+                className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interest Awarded</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Amount of gold awarded per requirement met.</p>
+              <input
+                type="number"
+                min="0"
+                value={(settings && settings.interest && Number(settings.interest.per)) ?? Number((settings && settings.interestPer) || 0)}
+                onChange={(e) => setSettings(prev => {
+                  if (!prev) return prev
+                  const v = Number(e.target.value || 0)
+                  const nextInterest = { ...(prev.interest || {}), per: v }
+                  return { ...prev, interest: nextInterest }
+                })}
                 className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>

@@ -19,8 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userId = session?.user?.id
     const userEmail = session?.user?.email
+    const isAdmin = session?.user?.role === 'ADMIN'
     const isHost = (kdr.createdBy && userEmail && kdr.createdBy.email === userEmail) || (kdr.createdById && userId && kdr.createdById === userId)
-    if (!isHost) return res.status(403).json({ error: 'Forbidden' })
+    if (!isHost && !isAdmin) return res.status(403).json({ error: 'Forbidden' })
 
     // Hard-delete: remove the KDR row so DB-level ON DELETE CASCADE
     // will remove related rows (PlayerItem, KDRPlayer, rounds, etc.).
