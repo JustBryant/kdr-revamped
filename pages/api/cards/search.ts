@@ -25,25 +25,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       where.variant = variantQ
     }
 
-    const cards = await prisma.card.findMany({
-      where,
-      take: 15,
-      select: {
-        id: true,
-        konamiId: true,
-        name: true,
-        type: true,
-        desc: true,
-        atk: true,
-        def: true,
-        level: true,
-        race: true,
-        attribute: true,
-        imageUrlCropped: true,
-        artworks: true,
-        primaryArtworkIndex: true,
+    // Prefer exact (case-insensitive) name matches first, then fill remaining results
+    const exactWhere: any = {
+      name: {
+        equals: q,
+        mode: 'insensitive',
       },
+    }
+    if (variantQ && typeof variantQ === 'string') exactWhere.variant = variantQ
+
+    const selectFields = {
+      id: true,
+      konamiId: true,
+      name: true,
+      type: true,
+      desc: true,
+      atk: true,
+      def: true,
+      level: true,
+      race: true,
+      attribute: true,
+      imageUrlCropped: true,
+      artworks: true,
+      primaryArtworkIndex: true,
+    }
+
+    const exactMatches = await prisma.card.findMany({
+      where: exactWhere,
+      take: 15,
+      select: selectFields,
     })
+
+    const exactIds = exactMatches.map((c: any) => c.id)
+    const remaining = Math.max(0, 15 - exactMatches.length)
+
+    let otherMatches: any[] = []
+    if (remaining > 0) {
+      const otherWhere: any = { ...where }
+      if (exactIds.length > 0) otherWhere.id = { notIn: exactIds }
+      otherMatches = await prisma.card.findMany({
+        where: otherWhere,
+        take: remaining,
+        select: selectFields,
+      })
+    }
+
+    const cards = [...exactMatches, ...otherMatches]
 
     const normalize = (card: any) => {
       let artworkUrl: string | null = null

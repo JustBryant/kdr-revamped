@@ -3,7 +3,7 @@ import { Card, DeckCard, Skill, SkillModification } from '../../types/class-edit
 import CardPreview from './shared/CardPreview'
 import SkillForm from './shared/SkillForm'
 import CardImage, { selectArtworkUrl } from '../common/CardImage'
-import HoverTooltip from '../shop-v2/components/HoverTooltip'
+// Use inline CardPreview for starting-loadout hover previews (avoid HoverTooltip here)
 import { RichTextRenderer } from '../RichText'
 import DeckFiltersPanel from '../DeckFiltersPanel'
 import { CardFiltersState, matchCard } from './shared/CardFilters'
@@ -988,7 +988,7 @@ export default function StartingCardsEditor({ deck, onChange, skills, onSkillsCh
         initialSkill={editingSkill}
         formatVariant={formatVariant}
       />
-      <HoverTooltip hoverTooltip={hoverTooltip} cardDetailsCacheRef={cardCache} tooltipScrollRef={tooltipScrollRef} onTooltipEnter={() => {}} onTooltipLeave={() => {}} />
+      {/* Starting loadout: suppress floating hover preview here (use right-panel preview only) */}
     </div>
   )
 }
