@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { findKdr, generatePlayerKey } from '../../../lib/kdrHelpers'
-import { invalidateKdrCache } from '../../../lib/redis'
+import { invalidateKdrCache, delKey } from '../../../lib/redis'
 
 function shuffle<T>(arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -137,7 +137,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    try { await invalidateKdrCache(canonicalKdrId) } catch (e) { console.warn('Failed to invalidate KDR cache after generate', e) }
+    try { 
+      await invalidateKdrCache(canonicalKdrId) 
+      // Also remove any slug-keyed cache (frontend may request by slug)
+      try {
+        if (kdr.slug) await delKey(`kdr:resp:${kdr.slug}`)
+      } catch (e) {
+        console.warn('Failed to delete slug cache key after generate', e)
+      }
+    } catch (e) { console.warn('Failed to invalidate KDR cache after generate', e) }
     return res.status(201).json({ round: createdRound, matches: createdMatches })
     
   } catch (error) {

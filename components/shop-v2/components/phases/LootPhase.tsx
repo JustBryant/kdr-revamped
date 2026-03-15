@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useRef } from 'react'
 import { useShopContext } from '../../ShopContext'
 import LootPoolInstance from '../loot/LootPoolInstance'
+import RerollAllButton from '../ui/RerollAllButton'
 import LootPoolDetailModal from '../loot/LootPoolDetailModal'
 import useShopCaches from '../../utils/useShopCaches'
 import HoverTooltip from '../HoverTooltip'
@@ -145,6 +146,9 @@ export default function LootPhase({ lootExitPhase }: { lootExitPhase?: boolean }
 
   return (
     <div className="w-full">
+      <div className="flex justify-end mb-4">
+        <RerollAllButton />
+      </div>
       <LootPoolInstance
         player={player}
         animatingOutGroups={animatingOutGroups}
