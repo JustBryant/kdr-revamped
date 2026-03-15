@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { matchId } = req.body || {}
     if (!matchId || typeof matchId !== 'string') return res.status(400).json({ error: 'Missing matchId' })
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     const match = await (prisma as any).kDRMatch.findUnique({ where: { id: matchId }, include: { round: true } })
@@ -26,9 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kdr = await findKdr(round.kdrId, { include: { createdBy: true } })
     if (!kdr) return res.status(404).json({ error: 'KDR not found' })
 
-    // Only the KDR host may reopen matches
-    if (kdr.createdById !== user.id && kdr.createdBy?.email !== session.user.email) {
-      return res.status(403).json({ error: 'Only the KDR host may reopen matches' })
+    // Only the KDR host or an admin may reopen matches
+    const isAdmin = user.role === 'ADMIN'
+    if (!isAdmin && kdr.createdById !== user.id && kdr.createdBy?.email !== session.user.email) {
+      return res.status(403).json({ error: 'Only the KDR host or an admin may reopen matches' })
     }
 
     // Only proceed if match was completed or reported/disputed

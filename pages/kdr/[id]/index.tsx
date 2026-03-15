@@ -216,6 +216,9 @@ export default function KdrViewPage() {
     return false
   })()
 
+  const isAdmin = !!(session?.user && session.user.role === 'ADMIN')
+  const canSeeHostControls = isHost || isAdmin
+
   const roundOngoing = (() => {
     if (!kdr || !kdr.rounds) return false
     return (kdr.rounds || []).some((r: any) => (r.matches || []).some((m: any) => m.status !== 'COMPLETED'))
@@ -419,7 +422,7 @@ export default function KdrViewPage() {
                 Invite
               </button>
               <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />
-              {!amIJoined && (kdr?.status === 'OPEN' || (isHost && kdr?.status === 'STARTED')) && (kdr?.playerCount == null || visiblePlayers.length < Number(kdr?.playerCount)) && (
+              {!amIJoined && (kdr?.status === 'OPEN' || (canSeeHostControls && kdr?.status === 'STARTED')) && (kdr?.playerCount == null || visiblePlayers.length < Number(kdr?.playerCount)) && (
                 <button className={`${btnBase} bg-indigo-600 text-white font-bold px-6 shadow-lg shadow-indigo-600/20`} onClick={handleJoinClick} disabled={loading}>Join KDR</button>
               )}
               {amIJoined && (
@@ -544,7 +547,7 @@ export default function KdrViewPage() {
                             </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                              {statusIcon}
-                             {isHost && !isMe && (
+                             {canSeeHostControls && !isMe && (
                                <button onClick={(e) => { e.stopPropagation(); kickPlayer(p); }} className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all">
                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                </button>
@@ -557,7 +560,7 @@ export default function KdrViewPage() {
                 </div>
 
                 {/* Host Controls */}
-                {isHost && (
+                {canSeeHostControls && (
                   <div className={`p-6 rounded-2xl border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
                     <h3 className="text-[10px] font-black uppercase text-indigo-500 mb-4 tracking-widest flex items-center gap-2">
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -734,12 +737,12 @@ export default function KdrViewPage() {
                               <div 
                                 key={m.id} 
                                 onClick={() => {
-                                  if ((isMe || isHost) && pB && m.status !== 'COMPLETED') {
+                                  if ((isMe || canSeeHostControls) && pB && m.status !== 'COMPLETED') {
                                     setSelectedMatchForReport({ ...m, pA, pB });
                                     setReportOpen(true);
                                   }
                                 }}
-                                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${(isMe || isHost) && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
+                                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${(isMe || canSeeHostControls) && pB && m.status !== 'COMPLETED' ? 'cursor-pointer active:scale-[0.98]' : ''} ${isMe ? (isDark ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-indigo-50 border-indigo-200 shadow-lg') : (isDark ? 'bg-white/2 border-white/5 hover:bg-white/5' : 'bg-white border-gray-100 hover:shadow-xl')}`}
                               >
                                 {isMe && <div className="absolute top-0 right-0 px-4 py-1.5 bg-indigo-600 text-[10px] font-black text-white uppercase tracking-widest rounded-bl-xl shadow-lg">Your Match</div>}
                                 
@@ -767,7 +770,7 @@ export default function KdrViewPage() {
                                       <div className={`mt-4 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all ${m.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-500' : m.status === 'DISPUTED' ? 'bg-red-500 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-white/5 border-white/5 text-gray-500'}`}>
                                         {m.status}
                                       </div>
-                                      {(isMe || isHost) && pB && m.status !== 'COMPLETED' && (
+                                      {(isMe || canSeeHostControls) && pB && m.status !== 'COMPLETED' && (
                                         <div className="mt-4 text-[10px] font-black text-indigo-500 uppercase animate-pulse">Click to Report</div>
                                       )}
                                     </div>
@@ -794,7 +797,7 @@ export default function KdrViewPage() {
                                     </div>
                                   </div>
 
-                                  {isHost && pB && (m.status === 'COMPLETED' || m.status === 'DISPUTED') && (
+                                  {canSeeHostControls && pB && (m.status === 'COMPLETED' || m.status === 'DISPUTED') && (
                                     <button onClick={async (e) => {
                                       e.stopPropagation();
                                       setLoading(true)
