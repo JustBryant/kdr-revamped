@@ -167,30 +167,11 @@ export function ShopProvider({ kdrId, children }: { kdrId: string; children: Rea
   }, [base])
 
   const rerollLoot = useCallback(async () => {
+    // Loot phase disabled in v2: noop to avoid server calls/animations
     try {
-      if (!base || typeof (base as any).call !== 'function') return
-      // Reset entrance animation state so the incoming offers animate correctly
-      try {
-        resetEntranceAnimation({ prevOfferIdsRef, animatedPoolsRef, initialEntranceRef, setLootTierTyping, setLootLineProgress, setLootPoolDropProgress, setLootCardFlips, setStartLootPoolAnimation, setResyncKey })
-      } catch (e) {}
-
-      // Call server-side reroll; use default autoSetPlayer behavior so useShopV2 updates state
-      const res = await (base as any).call('rerollLoot')
-      if (res && res.player) {
-        try {
-          (base as any).setPlayer((prev: any) => {
-            if (!prev) return res.player
-            const merged = { ...(prev || {}), ...(res.player || {}) }
-            merged.shopState = { ...(prev?.shopState || {}), ...(res.player?.shopState || {}) }
-            return merged
-          })
-        } catch (e) {
-          try { (base as any).setPlayer(res.player) } catch (e) {}
-        }
-      }
-      return res
+      console.warn('[ShopContext] rerollLoot called but LOOT is disabled; no-op')
+      return
     } catch (e) {
-      console.error('[ShopContext] rerollLoot error', e)
       return
     }
   }, [base])

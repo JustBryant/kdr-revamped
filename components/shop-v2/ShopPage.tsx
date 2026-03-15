@@ -318,14 +318,12 @@ function Inner({ kdrId }: { kdrId: string }) {
                   </ShopWindow>
 
                   {/* Absolute controls below the ShopWindow (aligned right) */}
-                  {player?.shopState?.stage === 'LOOT' && (
                   <div style={{ position: 'absolute', right: '18px', top: 'calc(100% + 12px)', zIndex: 50 }}>
                     <div className="flex items-center space-x-3">
                       <button onClick={() => setSellOpen(true)} className="px-4 py-2 bg-amber-600 text-white font-black text-[12px] uppercase tracking-widest rounded-lg hover:bg-amber-500">Sell</button>
                       <button onClick={async () => { try { if (typeof finishLootPhase === 'function') await finishLootPhase() } catch (e) {} }} disabled={loading} className="px-4 py-2 bg-gray-800 text-white font-black text-[12px] uppercase tracking-widest rounded-lg disabled:opacity-50">Finish</button>
                     </div>
                   </div>
-                  )}
                 </div>
               <div style={{ marginTop: '88px' }} className="flex items-center justify-between">
                 <div className="flex items-center">
