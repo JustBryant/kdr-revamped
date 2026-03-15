@@ -797,70 +797,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         case 'finish': {
-          // Mark the player's shop instance as finished for this round, and apply per-format "interest" if configured.
+          // Mark the player's shop instance as finished for this round
           try {
             const { updated, shopState: finalState } = await persistStateForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, partial: { stage: 'DONE' }, playerShopState: shopInstance?.shopState || player.shopState })
 
-            // Determine interest settings (support both new object shape and legacy flat keys)
-            const interestCfg = (settings && settings.interest) ? settings.interest : null
-            const requirement = Number((interestCfg && interestCfg.requirement) ?? settings.interestRequirement ?? 0)
-            const per = Number((interestCfg && interestCfg.per) ?? settings.interestPer ?? 0)
+            // Ensure the instance is marked complete
+            const updatedInst = await prisma.kDRShopInstance.upsert({
+              where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } },
+              create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: finalState, isComplete: true },
+              update: { shopState: finalState, isComplete: true }
+            })
 
-            // Only award interest once per shop instance. Use a flag on the persisted state to guard.
-            let interestAwarded = Boolean((finalState && finalState.interestAwarded) || (finalState && finalState.shopInterestAwarded))
-            let awardedAmount = 0
-
-            if (!interestAwarded && requirement > 0 && per > 0) {
-              // Fetch fresh player row to get authoritative gold amount
-              const fresh = await prisma.kDRPlayer.findUnique({ where: { id: player.id } })
-              const playerGoldNow = Number(fresh?.gold || 0)
-              const times = Math.floor(playerGoldNow / requirement)
-              if (times > 0) {
-                awardedAmount = times * per
-                try {
-                  // Atomically increment player gold and mark interest awarded on the instance/state
-                  const txRes = await prisma.$transaction(async (tx) => {
-                    const updatedPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { gold: { increment: awardedAmount } } })
-                    // mark the shop instance/state with interestAwarded and amount
-                    const inst = await tx.kDRShopInstance.upsert({
-                      where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } },
-                      create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: { ...(finalState || {}), interestAwarded: true, interestAmount: awardedAmount }, isComplete: true },
-                      update: { shopState: { ...(finalState || {}), interestAwarded: true, interestAmount: awardedAmount }, isComplete: true }
-                    })
-                    // also persist the shopState onto the player row for convenience
-                    const finalPlayer = await tx.kDRPlayer.update({ where: { id: player.id }, data: { shopComplete: true, lastShopRound: currentRoundNumberAtStart, shopState: { ...(finalState || {}), interestAwarded: true, interestAmount: awardedAmount } }, include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } } })
-                    return { updatedPlayer: finalPlayer, inst }
-                  }, { timeout: 10000 })
-                  // append a history entry to record the interest award
-                  try { await appendHistoryForPlayer({ playerId: player.id, roundNumber: currentRoundNumberAtStart, entry: { type: 'interest', text: `Interest awarded: +${awardedAmount} gold`, gold: awardedAmount }, playerShopState: finalState }) } catch (e) {}
-                  console.log(`[SHOP:TRACE] finish: applied interest ${awardedAmount} to player ${player.id} for round ${currentRoundNumberAtStart}`)
-                  return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(txRes.updatedPlayer, txRes.inst) })
-                } catch (e: any) {
-                  console.error('Failed to apply interest award', e)
-                  // fallback to marking finished without interest
-                }
-              }
-            }
-
-            // If no interest awarded or a failure occurred applying it, still mark instance/player complete
-            try {
-              const updatedInst = await prisma.kDRShopInstance.upsert({
-                where: { playerId_roundNumber: { playerId: player.id, roundNumber: currentRoundNumberAtStart } },
-                create: { playerId: player.id, roundNumber: currentRoundNumberAtStart, shopState: finalState, isComplete: true },
-                update: { shopState: finalState, isComplete: true }
-              })
-
-              const final = await prisma.kDRPlayer.update({
-                where: { id: player.id },
-                data: { shopComplete: true, lastShopRound: currentRoundNumberAtStart, shopState: finalState },
-                include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } }
-              })
-              console.log(`[SHOP:TRACE] finish: Player finished round ${currentRoundNumberAtStart}. interestAwarded=${interestAwarded} amount=${awardedAmount}`)
-              return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final, updatedInst) })
-            } catch (e: any) {
-              console.error('Failed to finish shop-v2', e)
-              return res.status(500).json({ error: 'Failed to finish' })
-            }
+            const final = await prisma.kDRPlayer.update({
+              where: { id: player.id },
+              data: { shopComplete: true, lastShopRound: currentRoundNumberAtStart, shopState: finalState },
+              include: { shopInstances: { where: { roundNumber: currentRoundNumberAtStart } } }
+            })
+            console.log(`[SHOP:TRACE] finish: Player finished round ${currentRoundNumberAtStart}.`)
+            return res.status(200).json({ message: 'Shop finished', player: attachPlayerKey(final, updatedInst) })
           } catch (e: any) {
             console.error('Failed to finish shop-v2', e)
             return res.status(500).json({ error: 'Failed to finish' })

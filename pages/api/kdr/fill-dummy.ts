@@ -17,12 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kdr = await findKdr(kdrId, { select: { id: true, playerCount: true, createdById: true, createdBy: { select: { id: true, email: true } }, players: { where: { status: 'ACTIVE' }, select: { id: true, userId: true } } } })
     if (!kdr) return res.status(404).json({ error: 'KDR not found' })
 
-    // host or admin check
+    // host check
     const userId = session?.user?.id
     const userEmail = session?.user?.email
-    const isAdmin = session?.user?.role === 'ADMIN'
     const isHost = (kdr.createdBy && userEmail && kdr.createdBy.email === userEmail) || (kdr.createdById && userId && kdr.createdById === userId)
-    if (!isHost && !isAdmin) return res.status(403).json({ error: 'Forbidden' })
+    if (!isHost) return res.status(403).json({ error: 'Forbidden' })
 
     const configured = kdr.playerCount || 0
     const current = (kdr.players || []).length

@@ -36,7 +36,6 @@ export interface Skill {
   uniqueRound?: number
   statRequirements?: {
     stat: string
-    statOptions?: string[]
     divisor?: number
     template?: string
     value?: number

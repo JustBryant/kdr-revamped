@@ -26,7 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (format.settings) return res.status(200).json(format.settings)
 
         const defaultSettings = {
-          interest: { requirement: 0, per: 0 },
           levelXpCurve: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500],
           classStarterCount: 1,
           classStarterCost: 50,
@@ -119,9 +118,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       const { 
         levelXpCurve, 
-        interest,
-        interestRequirement,
-        interestPer,
         classStarterCount, classStarterCost, classStarterMinLevel,
         classMidCount, classMidCost, classMidMinLevel,
         classHighCount, classHighCost, classHighMinLevel,
@@ -141,8 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return isNaN(num) ? def : num;
       };
 
-      // Build the common data shape for settings
-      const dataCommon: any = {
+      const data = {
         levelXpCurve,
         classStarterCount: safeInt(classStarterCount, 1),
         classStarterCost: safeInt(classStarterCost, 50),
@@ -186,14 +181,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         skillUnlockLevels,
         skillSelectionCount: safeInt(skillSelectionCount, 3)
       };
-
-      // If saving a format's settings (Format.settings JSON), include interest (supports nested or legacy keys).
-      const data = targetFormatId
-        ? {
-            ...dataCommon,
-            interest: interest ?? { requirement: safeInt(interestRequirement, 0), per: safeInt(interestPer, 0) }
-          }
-        : dataCommon;
 
       // Update or create for the target format (persist to Format.settings), otherwise use GameSettings singleton
       if (targetFormatId) {

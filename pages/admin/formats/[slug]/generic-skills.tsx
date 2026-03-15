@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { Skill, Card } from '../../../../types/class-editor';
 import SkillForm from '../../../../components/class-editor/shared/SkillForm';
 import { useRouter } from 'next/router';
-import HoverTooltip from '../../../../components/shop-v2/components/HoverTooltip';
+import CardPreview from '../../../../components/class-editor/shared/CardPreview';
 import CardImage from '../../../../components/common/CardImage';
 
 // artwork resolution handled by CardImage component
@@ -16,14 +16,13 @@ export default function GenericSkillsEditor() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
-  const [hoverTooltip, setHoverTooltip] = useState<any>({ visible: false, x: 0, y: 0, cardLike: null, skills: [], stats: {} });
-  const cardDetailsCacheRef = useRef<Record<string, any>>({});
-  const tooltipScrollRef = useRef<HTMLDivElement | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<{ card: Card, skill: Skill } | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const router = useRouter();
   const slug = Array.isArray(router.query.slug) ? router.query.slug[0] : router.query.slug as string | undefined;
 
-  const handleMouseMove = (e: any) => {
-    try { setHoverTooltip((prev: any) => ({ ...(prev || {}), x: e.clientX || 0, y: e.clientY || 0 })); } catch (err) {}
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
   };
 
   useEffect(() => {
@@ -145,10 +144,11 @@ export default function GenericSkillsEditor() {
                         key={card.id} 
                         className="relative group cursor-help"
                         onMouseEnter={(e) => {
-                          try { setHoverTooltip({ visible: true, x: e.clientX || 0, y: e.clientY || 0, cardLike: card, skills: [skill], stats: {} }); } catch (err) {}
+                          setHoveredCard({ card, skill });
+                          setMousePos({ x: e.clientX, y: e.clientY });
                         }}
                         onMouseMove={handleMouseMove}
-                        onMouseLeave={() => { try { setHoverTooltip((p: any) => ({ ...(p || {}), visible: false })) } catch (err) {} }}
+                        onMouseLeave={() => setHoveredCard(null)}
                       >
                         <div style={{ width: 48 }}>
                           <CardImage card={card} konamiId={card.konamiId} alt={card.name} className="w-full h-full object-contain rounded shadow-sm border border-gray-200 dark:border-gray-700" />
@@ -180,12 +180,18 @@ export default function GenericSkillsEditor() {
           )}
         </div>
 
-        {/* HoverTooltip (shared) */}
-        <HoverTooltip
-          hoverTooltip={hoverTooltip}
-          cardDetailsCacheRef={cardDetailsCacheRef}
-          tooltipScrollRef={tooltipScrollRef}
-        />
+        {/* Card Hover Preview */}
+        {hoveredCard && (
+          <div 
+            className="fixed z-50 pointer-events-none"
+            style={{ 
+              top: Math.min(mousePos.y + 20, (typeof window !== 'undefined' ? window.innerHeight : 1000) - 550),
+              left: Math.min(mousePos.x + 20, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 320)
+            }}
+          >
+            <CardPreview card={hoveredCard.card} skills={[hoveredCard.skill]} className="w-80" />
+          </div>
+        )}
 
         <SkillForm
           isOpen={isModalOpen}

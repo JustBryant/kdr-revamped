@@ -74,7 +74,7 @@ export default function TreasuresEditor() {
 
   const fetchTreasures = async () => {
     try {
-      const res = await axios.get('/api/treasures');
+      const res = await axios.get('/api/treasures/index');
       setTreasures(res.data);
       setLoading(false);
     } catch (error) {

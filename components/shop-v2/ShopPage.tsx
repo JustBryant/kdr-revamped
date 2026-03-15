@@ -22,7 +22,7 @@ import TrainingPhase from './components/phases/TrainingPhase'
 import TreasurePhase from './components/phases/TreasurePhase'
 import LootPhase from './components/phases/LootPhase'
 import ShopWindow from './components/layout/ShopWindow'
-
+// Loot pools temporarily disabled in v2 preview
 
 function Inner({ kdrId }: { kdrId: string }) {
   // Scale wrapper refs & state (match original shop responsive scaler)

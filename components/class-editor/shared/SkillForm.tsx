@@ -4,8 +4,6 @@ import ModificationBuilder from './ModificationBuilder'
 import CardDescription from './CardDescription'
 import CardPreview from './CardPreview'
 import CardImage, { selectArtworkUrl } from '../../common/CardImage'
-import StatRequirementEditor from './StatRequirementEditor'
-import { RichTextRenderer } from '../../RichText'
 
 const getImageUrl = (konamiId: number) => selectArtworkUrl(undefined, konamiId) || undefined
 
@@ -128,19 +126,14 @@ export default function SkillForm({
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-lg text-gray-900 dark:text-white">{title}</h3>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Edit skill details and scaling effects</div>
-            </div>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
+            <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
             <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">✕</button>
           </div>
-          <div className="p-6 max-h-[80vh] overflow-y-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-4">
-                <div>
+          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Skill Name</label>
               <input
                 type="text"
@@ -326,27 +319,66 @@ export default function SkillForm({
                     type="button"
                     onClick={() => setSkillForm(prev => ({ 
                       ...prev, 
-                      statRequirements: [...(prev.statRequirements || []), { stat: 'STR', divisor: 1, template: '' }] 
+                      statRequirements: [...(prev.statRequirements || []), { stat: 'str', divisor: 4, template: '' }] 
                     }))}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                   >
                     + Add Scaling Effect
                   </button>
                 </div>
-
+                
                 {skillForm.statRequirements && skillForm.statRequirements.length > 0 ? (
                   <div className="space-y-2">
                     {skillForm.statRequirements.map((req, idx) => (
-                      <div key={idx}>
-                        <StatRequirementEditor
-                          req={req}
-                          onChange={(next) => {
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
+                        <select
+                          value={req.stat}
+                          onChange={e => {
                             const newReqs = [...(skillForm.statRequirements || [])]
-                            newReqs[idx] = { ...newReqs[idx], ...next }
+                            newReqs[idx] = { ...req, stat: e.target.value as any }
                             setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
                           }}
-                          onRemove={() => setSkillForm(prev => ({ ...prev, statRequirements: prev.statRequirements?.filter((_, i) => i !== idx) }))}
+                          className="text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
+                        >
+                          {['str', 'dex', 'con', 'int', 'cha'].map(s => (
+                            <option key={s} value={s}>{s.toUpperCase()}</option>
+                          ))}
+                        </select>
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+                          <span>per</span>
+                          <input
+                            type="number"
+                            value={req.divisor || 1}
+                            min={1}
+                            onChange={e => {
+                              const newReqs = [...(skillForm.statRequirements || [])]
+                              newReqs[idx] = { ...req, divisor: Number(e.target.value) }
+                              setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                            }}
+                            className="w-10 text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={req.template || ''}
+                          placeholder="Template: Costs {n} less..."
+                          onChange={e => {
+                            const newReqs = [...(skillForm.statRequirements || [])]
+                            newReqs[idx] = { ...req, template: e.target.value }
+                            setSkillForm(prev => ({ ...prev, statRequirements: newReqs }))
+                          }}
+                          className="flex-1 text-xs bg-white dark:bg-gray-700 border border-emerald-300 dark:border-emerald-700 rounded px-1 py-1 text-emerald-900 dark:text-emerald-100"
                         />
+                        <button 
+                          type="button"
+                          onClick={() => setSkillForm(prev => ({ 
+                            ...prev, 
+                            statRequirements: prev.statRequirements?.filter((_, i) => i !== idx) 
+                          }))}
+                          className="ml-auto text-emerald-400 hover:text-red-500"
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -356,41 +388,11 @@ export default function SkillForm({
                   </div>
                 )}
               </div>
-                </div>
-              </div>
-
-              <div className="lg:col-span-1 space-y-4">
-                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700">
-                  <div className="text-sm font-semibold mb-2">Live Preview</div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 max-h-[40vh] overflow-y-auto">
-                    <RichTextRenderer content={skillForm.description || ''} stats={undefined} requirements={skillForm.statRequirements as any} />
-                  </div>
-                </div>
-
-                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                  <div className="text-sm font-semibold mb-2">Provides</div>
-                  {skillForm.providesCards && skillForm.providesCards.length > 0 ? (
-                    <div className="space-y-2">
-                      {skillForm.providesCards.map((card, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div style={{ width: 40 }}>
-                            <CardImage konamiId={card.konamiId} card={card} alt={card.name} />
-                          </div>
-                          <div className="text-sm truncate">{card.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-500 italic">No cards provided</div>
-                  )}
-                </div>
-
-                <div className="p-3 flex items-center justify-end gap-2">
-                  <button onClick={onClose} className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800">Cancel</button>
-                  <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Save</button>
-                </div>
-              </div>
             </div>
+          </div>
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-2">
+            <button onClick={onClose} className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800">Cancel</button>
+            <button onClick={handleSave} className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
           </div>
         </div>
       </div>

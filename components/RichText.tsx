@@ -6,14 +6,6 @@ import Icon from './Icon'
 
 export interface StatRequirement {
   stat: 'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'
-  // Optional: compute `n` from multiple stats by taking the max
-  statOptions?: Array<'STR' | 'DEX' | 'INT' | 'LUK' | 'FOR' | 'CON'>
-  // mode: 'max' -> use max(selected stats) / divisor (default)
-  // 'threshold_count' -> count how many selected stats meet >= threshold
-  // 'per_stat' -> use per-stat divisors in `perStatDivisors` and take the max of floor(stat/divisor)
-  mode?: 'max' | 'threshold_count' | 'per_stat'
-  threshold?: number
-  perStatDivisors?: Record<string, number>
   value: number
   affectedTextSnippet?: string
   template?: string
@@ -80,97 +72,6 @@ export interface PlayerStats {
 }
 
 export function RichTextRenderer({ content, stats, requirements, inline = false }: { content: string; stats?: PlayerStats; requirements?: StatRequirement[]; inline?: boolean }) {
-  // Small safe expression evaluator for inline {expr} where `n` and stat
-  // variables (STR, DEX, INT, CHA, LUK, FOR, CON) are available. Also
-  // supports `max(a,b,...)` and `min(a,b,...)` via the provided args.
-  const safeEvalExpr = (expr: string, nVal: number, statsObj?: PlayerStats): string | null => {
-    if (!expr || typeof expr !== 'string') return null
-    const cleaned = expr.trim()
-    // Basic allowed characters (numbers, letters, operators, parentheses, commas, spaces, dot)
-    if (!/^[0-9A-Za-z_+\-*/().,\s]+$/.test(cleaned)) return null
-    // Disallow suspicious tokens
-    const forbidden = ['__proto__', 'constructor', 'process', 'global', 'window', 'eval', 'Function']
-    for (const f of forbidden) if (cleaned.includes(f)) return null
-
-    // Allowed variable names
-    const vars = ['n','STR','DEX','INT','CHA','LUK','FOR','CON','max','min']
-    const args = vars
-    const values: any[] = [Number(nVal)]
-    const upperStats: Record<string, number> = {}
-    const statKeys = statsObj ? Object.keys(statsObj) : []
-    statKeys.forEach(k => { upperStats[k.toUpperCase()] = Number((statsObj as any)[k] || 0) })
-    for (let i=1;i<vars.length-2;i++) {
-      values.push(upperStats[vars[i]] || 0)
-    }
-    // push helper functions
-    values.push(Math.max)
-    values.push(Math.min)
-
-    try {
-      // Create function with named args for safety
-      // eslint-disable-next-line no-new-func
-      const fn = Function(...args, 'return (' + cleaned + ')')
-      const result = fn(...values)
-      if (typeof result === 'number' && isFinite(result)) return String(Math.floor(result))
-      if (typeof result === 'string') return result
-      return null
-    } catch (e) {
-      return null
-    }
-  }
-
-  // Compute the base stat value for a requirement. If `statOptions` is
-  // present, return the maximum value among those stats (defaults to 0).
-  const computeStatValue = (req: StatRequirement, statsObj?: PlayerStats): number => {
-    if (!statsObj) return 0
-    const opts = (req as any).statOptions as string[] | undefined
-    if (opts && Array.isArray(opts) && opts.length > 0) {
-      const vals = opts.map(s => {
-        const key = s.toUpperCase()
-        return Number((statsObj as any)[key] || (statsObj as any)[s] || 0)
-      })
-      return Math.max(...vals, 0)
-    }
-    const key = req.stat as keyof PlayerStats
-    return Number((statsObj as any)[key] || 0)
-  }
-
-  // Compute the `n` value for a requirement according to different modes.
-  // - 'max' (default): floor(max(selectedStats) / divisor)
-  // - 'threshold_count': count(stats >= threshold)
-  // - 'per_stat': for each stat, compute floor(stat / perStatDivisors[stat]||divisor) and take max
-  const computeN = (req: StatRequirement, statsObj?: PlayerStats): number => {
-    if (!req) return 0
-    const mode = (req as any).mode || 'max'
-    if (mode === 'threshold_count') {
-      const threshold = (req as any).threshold ?? (req.value ?? 1)
-      const opts = (req as any).statOptions && (req as any).statOptions.length > 0 ? (req as any).statOptions : [req.stat && String(req.stat).toUpperCase()].filter(Boolean)
-      let count = 0
-      for (const s of opts) {
-        const val = Number(statsObj?.[s] ?? statsObj?.[String(s).toLowerCase()] ?? 0)
-        if (val >= threshold) count++
-      }
-      return count
-    }
-
-    if (mode === 'per_stat') {
-      const opts = (req as any).statOptions && (req as any).statOptions.length > 0 ? (req as any).statOptions : [req.stat && String(req.stat).toUpperCase()].filter(Boolean)
-      const per = (req as any).perStatDivisors || {}
-      let best = 0
-      for (const s of opts) {
-        const statVal = Number(statsObj?.[s] ?? statsObj?.[String(s).toLowerCase()] ?? 0)
-        const div = per[s] ?? req.divisor ?? 1
-        const n = Math.floor(Number(statVal) / Number(div || 1))
-        if (n > best) best = n
-      }
-      return best
-    }
-
-    // default 'max' behavior
-    const base = computeStatValue(req, statsObj)
-    return Math.floor(Number(base) / Number(req.divisor || 1))
-  }
-
   // 1. Handle Conditional Blocks: [if DEX>=4]This text appears if DEX is at least 4[/if]
   // Pattern: [if STAT OP VAL]content[/if]
   const processConditions = (text: string) => {
@@ -207,7 +108,7 @@ export function RichTextRenderer({ content, stats, requirements, inline = false 
       requirements.forEach(req => {
         if (!req.affectedTextSnippet) return
 
-        const playerVal = computeStatValue(req, stats)
+        const playerVal = stats ? (stats[req.stat] || 0) : 0
         const met = playerVal >= req.value
 
         // Escape regex special chars in the snippet
@@ -226,19 +127,16 @@ export function RichTextRenderer({ content, stats, requirements, inline = false 
     if (requirements && requirements.length > 0) {
       requirements.forEach(req => {
         if (req.template && req.template.includes('{n}')) {
-          const nValue = computeN(req, stats)
-
-          // Replace any {expr} occurrences inside the template using nValue
-          const templateRendered = req.template.replace(/\{([^}]+)\}/g, (m, expr) => {
-            const val = safeEvalExpr(expr, nValue, stats)
-            if (val !== null) {
-              return `<span class="text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">${val}</span>`
-            }
-            return m
-          })
-
+          const playerVal = stats ? (stats[req.stat as keyof PlayerStats] || 0) : 0
+          const divisor = req.divisor || 1
+          const nValue = Math.floor(playerVal / divisor)
+          
+          // Use green/emerald for scaling
+          const nStyled = `<span class="text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">${nValue}</span>`
+          const scalingText = req.template.replace('{n}', nStyled)
+          
           // Append as a dedicated UI block
-          processedText += `<div class="mt-2 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded text-xs text-emerald-100/90 italic animate-in fade-in slide-in-from-bottom-1 duration-700">${templateRendered}</div>`
+          processedText += `<div class="mt-2 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded text-xs text-emerald-100/90 italic animate-in fade-in slide-in-from-bottom-1 duration-700">${scalingText}</div>`
         }
       })
     }
@@ -247,62 +145,11 @@ export function RichTextRenderer({ content, stats, requirements, inline = false 
   }
 
   const processedContent = processConditions(content)
-
-  // Build a small visible summary for stat requirements so editors / admin UIs
-  // (which may not have a player `stats` object) can still show what the
-  // skill/card scaling or hard requirements would look like. When no
-  // `stats` are provided we default numeric values (n) to 0 as requested.
-  let requirementsSummary = ''
-  if (requirements && requirements.length > 0) {
-    const parts: string[] = []
-    for (const req of requirements) {
-      const statKey = req.stat
-      // Prefer explicit value (threshold) when present
-      if (typeof (req as any).value === 'number') {
-        parts.push(`Requires ${ (req as any).value } ${ statKey }`)
-      } else if (req.template) {
-        const nValue = computeN(req, stats)
-        const rendered = req.template.replace(/\{([^}]+)\}/g, (m, expr) => {
-          const v = safeEvalExpr(expr, nValue, stats)
-          return v !== null ? v : m
-        })
-        parts.push(rendered)
-      } else if (typeof (req as any).divisor === 'number' && req.template) {
-        const nValue = computeN(req, stats)
-        parts.push(req.template.replace('{n}', String(nValue)))
-      }
-    }
-
-    if (parts.length > 0) {
-      requirementsSummary = `<div class="mb-2 p-2 bg-gray-800/30 dark:bg-gray-200/5 border border-gray-700 dark:border-gray-600 rounded text-xs text-gray-200/90 dark:text-gray-300 italic">${parts.map(p=>`<div class=\"leading-tight\">${p}</div>`).join('')}</div>`
-    }
-  }
-  
-  
-
-  // Replace inline expression occurrences like {n*100} in the main content.
-  // Use the first requirement to derive `n` when available; default n=0.
-  let processedContentWithExpr = processedContent
-  if (requirements && requirements.length > 0) {
-    const primary = requirements[0]
-    const primaryN = computeN(primary, stats)
-    processedContentWithExpr = processedContent.replace(/\{(?!class:)(?!card:)([^}]+)\}/g, (m, expr) => {
-      const out = safeEvalExpr(expr, primaryN, stats)
-      return out !== null ? out : m
-    })
-  } else {
-    // no requirements -> n = 0
-    processedContentWithExpr = processedContent.replace(/\{(?!class:)(?!card:)([^}]+)\}/g, (m, expr) => {
-      const out = safeEvalExpr(expr, 0, stats)
-      return out !== null ? out : m
-    })
-  }
   
   // Handle Class Embedding: {class:Name}
   // Handle Card Embedding: {card:ID}
   
-  const finalContent = requirementsSummary + processedContentWithExpr
-  const parts = finalContent.split(/(\{class:.*?\}|\{card:.*?\})/g)
+  const parts = processedContent.split(/(\{class:.*?\}|\{card:.*?\})/g)
 
   const Component = inline ? 'span' : 'div'
 
