@@ -870,11 +870,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
               <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
                   <h3 className="font-bold text-gray-700 dark:text-gray-200">Pool Contents</h3>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{activePool.items.length} Items</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{(effectivePool?.items?.length) || 0} Items</span>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
-                  {activePool.items.length === 0 ? (
+                  {(effectivePool?.items?.length || 0) === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                       <p>This pool is empty.</p>
                       <p className="text-sm">Add cards or skills from the left panel.</p>
@@ -882,11 +882,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Cards Section */}
-                      {activePool.items.some(i => i.type === 'Card') && (
+                      {(effectivePool?.items || []).some(i => i.type === 'Card') && (
                         <div className="col-span-full">
                           <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Cards</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {activePool.items.filter(i => i.type === 'Card').map(item => (
+                            {(effectivePool?.items || []).filter(i => i.type === 'Card').map(item => (
                               <div
                                 key={item.id}
                                 onMouseEnter={async () => item.card && setHoveredCard(await enrichCard(item.card))}
@@ -933,11 +933,11 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                       )}
 
                       {/* Skills Section */}
-                      {activePool.items.some(i => i.type === 'Skill') && (
+                      {(effectivePool?.items || []).some(i => i.type === 'Skill') && (
                         <div className="col-span-full mt-4">
                           <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Skills</h4>
                           <div className="space-y-3">
-                            {activePool.items.filter(i => i.type === 'Skill').map(item => (
+                            {(effectivePool?.items || []).filter(i => i.type === 'Skill').map(item => (
                               <div key={item.id} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 relative group hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
                                 <div className="font-bold text-blue-900 dark:text-blue-100 text-sm">{item.skill?.name}</div>
                                 <div className="text-xs text-blue-700 dark:text-blue-300 mt-1 whitespace-pre-wrap">{item.skill?.description}</div>
