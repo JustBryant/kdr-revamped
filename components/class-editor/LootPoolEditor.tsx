@@ -114,6 +114,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [nameDraft, setNameDraft] = useState<string>('')
   const [editingName, setEditingName] = useState<boolean>(false)
+  const [localPool, setLocalPool] = useState<LootPool | null>(null)
 
   const getTierLabel = (tier: Tier) => {
     if (tierLabels && tierLabels[tier]) return tierLabels[tier]
@@ -369,7 +370,20 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   }
 
   const activePool = pools.find(p => p.id === activePoolId)
-  const activePoolSkills = activePool ? activePool.items.filter(i => i.type === 'Skill').map(i => i.skill).filter(Boolean) : []
+  const effectivePool = (isModalOpen && localPool && localPool.id === activePoolId) ? localPool : activePool
+  const activePoolSkills = effectivePool ? effectivePool.items.filter(i => i.type === 'Skill').map(i => i.skill).filter(Boolean) : []
+
+  // Keep a local editable copy while modal is open so live updates don't clobber edits
+  React.useEffect(() => {
+    if (isModalOpen && activePool) {
+      try {
+        setLocalPool(JSON.parse(JSON.stringify(activePool)))
+      } catch (e) {
+        setLocalPool(activePool)
+      }
+    }
+    if (!isModalOpen) setLocalPool(null)
+  }, [isModalOpen, activePoolId])
 
   // Debounce search
   useEffect(() => {
@@ -403,6 +417,7 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
     }
     setPools([...pools, newPool])
     setActivePoolId(newPool.id)
+    setLocalPool(newPool)
     setIsModalOpen(true)
   }
 
@@ -412,12 +427,20 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
 
   const updatePoolName = (name: string) => {
     if (!activePoolId) return
-    setPools(pools.map(p => p.id === activePoolId ? { ...p, name } : p))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, name })
+    } else {
+      setPools(pools.map(p => p.id === activePoolId ? { ...p, name } : p))
+    }
   }
 
   const updatePoolTax = (tax: number) => {
     if (!activePoolId) return
-    setPools(pools.map(p => p.id === activePoolId ? { ...p, tax } : p))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, tax })
+    } else {
+      setPools(pools.map(p => p.id === activePoolId ? { ...p, tax } : p))
+    }
   }
 
   const addCardToPool = (card: Card) => {
@@ -427,13 +450,18 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
       type: 'Card',
       card: card
     }
-    setPools(pools.map(p => {
-      if (p.id === activePoolId) {
-        if (p.items.some(i => i.card?.id === card.id)) return p
-        return { ...p, items: [...p.items, newItem] }
-      }
-      return p
-    }))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      if ((localPool.items || []).some(i => i.card?.id === card.id)) return
+      setLocalPool({ ...localPool, items: [...(localPool.items || []), newItem] })
+    } else {
+      setPools(pools.map(p => {
+        if (p.id === activePoolId) {
+          if (p.items.some(i => i.card?.id === card.id)) return p
+          return { ...p, items: [...p.items, newItem] }
+        }
+        return p
+      }))
+    }
     // Keep the search query and results so admin can add multiple cards quickly
   }
 
@@ -456,40 +484,41 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   const handleSaveSkill = (skill: Skill) => {
     if (!activePoolId) return
 
-    if (editingItemId) {
-      setPools(pools.map(p => {
-        if (p.id === activePoolId) {
-          return {
-            ...p,
-            items: p.items.map(i => i.id === editingItemId ? { ...i, skill: skill } : i)
-          }
-        }
-        return p
-      }))
-    } else {
-      const newItem: LootPoolItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: 'Skill',
-        skill: skill
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      if (editingItemId) {
+        setLocalPool({ ...localPool, items: localPool.items.map(i => i.id === editingItemId ? { ...i, skill } : i) })
+      } else {
+        const newItem: LootPoolItem = { id: Math.random().toString(36).substr(2, 9), type: 'Skill', skill }
+        setLocalPool({ ...localPool, items: [...localPool.items, newItem] })
       }
-      setPools(pools.map(p => {
-        if (p.id === activePoolId) {
-          return { ...p, items: [...p.items, newItem] }
-        }
-        return p
-      }))
+    } else {
+      if (editingItemId) {
+        setPools(pools.map(p => {
+          if (p.id === activePoolId) {
+            return { ...p, items: p.items.map(i => i.id === editingItemId ? { ...i, skill } : i) }
+          }
+          return p
+        }))
+      } else {
+        const newItem: LootPoolItem = { id: Math.random().toString(36).substr(2, 9), type: 'Skill', skill }
+        setPools(pools.map(p => p.id === activePoolId ? { ...p, items: [...p.items, newItem] } : p))
+      }
     }
     setIsSkillFormOpen(false)
   }
 
   const removeItem = (itemId: string) => {
     if (!activePoolId) return
-    setPools(pools.map(p => {
-      if (p.id === activePoolId) {
-        return { ...p, items: p.items.filter(i => i.id !== itemId) }
-      }
-      return p
-    }))
+    if (isModalOpen && localPool && localPool.id === activePoolId) {
+      setLocalPool({ ...localPool, items: localPool.items.filter(i => i.id !== itemId) })
+    } else {
+      setPools(pools.map(p => {
+        if (p.id === activePoolId) {
+          return { ...p, items: p.items.filter(i => i.id !== itemId) }
+        }
+        return p
+      }))
+    }
   }
 
   const getModsForCard = (card: Card | null) => {
@@ -674,8 +703,8 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
               <div className="flex items-center space-x-4 flex-1">
                 <input 
                   type="text" 
-                  value={editingName ? nameDraft : (activePool.name || '')}
-                  onFocus={() => { setNameDraft(activePool.name || ''); setEditingName(true) }}
+                  value={editingName ? nameDraft : (effectivePool?.name || '')}
+                  onFocus={() => { setNameDraft(effectivePool?.name || ''); setEditingName(true) }}
                   onChange={(e) => { if (editingName) { setNameDraft(e.target.value) } else { updatePoolName(e.target.value) } }}
                   onBlur={() => { if (editingName) { updatePoolName(nameDraft); setEditingName(false) } }}
                   className="text-2xl font-bold bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 w-full"
@@ -686,14 +715,26 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
                   <input
                     type="number"
                     min="0"
-                    value={activePool.tax || 0}
+                    value={effectivePool?.tax || 0}
                     onChange={(e) => updatePoolTax(parseInt(e.target.value) || 0)}
                     className="w-16 text-sm border-none focus:ring-0 p-0 text-right font-mono bg-transparent text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  // Apply local edits back to pools when closing modal
+                  if (localPool) {
+                    setPools((prev) => {
+                      const exists = prev.some(p => p.id === localPool.id)
+                      if (exists) return prev.map(p => p.id === localPool.id ? localPool : p)
+                      return [...prev, localPool]
+                    })
+                  }
+                  setIsModalOpen(false)
+                  setActivePoolId(null)
+                  setLocalPool(null)
+                }}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 ml-4"
               >
                 ✕
