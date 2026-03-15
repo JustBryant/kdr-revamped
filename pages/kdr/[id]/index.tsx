@@ -605,12 +605,13 @@ export default function KdrViewPage() {
                                   ? `The following participants have not yet picked their class. This will force them to start with a random class.`
                                   : `The following participants have not finished shopping. This will end their shopping phase immediately.`,
                                 players: pendingShop,
-                                onConfirm: async () => {
+                                  onConfirm: async () => {
                                   setConfirmModal(null)
                                   setLoading(true)
                                   try {
-                                    const res = await axios.post(`/api/kdr/generate`, { kdrId: id })
-                                    setKdr(res.data)
+                                    await axios.post(`/api/kdr/generate`, { kdrId: id })
+                                    const fresh = await axios.get(`/api/kdr/${id}`)
+                                    setKdr(fresh.data)
                                     setMessage('Round generated')
                                     triggerGlobalRefresh()
                                   } catch (e: any) {
@@ -623,8 +624,9 @@ export default function KdrViewPage() {
 
                             setLoading(true)
                             try {
-                              const res = await axios.post(`/api/kdr/generate`, { kdrId: id })
-                              setKdr(res.data)
+                              await axios.post(`/api/kdr/generate`, { kdrId: id })
+                              const fresh = await axios.get(`/api/kdr/${id}`)
+                              setKdr(fresh.data)
                               setMessage('Round generated')
                               triggerGlobalRefresh()
                             } catch (e: any) {
@@ -1262,16 +1264,20 @@ export default function KdrViewPage() {
 
                     setLoading(true);
                     try {
-                      const res = await axios.post('/api/kdr/match/report', {
-                        matchId: selectedMatchForReport.id,
-                        scoreA: selectedMatchForReport.scoreA,
-                        scoreB: selectedMatchForReport.scoreB,
-                        replayUrl: selectedMatchForReport.replayUrl
-                      });
-                      setKdr(res.data);
+                        await axios.post('/api/kdr/match/report', {
+                          matchId: selectedMatchForReport.id,
+                          scoreA: selectedMatchForReport.scoreA,
+                          scoreB: selectedMatchForReport.scoreB,
+                          replayUrl: selectedMatchForReport.replayUrl
+                        });
+                        try {
+                          const fresh = await axios.get(`/api/kdr/${id}`)
+                          setKdr(fresh.data)
+                        } catch (err) {
+                          // ignore - global refresh will update shortly
+                        }
                       setReportOpen(false);
                       triggerGlobalRefresh();
-                      triggerMatchUpdate();
                     } catch (e: any) {
                       alert(e?.response?.data?.error || 'Failed to report score');
                     } finally {
