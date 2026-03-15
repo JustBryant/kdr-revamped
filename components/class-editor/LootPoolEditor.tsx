@@ -112,6 +112,8 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
   const [activeTier, setActiveTier] = useState<Tier>('STARTER')
   const [activePoolId, setActivePoolId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [nameDraft, setNameDraft] = useState<string>('')
+  const [editingName, setEditingName] = useState<boolean>(false)
 
   const getTierLabel = (tier: Tier) => {
     if (tierLabels && tierLabels[tier]) return tierLabels[tier]
@@ -672,8 +674,10 @@ export default function LootPoolEditor({ pools, onChange, tierLabels, send, me, 
               <div className="flex items-center space-x-4 flex-1">
                 <input 
                   type="text" 
-                  value={activePool.name}
-                  onChange={(e) => updatePoolName(e.target.value)}
+                  value={editingName ? nameDraft : (activePool.name || '')}
+                  onFocus={() => { setNameDraft(activePool.name || ''); setEditingName(true) }}
+                  onChange={(e) => { if (editingName) { setNameDraft(e.target.value) } else { updatePoolName(e.target.value) } }}
+                  onBlur={() => { if (editingName) { updatePoolName(nameDraft); setEditingName(false) } }}
                   className="text-2xl font-bold bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 w-full"
                   placeholder="Pool Name"
                 />
