@@ -1,0 +1,40 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          timeout: 120s
+          script: |
+            set -e
+            # change to the app directory (adjust if your path differs)
+            cd /home/deploy/kdr || exit 1
+
+            # ensure repo is on expected branch and up-to-date
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            # pull images and rebuild web service
+            docker compose -f infra/docker-compose.hetzner.yml pull --ignore-pull-failures
+            docker compose -f infra/docker-compose.hetzner.yml up -d --build web
+
+            # (optional) run migrations or other post-deploy tasks here
+            # docker compose -f infra/docker-compose.hetzner.yml exec -T web npm run migrate
+
+            echo "Deploy finished"
