@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install deps
@@ -10,7 +10,7 @@ RUN if [ -f yarn.lock ]; then npm install -g yarn && yarn --frozen-lockfile --pr
 COPY . .
 RUN if [ -f package.json ]; then npm run build || true; fi
 
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
