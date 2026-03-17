@@ -13,6 +13,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Runner connectivity debug
+        run: |
+          echo "Runner public IP:"
+          curl -s https://ifconfig.co || curl -s https://ipinfo.io/ip || true
+          echo "Testing TCP connect to ${DEPLOY_HOST:-$GITHUB_REPOSITORY} on port ${DEPLOY_PORT:-22}"
+          python3 - <<'PY'
+import socket,sys
+host = sys.argv[1] if len(sys.argv)>1 else '204.168.138.6'
+port = int(sys.argv[2]) if len(sys.argv)>2 else 22
+s = socket.socket()
+s.settimeout(8)
+try:
+  s.connect((host,port))
+  print('CONNECT_OK')
+except Exception as e:
+  print('CONNECT_FAIL',str(e))
+PY 204.168.138.6 22
+
+
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v0.1.8
         with:
