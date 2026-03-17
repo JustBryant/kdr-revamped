@@ -6,7 +6,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  runner-debug:
+    runs-on: ubuntu-latest
+    outputs:
+      connect: ${{ steps.check.outputs.connect }}
+    steps:
+      - name: Runner connectivity check
+        id: check
+        run: |
+          set -e
+          echo "Runner public IP:"
+          curl -sS https://ifconfig.co || curl -sS https://ipinfo.io/ip || curl -sS https://icanhazip.com || dig +short myip.opendns.com @resolver1.opendns.com || true
+          echo "Testing TCP connect to ${DEPLOY_HOST:-204.168.138.6} on port ${DEPLOY_PORT:-22}"
+          ok=false
+          # Try multiple methods to test TCP connect
+          if timeout 8 bash -c "cat < /dev/tcp/${DEPLOY_HOST:-204.168.138.6}/${DEPLOY_PORT:-22}" >/dev/null 2>&1; then
+            ok=true
+          fi
+          if command -v nc >/dev/null 2>&1; then
+            if nc -vz -w 8 ${DEPLOY_HOST:-204.168.138.6} ${DEPLOY_PORT:-22} >/dev/null 2>&1; then ok=true; fi
+          fi
+          if command -v timeout >/dev/null 2>&1 && command -v bash >/dev/null 2>&1; then
+            if bash -c "</dev/tcp/${DEPLOY_HOST:-204.168.138.6}/${DEPLOY_PORT:-22}" >/dev/null 2>&1; then ok=true; fi
+          fi
+          if [ "$ok" = true ]; then
+            echo "connect=true" >> $GITHUB_OUTPUT
+            echo CONNECT_OK
+          else
+            echo "connect=false" >> $GITHUB_OUTPUT
+            echo CONNECT_FAIL
+            exit 0
+          fi
+
   deploy:
+    needs: runner-debug
+    if: needs.runner-debug.outputs.connect == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
