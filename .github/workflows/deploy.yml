@@ -8,52 +8,64 @@ on:
 jobs:
   deploy:
     name: Deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    name: Deploy to Hetzner
 
-      - name: Runner connectivity debug
-        run: |
-          echo "Runner public IP:"
-          curl -s https://ifconfig.co || curl -s https://ipinfo.io/ip || true
-          echo "Testing TCP connect to ${DEPLOY_HOST:-$GITHUB_REPOSITORY} on port ${DEPLOY_PORT:-22}"
-          python3 - <<'PY'
-import socket,sys
-host = sys.argv[1] if len(sys.argv)>1 else '204.168.138.6'
-port = int(sys.argv[2]) if len(sys.argv)>2 else 22
-s = socket.socket()
-s.settimeout(8)
-try:
-  s.connect((host,port))
-  print('CONNECT_OK')
-except Exception as e:
-  print('CONNECT_FAIL',str(e))
-PY 204.168.138.6 22
+    on:
+      push:
+        branches: [ main ]
+      workflow_dispatch:
 
+    jobs:
+      deploy:
+        name: Deploy
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
 
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          timeout: 120s
-          script: |
-            set -e
-            # change to the app directory (adjust if your path differs)
-            cd /home/deploy/kdr || exit 1
+          - name: Runner connectivity debug
+            env:
+              DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+              DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+            run: |
+              echo "Runner public IP:"
+              curl -s https://ifconfig.co || curl -s https://ipinfo.io/ip || true
+              echo "Testing TCP connect to ${DEPLOY_HOST:-204.168.138.6} on port ${DEPLOY_PORT:-22}"
+              python3 - <<'PY'
+    import socket,os
+    host = os.environ.get('DEPLOY_HOST','204.168.138.6')
+    port = int(os.environ.get('DEPLOY_PORT','22'))
+    s = socket.socket()
+    s.settimeout(8)
+    try:
+        s.connect((host,port))
+        print('CONNECT_OK')
+    except Exception as e:
+        print('CONNECT_FAIL',str(e))
+    PY
 
-            # ensure repo is on expected branch and up-to-date
-            git fetch --all --prune
-            git reset --hard origin/main
+          - name: Deploy to server via SSH
+            uses: appleboy/ssh-action@v0.1.8
+            with:
+              host: ${{ secrets.DEPLOY_HOST }}
+              username: ${{ secrets.DEPLOY_USER }}
+              key: ${{ secrets.DEPLOY_SSH_KEY }}
+              port: ${{ secrets.DEPLOY_PORT }}
+              timeout: 120s
+              script: |
+                set -e
+                # change to the app directory (adjust if your path differs)
+                cd /home/deploy/kdr || exit 1
 
-            # pull images and rebuild web service
-            docker compose -f infra/docker-compose.hetzner.yml pull --ignore-pull-failures
-            docker compose -f infra/docker-compose.hetzner.yml up -d --build web
+                # ensure repo is on expected branch and up-to-date
+                git fetch --all --prune
+                git reset --hard origin/main
 
-            # (optional) run migrations or other post-deploy tasks here
-            # docker compose -f infra/docker-compose.hetzner.yml exec -T web npm run migrate
+                # pull images and rebuild web service
+                docker compose -f infra/docker-compose.hetzner.yml pull --ignore-pull-failures
+                docker compose -f infra/docker-compose.hetzner.yml up -d --build web
 
-            echo "Deploy finished"
+                # (optional) run migrations or other post-deploy tasks here
+                # docker compose -f infra/docker-compose.hetzner.yml exec -T web npm run migrate
+
+                echo "Deploy finished"
