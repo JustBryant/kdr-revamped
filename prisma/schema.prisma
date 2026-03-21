@@ -249,11 +249,12 @@ model DeckCard {
   id       String @id @default(cuid())
   deckId   String
   cardId   String
-  quantity Int    @default(1)
+    quantity Int    @default(1)
+    location String // 'MAIN', 'EXTRA', or 'SIDE'
   card     Card   @relation(fields: [cardId], references: [id])
   deck     Deck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
 
-  @@unique([deckId, cardId])
+    @@unique([deckId, cardId, location])
 }
 
 model Tournament {

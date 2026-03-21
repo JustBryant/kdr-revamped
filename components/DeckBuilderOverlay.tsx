@@ -1,4 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+// YDKE export helper
+function generateYDKE(main: { card: { konamiId?: number } }[], extra: { card: { konamiId?: number } }[], side: { card: { konamiId?: number } }[]) {
+  // YDKE: ydke://main!extra!side
+  // Each section is a base64 string of 4-byte little-endian konami IDs
+  function encodeSection(deck: { card: { konamiId?: number } }[]) {
+    const bytes = [];
+    for (const item of deck) {
+      const id = item.card.konamiId || 0;
+      bytes.push(id & 0xFF, (id >> 8) & 0xFF, (id >> 16) & 0xFF, (id >> 24) & 0xFF);
+    }
+    return btoa(String.fromCharCode(...bytes));
+  }
+  return `ydke://${encodeSection(main)}!${encodeSection(extra)}!${encodeSection(side)}!`;
+}
 import CardImage, { selectArtworkUrl } from './common/CardImage'
 import LocalIcon from './LocalIcon'
 import DeckFiltersPanel from './DeckFiltersPanel'
@@ -146,6 +160,8 @@ export default function DeckBuilderOverlay({ open, onClose, onSave, initialDeck 
   
   const [loading, setLoading] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [showYDKE, setShowYDKE] = useState(false)
+  const [ydkeCode, setYDKECode] = useState('')
   const [selectedCard, setSelectedCard] = useState<CardItem | null>(null)
   const [activeTab, setActiveTab] = useState<'main' | 'extra' | 'side'>('main')
   const attemptedEnrichment = useRef<Set<string>>(new Set())
@@ -1062,20 +1078,55 @@ export default function DeckBuilderOverlay({ open, onClose, onSave, initialDeck 
               >
                   Load
               </button>
-              <button 
+                <button 
                   disabled={!deckName.trim()}
                   onClick={() => { 
-                      onSave({
-                          name: deckName,
-                          main: exportEnds(mainDeck),
-                          extra: exportEnds(extraDeck),
-                          side: exportEnds(sideDeck)
-                      })
-                      // Do not close on save
+                    onSave({
+                      name: deckName,
+                      main: exportEnds(mainDeck),
+                      extra: exportEnds(extraDeck),
+                      side: exportEnds(sideDeck)
+                    })
                   }} 
                   className={`flex-1 px-3 py-2 rounded font-semibold text-white transition-all ${!deckName.trim() ? 'bg-gray-400 cursor-not-allowed opacity-50' : 'bg-emerald-500 hover:bg-emerald-600 shadow-md'}`}>
                   Save
-              </button>
+                </button>
+                <button
+                onClick={() => {
+                  const ydke = generateYDKE(mainDeck, extraDeck, sideDeck)
+                  setYDKECode(ydke)
+                  setShowYDKE(true)
+                }}
+                className="flex-1 px-3 py-2 rounded font-semibold text-white bg-yellow-500 hover:bg-yellow-600 shadow-md transition-all ml-2">
+                Export YDKE
+                </button>
+                  {/* YDKE Export Modal */}
+                  {showYDKE && (
+                    <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
+                      <div className="w-full max-w-lg rounded-3xl shadow-2xl p-8 border border-yellow-400 bg-slate-900/90 relative">
+                        <h2 className="text-2xl font-black uppercase tracking-tighter mb-6 flex items-center gap-3 text-yellow-300">
+                          <span className="w-2 h-8 bg-yellow-400 rounded-full"></span>
+                          Export YDKE Code
+                        </h2>
+                        <textarea
+                          readOnly
+                          value={ydkeCode}
+                          className="w-full p-3 rounded-lg bg-black/60 border border-yellow-400 text-yellow-200 font-mono text-sm mb-4"
+                          rows={3}
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {navigator.clipboard.writeText(ydkeCode)}}
+                            className="flex-1 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-widest text-xs transition-all shadow-lg"
+                          >Copy</button>
+                          <button
+                            onClick={() => setShowYDKE(false)}
+                            className="flex-1 py-2 rounded-xl border border-white/10 text-gray-400 font-black uppercase tracking-widest text-xs hover:bg-white/5 transition-all"
+                          >Close</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
             </div>
           </div>
         </div>
